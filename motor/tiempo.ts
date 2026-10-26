@@ -30,7 +30,11 @@ export function validarEntrada(sesiones: readonly Sesion[]): void {
   for (const s of sesiones) {
     if (vistos.has(s.id)) throw new Error(`Id de sesión duplicado: ${s.id}`)
     vistos.add(s.id)
-    diaNumero(s.fecha)
+    try {
+      diaNumero(s.fecha)
+    } catch (e) {
+      throw new Error(`Fecha inválida en ${s.id}: ${e instanceof Error ? e.message : String(e)}`)
+    }
     if (!Number.isFinite(s.horaInicio) || s.horaInicio < 0 || s.horaInicio >= 24) {
       throw new Error(`horaInicio fuera de [0, 24) en ${s.id}: ${s.horaInicio}`)
     }

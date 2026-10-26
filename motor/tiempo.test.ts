@@ -18,6 +18,15 @@ describe('diaNumero', () => {
     expect(() => diaNumero('26-10-01')).toThrow()
     expect(() => diaNumero('2026-10-1')).toThrow()
   })
+  it('respeta los años bisiestos', () => {
+    expect(() => diaNumero('2026-02-29')).toThrow()
+    expect(() => diaNumero('2100-02-29')).toThrow()
+    expect(() => diaNumero('2000-02-29')).not.toThrow()
+  })
+  it('es negativo antes de 1970', () => {
+    expect(diaNumero('1969-12-31')).toBe(-1)
+    expect(diaNumero('1970-01-01') - diaNumero('1969-12-31')).toBe(1)
+  })
 })
 
 describe('inicioHoras y finHoras', () => {
@@ -50,5 +59,20 @@ describe('validarEntrada', () => {
   })
   it('lanza con una fecha inexistente', () => {
     expect(() => validarEntrada([ses('a', '2026-02-30', 18)])).toThrow()
+  })
+  it('el error de fecha nombra la sesión', () => {
+    expect(() => validarEntrada([ses('sesion-rara', '2026-02-30', 18)])).toThrow(/Fecha inválida en sesion-rara/)
+  })
+  it('acepta horaInicio 23.999 y rechaza infinitos', () => {
+    expect(() => validarEntrada([ses('a', '2026-10-26', 23.999)])).not.toThrow()
+    expect(() => validarEntrada([ses('a', '2026-10-26', Infinity)])).toThrow(/horaInicio/)
+    expect(() => validarEntrada([ses('a', '2026-10-26', -Infinity)])).toThrow(/horaInicio/)
+  })
+  it('lanza con duracionMin NaN o negativa', () => {
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { duracionMin: Number.NaN })])).toThrow(/duracionMin/)
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { duracionMin: -5 })])).toThrow(/duracionMin/)
+  })
+  it('acepta una lista vacía', () => {
+    expect(() => validarEntrada([])).not.toThrow()
   })
 })
