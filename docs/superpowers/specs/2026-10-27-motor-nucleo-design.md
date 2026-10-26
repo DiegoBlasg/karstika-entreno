@@ -75,8 +75,13 @@ export interface Violacion {
 - Tiempo absoluto de una sesión: `Date.UTC(año, mes-1, día) / 3.6e6 + horaInicio` horas. Se usa la hora
   local del usuario como si fuera continua; los cambios de hora de verano pueden desplazar un resultado
   una hora y no se corrigen (limitación documentada; el margen de 48 h lo absorbe en la práctica).
-- Una fecha mal formada, `horaInicio` fuera de `[0, 24)`, `duracionMin <= 0` o ids duplicados lanzan error
-  de entrada inválida (no se silencian).
+- Una fecha mal formada, `horaInicio` fuera de `[0, 24)`, `duracionMin <= 0`, ids duplicados o vacíos,
+  o un `detalle` inválido lanzan error de entrada inválida (no se silencian). Validación de `detalle`:
+  `agarre` (si existe) es `abierto`, `semiarqueado` o `arqueado`; `conCarga` (si existe) es booleano;
+  `regletaMm` (si existe) es un número finito mayor que 0. Los errores nombran el id de la sesión y el campo.
+- `campus` y las dos multipresas cuentan siempre como sesión intensa de dedos (P-15 las cuenta por tipo),
+  sea cual sea su etiqueta de `intensidad`; el resto de tipos de `tiposIntensosDedos` exigen `intensidad: 'alta'`.
+  «Carga alta» (P-16) es la etiqueta `alta` o ser intensa de dedos por tipo.
 
 ## 2. Metadatos de parámetros (`motor/metadatos.ts`, generado)
 
@@ -99,7 +104,7 @@ export const VALORES = {
   'P-12': { anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 },
   'P-13': { maxSesionesCampus: 0 },
   'P-14': { horasMinimasEntreSesionesIntensasDedos: 48 },
-  'P-15': { tiposIntensosDedos: ['multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite', 'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto'] },
+  'P-15': { tiposIntensosDedos: ['multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite', 'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto', 'campus'] },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },
 } as const satisfies Partial<Record<ParametroId, object>>
 ```
@@ -172,13 +177,13 @@ Solo devuelve violaciones en las que interviene la propuesta. Cada violación ll
 
 | Regla | Condición de violación | Parámetros |
 |---|---|---|
-| `seguridad.dedos-48h` | La propuesta y alguna sesión del historial son de tipo en `tiposIntensosDedos` con intensidad `alta` y hay menos de 48 h entre el fin de la anterior y el inicio de la posterior | P-14, P-15 |
-| `seguridad.carga-alta-seguida` | Con la propuesta habría más de 2 días naturales consecutivos con alguna sesión de intensidad `alta` (la propuesta es de intensidad `alta`) | P-16 |
+| `seguridad.dedos-48h` | La propuesta y alguna sesión del historial son intensas de dedos (tipo en `tiposIntensosDedos`, con intensidad `alta`; multipresas y campus cuentan siempre) y hay menos de 48 h entre el fin de la anterior y el inicio de la posterior | P-14, P-15 |
+| `seguridad.carga-alta-seguida` | Con la propuesta habría más de 2 días naturales consecutivos con alguna sesión de carga alta (etiqueta `alta` o intensa de dedos por tipo; la propuesta también es de carga alta) | P-16 |
 | `seguridad.campus` | La propuesta es `campus` y `anosEscalando < 2` | P-13, P-12 |
 | `seguridad.maxima-novel` | La propuesta es `multipresa-maxima` y `anosEscalando < 2` | P-01, P-12 |
 | `seguridad.multipresa-7dias` | Con la propuesta habría más de 2 sesiones de multipresa en alguna ventana de 7 días naturales que contenga el día de la propuesta (se cuentan también sesiones futuras ya confirmadas) y `anosEscalando < 2` | P-12 |
-| `seguridad.regleta` | `detalle.regletaMm < 20` en multipresa y `anosEscalando < 2` | P-12 |
-| `seguridad.arqueado` | `detalle.agarre === 'arqueado'` y `detalle.conCarga` verdadero (siempre, también con experiencia) | P-10, P-12 |
+| `seguridad.regleta` | Multipresa, `anosEscalando < 2` y `detalle.regletaMm` ausente (hay que indicar el canto; falla cerrado) o menor que 20 | P-12 |
+| `seguridad.arqueado` | `detalle.agarre === 'arqueado'` y (`anosEscalando < 2`, con o sin carga, o `detalle.conCarga` verdadero con cualquier experiencia) | P-10, P-12 si es novel; P-10 solo si tiene experiencia |
 
 - La salida está ordenada por regla y luego por ids de sesión, para que sea estable.
 - `validarSesion` no valida el contexto; el generador (2b) llama a `validarContexto` y `validarSesion`.
@@ -190,7 +195,7 @@ Solo devuelve violaciones en las que interviene la propuesta. Cada violación ll
   seguidos pasa y 3 falla; 2 multipresas en 7 días pasan y 3 fallan; regleta de 20 mm pasa y 19 mm falla).
   Historial con sesiones de semanas distintas (cruce de fin de semana y de fin de mes).
 - **Perfil**: las reglas de principiante no se aplican con `anosEscalando >= 2`; `dedos-48h`,
-  `carga-alta-seguida` y `arqueado` se aplican siempre.
+  `carga-alta-seguida` y `arqueado` con carga se aplican siempre (el arqueado sin carga solo viola a novel).
 - **Contexto**: cada fila de la tabla (solo/con gente × rocódromo/roca/casa); `tiposPosibles` nunca vacío;
   caso real del usuario: martes con gente en rocódromo (vías con cuerda sí) y jueves solo en rocódromo
   (vías con cuerda no; autoasegurada, bloque y board sí).
