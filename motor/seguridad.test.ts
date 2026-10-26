@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { perfilExperto, perfilNovel, ses } from './_fabrica'
+import { BASE_OCTUBRE, perfilExperto, perfilNovel, ses } from './_fabrica'
 import { esIntensaDedos, validarSesion } from './seguridad'
 import type { Perfil, Sesion } from './tipos'
 
@@ -370,7 +370,7 @@ describe('seguridad.evaluacion-prematura', () => {
 
   it('en perfil novel el test también exige regleta indicada y de al menos 20 mm', () => {
     const base = ses('e', '2026-10-27', 18, { tipo: 'evaluacion-dedos', duracionMin: 30 })
-    const historial = [primera('2026-09-01')]
+    const historial = [primera('2026-09-01'), ...BASE_OCTUBRE]
     expect(reglas(validarSesion(base, historial, perfilNovel))).toEqual(['seguridad.regleta'])
     const pequena = { ...base, detalle: { regletaMm: 15, agarre: 'semiarqueado' as const, conCarga: true } }
     expect(reglas(validarSesion(pequena, historial, perfilNovel))).toEqual(['seguridad.regleta'])
@@ -380,8 +380,8 @@ describe('seguridad.evaluacion-prematura', () => {
   const primera = (fecha: string) => ses('p', fecha, 18, { tipo: 'tecnica', intensidad: 'suave' })
 
   it('28 días desde la primera sesión pasa y 27 viola, en perfil novel', () => {
-    expect(validarSesion(evaluacion('2026-10-27'), [primera('2026-09-29')], perfilNovel)).toEqual([])
-    const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-30')], perfilNovel)
+    expect(validarSesion(evaluacion('2026-10-27'), [primera('2026-09-29'), ...BASE_OCTUBRE], perfilNovel)).toEqual([])
+    const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-30'), ...BASE_OCTUBRE], perfilNovel)
     expect(reglas(v)).toEqual(['seguridad.evaluacion-prematura'])
     expect(v[0]!.explicacion.parametros).toEqual(['P-12', 'P-32'])
     expect(v[0]!.sesionIds).toEqual(['e'])
@@ -390,7 +390,7 @@ describe('seguridad.evaluacion-prematura', () => {
     expect(reglas(validarSesion(evaluacion('2026-10-27'), [], perfilNovel))).toEqual(['seguridad.evaluacion-prematura'])
   })
   it('la primera sesión es la más antigua, no la última del historial', () => {
-    const historial = [primera('2026-10-20'), ses('q', '2026-09-01', 18, { tipo: 'tecnica', intensidad: 'suave' })]
+    const historial = [primera('2026-10-20'), ses('q', '2026-09-01', 18, { tipo: 'tecnica', intensidad: 'suave' }), ...BASE_OCTUBRE]
     expect(validarSesion(evaluacion('2026-10-27'), historial, perfilNovel)).toEqual([])
   })
   it('no se aplica a perfiles con experiencia', () => {
@@ -402,7 +402,7 @@ describe('seguridad.evaluacion-prematura', () => {
     expect(reglas(v)).toContain('seguridad.dedos-dia-descanso')
   })
   it('no dispara maxima-novel: es el tipo de excepción', () => {
-    const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-01')], perfilNovel)
+    const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-01'), ...BASE_OCTUBRE], perfilNovel)
     expect(reglas(v)).not.toContain('seguridad.maxima-novel')
   })
 })
@@ -430,5 +430,25 @@ describe('seguridad.dedos-7dias (tope semanal para perfiles novel)', () => {
     const h = [mp('a', '2026-10-26'), intensa('b', '2026-10-28'), intensa('c', '2026-11-01')]
     expect(regla(validarSesion(intensa('d', '2026-10-30'), h, perfilNovel))).toHaveLength(1)
     expect(regla(validarSesion(intensa('d', '2026-10-30'), h, perfilExperto))).toEqual([])
+  })
+})
+
+describe('seguridad.evaluacion-prematura: mínimo de sesiones en la base', () => {
+  const evaluacion = ses('e', '2026-10-27', 18, {
+    tipo: 'evaluacion-dedos', duracionMin: 30, detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: true },
+  })
+  const primera = ses('p', '2026-09-01', 18, { tipo: 'tecnica', intensidad: 'suave' })
+
+  it('con 28 días pero solo 5 sesiones en las 4 semanas previas viola, y el mensaje dice cuántas llevas', () => {
+    const v = validarSesion(evaluacion, [primera, ...BASE_OCTUBRE.slice(0, 5)], perfilNovel)
+    expect(v.map((x) => x.regla)).toEqual(['seguridad.evaluacion-prematura'])
+    expect(v[0]!.mensaje).toMatch(/6 sesiones.*llevas 5/)
+  })
+  it('con 6 sesiones en las 4 semanas previas pasa', () => {
+    expect(validarSesion(evaluacion, [primera, ...BASE_OCTUBRE], perfilNovel)).toEqual([])
+  })
+  it('las sesiones de hace más de 28 días no cuentan para el mínimo', () => {
+    const viejas = BASE_OCTUBRE.map((s, i) => ({ ...s, id: `v${i}`, fecha: `2026-09-${String(10 + i).padStart(2, '0')}` }))
+    expect(validarSesion(evaluacion, [primera, ...viejas], perfilNovel).map((x) => x.regla)).toEqual(['seguridad.evaluacion-prematura'])
   })
 })

@@ -6,7 +6,7 @@ import type { Perfil, Sesion, TipoSesion, Violacion } from './tipos'
 const TIPOS_DEDOS: readonly TipoSesion[] = VALORES['P-15'].tiposIntensosDedos
 
 // Estos tipos cuentan siempre como sesión intensa de dedos, sea cual sea su etiqueta de intensidad (P-15 los cuenta por tipo).
-const SIEMPRE_INTENSOS: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima', 'campus', 'evaluacion-dedos']
+const SIEMPRE_INTENSOS: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'campus', 'evaluacion-dedos']
 
 export const esIntensaDedos = (s: Sesion): boolean =>
   SIEMPRE_INTENSOS.includes(s.tipo) || (s.intensidad === 'alta' && TIPOS_DEDOS.includes(s.tipo))
@@ -89,7 +89,7 @@ function reglaCargaAltaSeguida(propuesta: Sesion, historial: readonly Sesion[]):
   ]
 }
 
-const MULTIPRESA: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima']
+const MULTIPRESA: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza']
 const esMultipresa = (s: Sesion): boolean => MULTIPRESA.includes(s.tipo)
 const esNovel = (p: Perfil): boolean => p.anosEscalando < VALORES['P-12'].anosMaximosPerfilNovel
 
@@ -243,18 +243,23 @@ function reglaArqueado(propuesta: Sesion, _historial: readonly Sesion[], perfil:
 
 function reglaEvaluacionPrematura(propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil): Violacion[] {
   if (propuesta.tipo !== 'evaluacion-dedos' || !esNovel(perfil)) return []
-  const minimo = VALORES['P-32'].diasBaseMinimos
+  const { diasBaseMinimos: minimo, sesionesMinimasBase } = VALORES['P-32']
+  const d = diaNumero(propuesta.fecha)
   const dias = historial.map((s) => diaNumero(s.fecha))
-  if (dias.length > 0 && diaNumero(propuesta.fecha) - Math.min(...dias) >= minimo) return []
+  const suficientesDias = dias.length > 0 && d - Math.min(...dias) >= minimo
+  const enLaBase = dias.filter((x) => x >= d - minimo && x <= d - 1).length
+  if (suficientesDias && enLaBase >= sesionesMinimasBase) return []
   return [
     {
       regla: 'seguridad.evaluacion-prematura',
       sesionIds: [propuesta.id],
-      mensaje: `El test máximo de dedos exige al menos ${minimo} días de base desde tu primera sesión registrada.`,
+      mensaje: suficientesDias
+        ? `El test máximo de dedos exige al menos ${sesionesMinimasBase} sesiones en los últimos ${minimo} días; llevas ${enLaBase}.`
+        : `El test máximo de dedos exige al menos ${minimo} días de base desde tu primera sesión registrada.`,
       explicacion: explicar(
         'seguridad.evaluacion-prematura',
         ['P-32', 'P-12'],
-        `Con poca experiencia el único esfuerzo máximo de dedos es el test, y solo tras ${minimo} días (4 semanas) de base técnica y adaptación.`,
+        `Con poca experiencia el único esfuerzo máximo de dedos es el test, y solo tras ${minimo} días (4 semanas) de base técnica y adaptación con al menos ${sesionesMinimasBase} sesiones.`,
       ),
     },
   ]

@@ -9,6 +9,12 @@ export function ses(id: string, fecha: string, horaInicio: number, extra: Partia
   return { id, tipo: 'bloque-limite', intensidad: 'alta', fecha, horaInicio, duracionMin: 90, ...extra }
 }
 
+// Base realista para desbloquear el test de dedos (P-32): 6 sesiones suaves de técnica en las 4 semanas previas
+// al 27 de octubre, todas a más de 7 días (no cuentan para los cupos de esa semana).
+export const BASE_OCTUBRE: Sesion[] = ['2026-10-01', '2026-10-04', '2026-10-07', '2026-10-10', '2026-10-14', '2026-10-18'].map(
+  (fecha, i) => ses(`base${i}`, fecha, 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
+)
+
 export function peticion(extra: Partial<Peticion> = {}): Peticion {
   return {
     fecha: '2026-10-27',

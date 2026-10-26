@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { perfilExperto, peticion, ses } from './_fabrica'
+import { BASE_OCTUBRE, perfilExperto, peticion, ses } from './_fabrica'
 import { validarContexto } from './contexto'
 import { FASE_BASE, FASE_FUERZA } from './fases'
 import { proponerSesion } from './propuesta'
@@ -71,7 +71,7 @@ describe('proponerSesion: semana real (martes con gente, jueves solo)', () => {
 })
 
 describe('proponerSesion: fase de fuerza', () => {
-  const fuerza = (extra = {}) => peticion({ fase: FASE_FUERZA, historial: [antigua], ...extra })
+  const fuerza = (extra = {}) => peticion({ fase: FASE_FUERZA, historial: [antigua, ...BASE_OCTUBRE], ...extra })
 
   it('sin evaluación vigente propone el test de dedos, luego vía al límite y multipresa', () => {
     expect(tipos(proponerSesion(fuerza()))).toEqual(['evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia'])
