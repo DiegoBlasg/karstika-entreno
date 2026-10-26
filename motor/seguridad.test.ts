@@ -25,54 +25,51 @@ describe('esIntensaDedos: tipos que cuentan siempre', () => {
   })
 })
 
-describe('seguridad.dedos-48h', () => {
-  it('una multipresa de resistencia etiquetada suave tras un board alto viola', () => {
+describe('seguridad.dedos-dia-descanso', () => {
+  it('una multipresa de resistencia etiquetada suave el día después de un board alto viola', () => {
     const board = ses('board', '2026-10-26', 18, { tipo: 'board' })
     const mp = ses('mp', '2026-10-27', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
-    expect(reglas(validarSesion(mp, [board], perfilExperto))).toEqual(['seguridad.dedos-48h'])
+    expect(reglas(validarSesion(mp, [board], perfilExperto))).toEqual(['seguridad.dedos-dia-descanso'])
   })
-  it('multipresa máxima suave 24 h después de un board viola con 3 años', () => {
-    const board = ses('board', '2026-10-26', 18, { tipo: 'board' }) // termina 19:30
+  it('multipresa máxima suave el día después de un board viola con 3 años', () => {
+    const board = ses('board', '2026-10-26', 18, { tipo: 'board' })
     const mp = ses('mp', '2026-10-27', 19.5, { tipo: 'multipresa-maxima', intensidad: 'suave' })
     const perfil3 = { ...perfilExperto, anosEscalando: 3 }
-    expect(reglas(validarSesion(mp, [board], perfil3))).toEqual(['seguridad.dedos-48h'])
+    expect(reglas(validarSesion(mp, [board], perfil3))).toEqual(['seguridad.dedos-dia-descanso'])
   })
-  it('el campus suave tras un board alto viola', () => {
+  it('el campus suave el día después de un board alto viola', () => {
     const board = ses('board', '2026-10-26', 18, { tipo: 'board' })
     const c = ses('c', '2026-10-27', 18, { tipo: 'campus', intensidad: 'suave' })
-    expect(reglas(validarSesion(c, [board], perfilExperto))).toEqual(['seguridad.dedos-48h'])
+    expect(reglas(validarSesion(c, [board], perfilExperto))).toEqual(['seguridad.dedos-dia-descanso'])
   })
-  // Lunes 18:00 + 90 min termina a las 19:30.
   const lunes = ses('lunes', '2026-10-26', 18)
 
-  it('exactamente 48 h entre el fin y el inicio pasa', () => {
-    expect(validarSesion(ses('miercoles', '2026-10-28', 19.5), [lunes], perfilExperto)).toEqual([])
+  it('con un día completo de por medio pasa a cualquier hora (lunes 18:00 → miércoles 08:00)', () => {
+    expect(validarSesion(ses('miercoles', '2026-10-28', 8), [lunes], perfilExperto)).toEqual([])
+    expect(validarSesion(ses('miercoles', '2026-10-28', 23.5), [lunes], perfilExperto)).toEqual([])
   })
-  it('47,9 h viola', () => {
-    const v = validarSesion(ses('miercoles', '2026-10-28', 19.4), [lunes], perfilExperto)
-    expect(reglas(v)).toEqual(['seguridad.dedos-48h'])
-    expect(v[0]!.sesionIds).toEqual(['lunes', 'miercoles'])
+  it('el día siguiente viola, aunque pasen más de 24 h', () => {
+    const v = validarSesion(ses('martes', '2026-10-27', 23.5), [lunes], perfilExperto)
+    expect(reglas(v)).toEqual(['seguridad.dedos-dia-descanso'])
+    expect(v[0]!.sesionIds).toEqual(['lunes', 'martes'])
     expect(v[0]!.explicacion.parametros).toEqual(['P-14', 'P-15'])
     expect(v[0]!.explicacion.origen).toBe('diseno')
+    expect(v[0]!.mensaje).toMatch(/días seguidos/)
   })
-  it('el mensaje trunca el hueco y nunca lo redondea hasta el límite (47,96 h)', () => {
-    const v = validarSesion(ses('miercoles', '2026-10-28', 19.46), [lunes], perfilExperto)
-    expect(reglas(v)).toEqual(['seguridad.dedos-48h'])
-    expect(v[0]!.mensaje).toContain('47.96')
-    expect(v[0]!.mensaje).not.toContain('Solo hay 48 h')
+  it('dos sesiones intensas el mismo día violan, aunque no se solapen', () => {
+    const v = validarSesion(ses('tarde', '2026-10-26', 21), [ses('manana', '2026-10-26', 8)], perfilExperto)
+    expect(reglas(v)).toEqual(['seguridad.dedos-dia-descanso'])
+    expect(v[0]!.mensaje).toMatch(/mismo día/)
   })
   it('vale también cuando la sesión del historial es posterior a la propuesta', () => {
-    const futura = ses('futura', '2026-10-28', 19.4)
-    expect(reglas(validarSesion(lunes, [futura], perfilExperto))).toEqual(['seguridad.dedos-48h'])
-    expect(validarSesion(lunes, [ses('futura', '2026-10-28', 19.5)], perfilExperto)).toEqual([])
+    expect(reglas(validarSesion(lunes, [ses('martes', '2026-10-27', 8)], perfilExperto))).toEqual(['seguridad.dedos-dia-descanso'])
+    expect(validarSesion(lunes, [ses('miercoles', '2026-10-28', 8)], perfilExperto)).toEqual([])
   })
-  it('cruza el fin de mes', () => {
-    const sabado = ses('sabado', '2026-10-31', 20) // termina 21:30
-    expect(validarSesion(ses('lunes2', '2026-11-02', 21.5), [sabado], perfilExperto)).toEqual([])
-    expect(reglas(validarSesion(ses('lunes2', '2026-11-02', 21), [sabado], perfilExperto))).toEqual(['seguridad.dedos-48h'])
-  })
-  it('sesiones solapadas violan', () => {
-    expect(reglas(validarSesion(ses('b', '2026-10-26', 19), [lunes], perfilExperto))).toEqual(['seguridad.dedos-48h'])
+  it('cruza el fin de mes y de año', () => {
+    const sabado = ses('sabado', '2026-10-31', 20)
+    expect(validarSesion(ses('lunes2', '2026-11-02', 8), [sabado], perfilExperto)).toEqual([])
+    expect(reglas(validarSesion(ses('domingo', '2026-11-01', 8), [sabado], perfilExperto))).toEqual(['seguridad.dedos-dia-descanso'])
+    expect(reglas(validarSesion(ses('ano', '2027-01-01', 8), [ses('noche', '2026-12-31', 20)], perfilExperto))).toEqual(['seguridad.dedos-dia-descanso'])
   })
   it('una sesión suave o de un tipo que no carga los dedos no cuenta', () => {
     const manana = ses('manana', '2026-10-27', 18, { intensidad: 'suave' })
@@ -87,7 +84,7 @@ describe('seguridad.dedos-48h', () => {
       [ses('z', '2026-10-26', 8), ses('a', '2026-10-28', 8)],
       perfilExperto,
     )
-    expect(v.filter((x) => x.regla === 'seguridad.dedos-48h').map((x) => x.sesionIds)).toEqual([['a', 'm'], ['m', 'z']])
+    expect(v.filter((x) => x.regla === 'seguridad.dedos-dia-descanso').map((x) => x.sesionIds)).toEqual([['a', 'm'], ['m', 'z']])
   })
 })
 
@@ -212,7 +209,7 @@ describe('seguridad.campus y seguridad.maxima-novel', () => {
 
 describe('seguridad.multipresa-7dias', () => {
   // Las multipresas ahora cuentan siempre como intensas de dedos; aquí solo interesa la regla de 7 días,
-  // así que se filtra por ella (dedos-48h y regleta tienen sus propias pruebas).
+  // así que se filtra por ella (dedos-dia-descanso y regleta tienen sus propias pruebas).
   const mp = (id: string, fecha: string) =>
     ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
   const validar = (p: Sesion, h: Sesion[], perfil: Perfil) =>
@@ -323,16 +320,16 @@ describe('seguridad.arqueado', () => {
 
 describe('validarSesion: varias reglas a la vez', () => {
   it('las violaciones salen ordenadas por regla', () => {
-    // Bloque intenso el lunes 18:00 (termina 19:30); la propuesta es el martes 18:00: 22,5 h de hueco.
+    // Bloque intenso el lunes 18:00 (termina 19:30); la propuesta es el martes: días seguidos.
     const lunes = ses('lunes', '2026-10-26', 18)
     const peligrosa = ses('p', '2026-10-27', 18, {
       tipo: 'multipresa-maxima',
       detalle: { regletaMm: 15 },
     })
     const v = validarSesion(peligrosa, [lunes], perfilNovel)
-    expect(reglas(v)).toEqual(['seguridad.dedos-48h', 'seguridad.maxima-novel', 'seguridad.regleta'])
+    expect(reglas(v)).toEqual(['seguridad.dedos-dia-descanso', 'seguridad.maxima-novel', 'seguridad.regleta'])
   })
-  it('arqueado, dedos-48h, maxima-novel, multipresa-7dias y regleta a la vez, en orden', () => {
+  it('arqueado, dedos-dia-descanso, maxima-novel, multipresa-7dias y regleta a la vez, en orden', () => {
     const mp = (id: string, fecha: string) =>
       ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
     const propuesta = ses('p', '2026-10-27', 18, {
@@ -341,14 +338,14 @@ describe('validarSesion: varias reglas a la vez', () => {
     })
     const historial = [ses('lunes', '2026-10-26', 18), mp('m1', '2026-10-25'), mp('m2', '2026-10-28')]
     const v = validarSesion(propuesta, historial, perfilNovel)
-    // lunes y m2 (multipresa, intensa por tipo) están a menos de 48 h de la propuesta: dedos-48h sale dos veces.
+    // lunes y m2 (multipresa, intensa por tipo) son del día anterior y del siguiente a la propuesta: dedos-dia-descanso sale dos veces.
     // Los días 25-28 son además cuatro seguidos de carga alta (la multipresa suave cuenta).
     const nombres = reglas(v)
     expect(nombres).toEqual([
       'seguridad.arqueado',
       'seguridad.carga-alta-seguida',
-      'seguridad.dedos-48h',
-      'seguridad.dedos-48h',
+      'seguridad.dedos-dia-descanso',
+      'seguridad.dedos-dia-descanso',
       'seguridad.maxima-novel',
       'seguridad.multipresa-7dias',
       'seguridad.regleta',
@@ -356,7 +353,7 @@ describe('validarSesion: varias reglas a la vez', () => {
     expect(nombres).toEqual([...nombres].sort())
   })
   it('campus y carga-alta-seguida a la vez, en orden', () => {
-    // campus no es un tipo de dedos (P-15), así que se combina con la racha de carga alta.
+    // el 4x4 no carga los dedos: aquí solo interesa combinar campus con la racha de carga alta.
     const alta = (id: string, fecha: string) => ses(id, fecha, 8, { tipo: 'resistencia-4x4' })
     const campus = ses('c', '2026-10-28', 8, { tipo: 'campus' })
     const v = validarSesion(campus, [alta('a', '2026-10-26'), alta('b', '2026-10-27')], perfilNovel)
@@ -365,7 +362,20 @@ describe('validarSesion: varias reglas a la vez', () => {
 })
 
 describe('seguridad.evaluacion-prematura', () => {
-  const evaluacion = (fecha: string) => ses('e', fecha, 18, { tipo: 'evaluacion-dedos', duracionMin: 30 })
+  const evaluacion = (fecha: string) =>
+    ses('e', fecha, 18, {
+      tipo: 'evaluacion-dedos', duracionMin: 30, detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: true },
+    })
+
+  it('en perfil novel el test también exige regleta indicada y de al menos 20 mm', () => {
+    const base = ses('e', '2026-10-27', 18, { tipo: 'evaluacion-dedos', duracionMin: 30 })
+    const historial = [primera('2026-09-01')]
+    expect(reglas(validarSesion(base, historial, perfilNovel))).toEqual(['seguridad.regleta'])
+    const pequena = { ...base, detalle: { regletaMm: 15, agarre: 'semiarqueado' as const, conCarga: true } }
+    expect(reglas(validarSesion(pequena, historial, perfilNovel))).toEqual(['seguridad.regleta'])
+    const arqueado = { ...base, detalle: { regletaMm: 20, agarre: 'arqueado' as const, conCarga: true } }
+    expect(reglas(validarSesion(arqueado, historial, perfilNovel))).toEqual(['seguridad.arqueado'])
+  })
   const primera = (fecha: string) => ses('p', fecha, 18, { tipo: 'tecnica', intensidad: 'suave' })
 
   it('28 días desde la primera sesión pasa y 27 viola, en perfil novel', () => {
@@ -388,7 +398,7 @@ describe('seguridad.evaluacion-prematura', () => {
   it('la evaluación cuenta como sesión intensa de dedos aunque se etiquete suave', () => {
     const ayer = ses('ayer', '2026-10-26', 18, { tipo: 'evaluacion-dedos', intensidad: 'suave' })
     const v = validarSesion(ses('hoy', '2026-10-27', 18, { tipo: 'board' }), [ayer], perfilExperto)
-    expect(reglas(v)).toContain('seguridad.dedos-48h')
+    expect(reglas(v)).toContain('seguridad.dedos-dia-descanso')
   })
   it('no dispara maxima-novel: es el tipo de excepción', () => {
     const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-01')], perfilNovel)

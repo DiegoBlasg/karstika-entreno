@@ -1,4 +1,4 @@
-import { TIPOS_SESION, type Sesion } from './tipos'
+import { TIPOS_COMPLEMENTO, TIPOS_SESION, type Sesion } from './tipos'
 
 const FECHA = /^(\d{4})-(\d{2})-(\d{2})$/
 const MS_POR_DIA = 86_400_000
@@ -47,6 +47,22 @@ export function validarEntrada(sesiones: readonly Sesion[]): void {
       throw new Error(`intensidad desconocida en ${s.id}: ${s.intensidad}`)
     }
     validarDetalle(s)
+    validarIncluye(s)
+  }
+}
+
+function validarIncluye(s: Sesion): void {
+  const inc: unknown = s.incluye
+  if (inc === undefined) return
+  if (!Array.isArray(inc)) throw new Error(`incluye debe ser una lista en ${s.id}`)
+  const vistos = new Set<string>()
+  for (const t of inc) {
+    if (!(TIPOS_COMPLEMENTO as readonly unknown[]).includes(t)) {
+      throw new Error(`incluye solo admite complementos suaves (${TIPOS_COMPLEMENTO.join(', ')}) en ${s.id}: ${String(t)}`)
+    }
+    if (t === s.tipo) throw new Error(`incluye no puede repetir el tipo principal en ${s.id}: ${t}`)
+    if (vistos.has(t)) throw new Error(`incluye tiene un complemento repetido en ${s.id}: ${t}`)
+    vistos.add(t)
   }
 }
 
@@ -69,5 +85,6 @@ function validarDetalle(s: Sesion): void {
 }
 
 export function fechaDesdeDia(dia: number): string {
+  if (!Number.isInteger(dia)) throw new Error(`fechaDesdeDia necesita un número entero de días: ${dia}`)
   return new Date(dia * MS_POR_DIA).toISOString().slice(0, 10)
 }

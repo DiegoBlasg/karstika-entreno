@@ -1,9 +1,8 @@
 import { explicar } from './explicacion'
 import { VALORES } from './parametros'
-import { diaNumero, finHoras, inicioHoras, validarEntrada } from './tiempo'
+import { diaNumero, validarEntrada } from './tiempo'
 import type { Perfil, Sesion, TipoSesion, Violacion } from './tipos'
 
-const EPS = 1e-9
 const TIPOS_DEDOS: readonly TipoSesion[] = VALORES['P-15'].tiposIntensosDedos
 
 // Estos tipos cuentan siempre como sesión intensa de dedos, sea cual sea su etiqueta de intensidad (P-15 los cuenta por tipo).
@@ -17,10 +16,6 @@ export const esCargaAlta = (s: Sesion): boolean => s.intensidad === 'alta' || es
 
 type Regla = (propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil) => Violacion[]
 
-// Trunca (nunca redondea hacia arriba) a 2 decimales para que el mensaje no contradiga la regla:
-// un hueco de 47,96 h no debe mostrarse como "48 h". El 1e-6 absorbe el ruido de coma flotante.
-const truncar2 = (x: number): number => Math.floor(x * 100 + 1e-6) / 100
-
 function validarPerfil(perfil: Perfil): void {
   if (!Number.isFinite(perfil.anosEscalando) || perfil.anosEscalando < 0) {
     throw new Error(`anosEscalando debe ser un número finito no negativo: ${perfil.anosEscalando}`)
@@ -30,25 +25,28 @@ function validarPerfil(perfil: Perfil): void {
   }
 }
 
-function reglaDedos48h(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
+// Entre dos días con sesión intensa de dedos tiene que haber al menos un día natural completo sin ella
+// (martes y jueves sí; martes y miércoles, o dos sesiones el mismo día, no). Se cuenta por fecha de inicio.
+function reglaDedosDiaDescanso(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
   if (!esIntensaDedos(propuesta)) return []
-  const minimo = VALORES['P-14'].horasMinimasEntreSesionesIntensasDedos
+  const minimo = VALORES['P-14'].diasMinimosEntreSesionesIntensasDedos
+  const d = diaNumero(propuesta.fecha)
   const out: Violacion[] = []
   for (const h of historial) {
     if (!esIntensaDedos(h)) continue
-    const hueco =
-      inicioHoras(propuesta) >= inicioHoras(h)
-        ? inicioHoras(propuesta) - finHoras(h)
-        : inicioHoras(h) - finHoras(propuesta)
-    if (hueco < minimo - EPS) {
+    const distancia = Math.abs(d - diaNumero(h.fecha))
+    if (distancia < minimo) {
       out.push({
-        regla: 'seguridad.dedos-48h',
+        regla: 'seguridad.dedos-dia-descanso',
         sesionIds: [h.id, propuesta.id].sort(),
-        mensaje: `Solo hay ${truncar2(Math.max(0, hueco))} h entre ${h.id} y ${propuesta.id}; las sesiones intensas de dedos necesitan al menos ${minimo} h.`,
+        mensaje:
+          distancia === 0
+            ? `${h.id} y ${propuesta.id} son sesiones intensas de dedos el mismo día; tiene que haber un día completo de descanso entre ellas.`
+            : `${h.id} y ${propuesta.id} son sesiones intensas de dedos en días seguidos; tiene que haber un día completo de descanso entre ellas.`,
         explicacion: explicar(
-          'seguridad.dedos-48h',
+          'seguridad.dedos-dia-descanso',
           ['P-14', 'P-15'],
-          `Dos sesiones intensas de dedos necesitan al menos ${minimo} h de descanso entre el fin de una y el inicio de la siguiente.`,
+          'Entre dos días con sesión intensa de dedos se deja al menos un día natural completo sin carga intensa de dedos.',
         ),
       })
     }
@@ -158,11 +156,12 @@ function reglaMultipresa7Dias(propuesta: Sesion, historial: readonly Sesion[], p
   return []
 }
 
-// Falla cerrado: sin regletaMm en una multipresa de un perfil novel también es violación.
+// Falla cerrado: sin regletaMm en una multipresa o en el test de dedos de un perfil novel también es violación.
 function reglaRegleta(propuesta: Sesion, _historial: readonly Sesion[], perfil: Perfil): Violacion[] {
   const mm = propuesta.detalle?.regletaMm
   const minimo = VALORES['P-12'].regletaMinimaMm
-  if (!esMultipresa(propuesta) || !esNovel(perfil)) return []
+  const colgado = esMultipresa(propuesta) || propuesta.tipo === 'evaluacion-dedos'
+  if (!colgado || !esNovel(perfil)) return []
   if (mm === undefined) {
     return [
       {
@@ -233,7 +232,7 @@ function reglaEvaluacionPrematura(propuesta: Sesion, historial: readonly Sesion[
 }
 
 const REGLAS: Regla[] = [
-  reglaDedos48h, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
+  reglaDedosDiaDescanso, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
   reglaMultipresa7Dias, reglaRegleta, reglaArqueado, reglaEvaluacionPrematura,
 ]
 

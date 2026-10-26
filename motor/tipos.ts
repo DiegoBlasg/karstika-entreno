@@ -7,6 +7,11 @@ export const TIPOS_SESION = [
 ] as const
 export type TipoSesion = (typeof TIPOS_SESION)[number]
 
+// Únicos tipos que pueden ir como complemento dentro de otra sesión: son suaves y no cargan los dedos,
+// para que nadie pueda esconder carga intensa de dedos dentro de una sesión compuesta.
+export const TIPOS_COMPLEMENTO = ['tecnica', 'arc', 'hombro'] as const
+export type TipoComplemento = (typeof TIPOS_COMPLEMENTO)[number]
+
 export type Intensidad = 'alta' | 'suave'
 export type Agarre = 'abierto' | 'semiarqueado' | 'arqueado'
 export type Compania = 'solo' | 'con-gente'
@@ -32,6 +37,7 @@ export interface Sesion {
   horaInicio: number       // 0 <= h < 24, hora local (puede tener decimales)
   duracionMin: number
   detalle?: { regletaMm?: number; agarre?: Agarre; conCarga?: boolean }
+  incluye?: TipoComplemento[]   // complementos suaves añadidos a la sesión (cuentan para los cupos de la fase)
 }
 
 export interface Violacion {

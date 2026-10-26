@@ -54,3 +54,28 @@ describe('lastreRepeaters', () => {
     expect(() => fuerzaRelativa(ev({ pesoCorporalKg: -1 }))).toThrow(/pesoCorporalKg/)
   })
 })
+
+describe('plausibilidad del test (protección contra errores al teclear)', () => {
+  it('rechaza pesos y lastres fuera de rango', () => {
+    expect(() => fuerzaRelativa(ev({ pesoCorporalKg: 25 }))).toThrow(/rango plausible/)
+    expect(() => fuerzaRelativa(ev({ pesoCorporalKg: 250 }))).toThrow(/rango plausible/)
+    expect(() => lastreRepeaters(ev({ lastreKg: 500 }))).toThrow(/rango plausible/)
+    expect(() => lastreRepeaters(ev({ lastreKg: -50 }))).toThrow(/rango plausible/)
+  })
+  it('acepta los extremos del rango', () => {
+    expect(() => fuerzaRelativa(ev({ lastreKg: 70 }))).not.toThrow()
+    expect(() => fuerzaRelativa(ev({ lastreKg: -42 }))).not.toThrow()
+  })
+})
+
+describe('lastreRepeaters con fracción', () => {
+  it('al 70 % da menos carga que al 80 %', () => {
+    expect(lastreRepeaters(ev(), 0.7)).toBe(0) // 0,7 × 100 − 70
+    expect(lastreRepeaters(ev())).toBe(10)
+  })
+  it('nunca acepta una fracción por encima del tope de P-06', () => {
+    expect(() => lastreRepeaters(ev(), 0.81)).toThrow(/fracción/)
+    expect(() => lastreRepeaters(ev(), 0)).toThrow(/fracción/)
+    expect(() => lastreRepeaters(ev(), Number.NaN)).toThrow(/fracción/)
+  })
+})

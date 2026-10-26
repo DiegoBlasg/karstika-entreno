@@ -19,17 +19,19 @@ describe('escenario real: martes con gente y jueves solo', () => {
     const jueves = ses('jueves', '2026-10-29', 19, { tipo: 'via-cuerda-limite' })
     expect(validarContexto(jueves, contextoJueves).map((v) => v.regla)).toEqual(['contexto.sin-cuerda'])
   })
-  it('un jueves a las 18:00 tras el martes: solo hay 45,5 h, así que no se puede forzar bloque al límite', () => {
-    const bloque = ses('jueves', '2026-10-29', 18, { tipo: 'bloque-limite' })
-    expect(validarSesion(bloque, [martes], perfilNovel).map((v) => v.regla)).toEqual(['seguridad.dedos-48h'])
+  it('el miércoles después del martes no se puede forzar bloque al límite: falta un día completo de descanso', () => {
+    const bloque = ses('miercoles', '2026-10-28', 19, { tipo: 'bloque-limite' })
+    expect(validarSesion(bloque, [martes], perfilNovel).map((v) => v.regla)).toEqual(['seguridad.dedos-dia-descanso'])
   })
-  it('ese mismo jueves, una sesión suave de técnica sí es posible', () => {
-    const tecnica = ses('jueves', '2026-10-29', 18, { tipo: 'tecnica', intensidad: 'suave' })
+  it('ese miércoles, una sesión suave de técnica sí es posible', () => {
+    const tecnica = ses('miercoles', '2026-10-28', 19, { tipo: 'tecnica', intensidad: 'suave' })
     expect(validarContexto(tecnica, contextoJueves)).toEqual([])
     expect(validarSesion(tecnica, [martes], perfilNovel)).toEqual([])
   })
-  it('pasadas 48 h desde el final del martes (jueves 20:30) el bloque al límite ya es posible', () => {
-    const bloque = ses('jueves', '2026-10-29', 20.5, { tipo: 'bloque-limite' })
-    expect(validarSesion(bloque, [martes], perfilNovel)).toEqual([])
+  it('el jueves, con el miércoles de descanso, el bloque al límite ya es posible a cualquier hora', () => {
+    for (const hora of [8, 18, 20.5]) {
+      const bloque = ses('jueves', '2026-10-29', hora, { tipo: 'bloque-limite' })
+      expect(validarSesion(bloque, [martes], perfilNovel)).toEqual([])
+    }
   })
 })

@@ -5,7 +5,8 @@ import type { ParametroId } from './metadatos'
 export const VALORES = {
   'P-12': { anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 },
   'P-13': { maxSesionesCampus: 0 },
-  'P-14': { horasMinimasEntreSesionesIntensasDedos: 48 },
+  // Distancia mínima en días naturales: 2 = un día completo de por medio (martes → jueves).
+  'P-14': { diasMinimosEntreSesionesIntensasDedos: 2 },
   'P-15': {
     tiposIntensosDedos: [
       'multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite',
