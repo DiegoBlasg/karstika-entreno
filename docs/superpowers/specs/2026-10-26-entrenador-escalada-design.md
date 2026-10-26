@@ -14,7 +14,7 @@ estar respaldada por evidencia citada y trazable.**
 - Experiencia: < 2 años escalando, sin entrenamiento estructurado previo.
 - Lesiones: ninguna.
 - Material: rocódromo (bloque y vía), board de entrenamiento, multipresa en casa. No va a roca con frecuencia.
-- Disponibilidad: **variable** cada semana → la planificación semanal es adaptativa.
+- Disponibilidad: **impredecible**. No hay calendario fijo: cada vez que quiere entrenar pide una sesión para un día, y la app la prepara según el contexto (con quién, dónde, cuánto tiempo) y el historial reciente.
 
 ### Alcance de usuarios
 
@@ -85,7 +85,7 @@ Tres capas con fronteras estrictas:
 | `perfiles` | peso, años escalando, grado actual y objetivo, material, lesiones |
 | `evaluaciones` | resultados de tests con fecha |
 | `macrociclos`, `fases` | plan hasta la fecha objetivo y fases con fechas y objetivo |
-| `semanas` | días disponibles y sesiones asignadas |
+| `cupos_fase` | cupos semanales de cada fase (p. ej. sesiones de dedos por 7 días móviles) |
 | `sesiones_plan` | sesión prescrita: ejercicios, series, cargas, `regla_ids` justificantes |
 | `sesiones_registro` | lo realizado: cargas, RPE de sesión, duración, sensaciones, molestias (zona y dolor 0–10) |
 | `escaladas` | vías/bloques: grado, estilo, roca/sala, pegues, notas de proyecto |
@@ -95,8 +95,7 @@ Toda salida del motor se persiste junto con su explicación (`regla`, `evidencia
 
 ### Flujo
 
-Perfil + evaluación → macrociclo → (días disponibles de la semana) → plan semanal → registro de cada
-sesión → ajuste de la siguiente → reevaluación periódica → recalibración y cambio de fase.
+Perfil + evaluación → macrociclo (fases con cupos semanales) → el usuario pide una sesión (día + contexto) → sesión preparada con el historial y los cupos → registro de cada sesión → ajuste de la siguiente → reevaluación periódica → recalibración y cambio de fase.
 
 ## 4. Motor de decisión
 
@@ -105,7 +104,7 @@ fija la mecánica.
 
 1. **Diagnóstico.** Compara los tests con perfiles de referencia publicados de escaladores de 6b–7a y obtiene puntuación y prioridad por limitante (dedos, resistencia de antebrazo, tirón, técnica, táctica/cabeza). Aplica un modificador por experiencia (< 2 años: más técnica y volumen, intensidad de dedos acotada).
 2. **Macrociclo.** Fases: base técnica y adaptación tendinosa → fuerza → resistencia de fuerza → rendimiento y proyecto en roca, con descargas intercaladas. El modelo de periodización es configuración (no código) y lo elige el bloque 7. Duración por defecto de 16–24 semanas si no hay fecha objetivo (a confirmar).
-3. **Planificador semanal.** Entrada: días disponibles y fase. Cada fase tiene una lista de sesiones por prioridad; **restricciones duras** (descanso mínimo entre sesiones intensas de dedos, máximo de días seguidos de carga alta) que nunca se violan, y **blandas** (intensidad antes que volumen, reparto de carga) que se optimizan. Determinista. Si recorta sesiones por falta de días, explica qué y por qué. Al mover una sesión manualmente, valida las restricciones y avisa.
+3. **Generador de sesión a demanda.** Entrada: día pedido, **contexto** (solo o con gente, lugar: rocódromo, roca o casa, y minutos disponibles), historial reciente y fase actual. Cada fase define **cupos** de sesiones por tipo en 7 días móviles. El motor decide qué tipo toca (o recomienda descansar o una sesión suave), con **restricciones duras** que nunca se violan (descanso mínimo entre sesiones intensas de dedos contando el historial real, máximo de días seguidos de carga alta) y **blandas** (cupos pendientes, intensidad antes que volumen). **Restricciones de contexto:** solo y sin compañero implica bloque, vías autoaseguradas, board o multipresa, nunca vías con cuerda ni pegues; con gente permite vías con cuerda; en casa solo multipresa y board. Adapta el volumen a los minutos disponibles. Determinista, con explicación de cada decisión.
 4. **Autorregulación.** Progresión de carga según cumplimiento y RPE frente al objetivo. El chequeo diario puede sustituir una sesión intensa por técnica o volumen suave. **Semáforo de dolor:** por encima del umbral bloquea la carga afectada, muestra un protocolo y recomienda fisioterapeuta, sin diagnosticar. Descargas programadas o adelantadas por la tendencia de fatiga y RPE.
 5. **Explicación.** Cada decisión lleva `{regla, evidencias[], motivo}` → botón "¿Por qué?".
 6. **Consejos.** Catálogo con condiciones de activación (fase, víspera de roca, molestia registrada, estancamiento…), cada consejo ligado a evidencia. Temas: calentamiento, táctica de pegues, chapado, descanso entre intentos, sueño, nutrición, cabeza y caídas.
@@ -114,7 +113,7 @@ fija la mecánica.
 
 1. **Hoy:** sesión del día con cargas exactas y motivo, chequeo de 10 s, botón "Empezar".
 2. **Modo sesión:** temporizador (suspensiones, 4x4, ARC) y registro rápido por serie, RPE final, molestias.
-3. **Semana:** calendario de 7 días, días disponibles, reparto automático, mover sesiones con validación.
+3. **Entrenar:** el usuario elige el día, responde 3 preguntas de contexto y recibe la sesión completa. Muestra además los cupos de la fase y el descanso recomendado, y valida contra el historial si pide algo no permitido.
 4. **Plan:** línea temporal del macrociclo, fase actual, próxima reevaluación, fecha objetivo.
 5. **Evaluación:** tests guiados con temporizador e histórico.
 6. **Progreso:** fuerza de dedos relativa, CF, dominada, carga semanal (RPE × min), pirámide de grados (roca y sala), molestias en el tiempo, limitantes frente a la referencia de 7a.
@@ -130,10 +129,10 @@ Sin conexión: la sesión del día se cachea; el registro va a una cola local qu
 - Aviso de que la app no sustituye a un médico ni a un fisioterapeuta.
 - Límites de seguridad codificados en el motor (progresión semanal máxima, descanso mínimo de dedos, prerrequisitos de campus). No se pueden saltar desde la interfaz.
 - Datos atípicos (saltos de carga o peso imposibles) requieren confirmación antes de que el motor los use.
-- Validación en la interfaz y en la base de datos. Si no hay plan posible (p. ej., 0 días disponibles), se dice explícitamente.
+- Validación en la interfaz y en la base de datos. Si no hay plan posible (p. ej., contexto sin material para ningún tipo de sesión que toque), se dice explícitamente.
 - **Tests del motor:** unitarios por regla, escenarios completos, propiedades (determinismo, nunca se viola una restricción dura, toda decisión tiene evidencia).
 - **Tests de evidencia:** referencias válidas, fuente y nivel presentes.
-- **Tests de la app:** RLS (aislamiento entre usuarios) y e2e de los flujos clave (primera vez, Hoy, Semana).
+- **Tests de la app:** RLS (aislamiento entre usuarios) y e2e de los flujos clave (primera vez, Entrenar, Hoy).
 
 ## 7. Orden de construcción
 
@@ -141,5 +140,5 @@ Cada subproyecto tiene su propio ciclo de especificación, plan e implementació
 
 1. **Investigación:** base de evidencia completa + documento de conclusiones y decisiones del plan. Antes de cualquier código.
 2. **Motor + tests:** TypeScript puro.
-3. **App mínima:** perfil, evaluación, Hoy, modo sesión, Semana.
+3. **App mínima:** perfil, evaluación, Entrenar, Hoy, modo sesión.
 4. **Completar:** Plan, Progreso, Escaladas, Biblioteca, sin conexión y PWA.
