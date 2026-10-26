@@ -67,3 +67,7 @@ function validarDetalle(s: Sesion): void {
     throw new Error(`detalle.regletaMm debe ser un número finito mayor que 0 en ${s.id}: ${String(regletaMm)}`)
   }
 }
+
+export function fechaDesdeDia(dia: number): string {
+  return new Date(dia * MS_POR_DIA).toISOString().slice(0, 10)
+}
