@@ -1,0 +1,124 @@
+import { descargar, FASES } from './fases'
+import type { Fase, FaseId } from './propuesta-tipos'
+import { diaNumero, fechaDesdeDia } from './tiempo'
+
+export interface SemanaPlan {
+  lunes: string                 // 'AAAA-MM-DD'
+  ciclo: 1 | 2
+  faseId: FaseId
+  semanaDeFase: number          // 1..n
+  descarga: boolean             // P-47 / P-48 (y la última semana del ciclo 2: afinado)
+  reevaluar: boolean            // última semana de fase, salvo transición (P-26)
+}
+
+export interface Temporada {
+  inicio: string
+  objetivo: string              // lunes de la semana objetivo
+  semanas: SemanaPlan[]
+}
+
+interface Tramo {
+  faseId: FaseId
+  ciclo: 1 | 2
+  semanas: number
+  min: number
+  max: number
+}
+
+// Plantilla de dos ciclos (48 semanas). Rangos: P-32 (base mínima 4), P-08 y P-31 (fuerza 4-10, resistencia 4-8);
+// el rendimiento y la transición son decisiones de diseño. En la parte 2, el diagnóstico ajustará fuerza y
+// resistencia del ciclo 2 dentro de sus rangos.
+function plantilla(): Tramo[] {
+  return [
+    { faseId: 'base', ciclo: 1, semanas: 4, min: 4, max: 4 },
+    { faseId: 'fuerza', ciclo: 1, semanas: 8, min: 8, max: 8 },
+    { faseId: 'resistencia', ciclo: 1, semanas: 6, min: 6, max: 6 },
+    { faseId: 'rendimiento', ciclo: 1, semanas: 4, min: 3, max: 6 },
+    { faseId: 'transicion', ciclo: 1, semanas: 2, min: 1, max: 3 },
+    { faseId: 'fuerza', ciclo: 2, semanas: 8, min: 8, max: 8 },
+    { faseId: 'resistencia', ciclo: 2, semanas: 6, min: 6, max: 6 },
+    { faseId: 'rendimiento', ciclo: 2, semanas: 10, min: 6, max: 12 },
+  ]
+}
+// Si la fecha objetivo no deja exactamente 48 semanas, se ajusta por este orden: rendimiento final, transición
+// y rendimiento de primavera.
+const ORDEN_AJUSTE = [7, 4, 3] as const
+// P-47: 1 semana de descarga de cada 4 para < 2 años. Solo cuentan las fases de carga.
+const CADA_CUANTAS_DESCARGA = 4
+const FASES_QUE_CUENTAN: readonly FaseId[] = ['fuerza', 'resistencia', 'rendimiento']
+
+// 1970-01-01 fue jueves: el día 4 fue lunes.
+const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
+
+export function planificarTemporada(inicio: string, objetivo: string): Temporada {
+  const di = diaNumero(inicio)
+  if (desdeLunes(di) !== 0) throw new Error(`El inicio de la temporada debe ser un lunes: ${inicio}`)
+  const dObjetivo = diaNumero(objetivo)
+  const lunesObjetivo = dObjetivo - desdeLunes(dObjetivo)
+  const n = (lunesObjetivo - di) / 7
+  const tramos = plantilla()
+  const base = tramos.reduce((a, t) => a + t.semanas, 0)
+  const minimo = tramos.reduce((a, t) => a + t.min, 0)
+  const maximo = tramos.reduce((a, t) => a + t.max, 0)
+  if (n < minimo || n > maximo) {
+    throw new Error(
+      `La fecha objetivo deja ${n} semanas desde el inicio; con dos ciclos caben entre ${minimo} y ${maximo}.`,
+    )
+  }
+  let diferencia = n - base
+  for (const i of ORDEN_AJUSTE) {
+    const t = tramos[i]!
+    const cambio = Math.max(t.min - t.semanas, Math.min(t.max - t.semanas, diferencia))
+    t.semanas += cambio
+    diferencia -= cambio
+  }
+
+  const semanas: SemanaPlan[] = []
+  const contador: Record<1 | 2, number> = { 1: 0, 2: 0 }
+  for (const t of tramos) {
+    for (let k = 1; k <= t.semanas; k++) {
+      let descarga = false
+      if (FASES_QUE_CUENTAN.includes(t.faseId)) {
+        contador[t.ciclo] += 1
+        descarga = contador[t.ciclo] % CADA_CUANTAS_DESCARGA === 0
+      }
+      semanas.push({
+        lunes: fechaDesdeDia(di + 7 * semanas.length),
+        ciclo: t.ciclo,
+        faseId: t.faseId,
+        semanaDeFase: k,
+        descarga,
+        reevaluar: k === t.semanas && t.faseId !== 'transicion',
+      })
+    }
+  }
+  // Afinado: la última semana antes del objetivo es siempre de descarga y sin test máximo (hay que llegar fresco).
+  const ultima = semanas[semanas.length - 1]!
+  ultima.descarga = true
+  ultima.reevaluar = false
+  return { inicio, objetivo: fechaDesdeDia(lunesObjetivo), semanas }
+}
+
+export function semanaEnFecha(t: Temporada, fecha: string): SemanaPlan | undefined {
+  const indice = Math.floor((diaNumero(fecha) - diaNumero(t.inicio)) / 7)
+  return indice >= 0 ? t.semanas[indice] : undefined
+}
+
+// La fase de una fecha con la semana aplicada: descarga si toca y, en la semana de reevaluación, el test de
+// dedos permitido (también si coincide con una descarga: es poco volumen y medir tras descargar es lo habitual).
+export function faseEnFecha(t: Temporada, fecha: string): Fase {
+  const s = semanaEnFecha(t, fecha)
+  if (!s) throw new Error(`La fecha ${fecha} está fuera de la temporada (${t.inicio} a ${t.objetivo}).`)
+  let fase = FASES[s.faseId]
+  if (s.descarga) fase = descargar(fase)
+  if (s.reevaluar) {
+    fase = {
+      ...fase,
+      cupos: { ...fase.cupos, 'evaluacion-dedos': 1 },
+      prioridad: ['evaluacion-dedos', ...fase.prioridad.filter((x) => x !== 'evaluacion-dedos')],
+      prohibidos: fase.prohibidos.filter((x) => x !== 'evaluacion-dedos'),
+      reevaluar: true,
+    }
+  }
+  return fase
+}

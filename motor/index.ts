@@ -17,3 +17,6 @@ export { evaluacionVigente, fuerzaRelativa, lastreRepeaters } from './evaluacion
 export type {
   Bloque, Ejercicio, EvaluacionDedos, Fase, Peticion, Propuesta, SesionPlan,
 } from './propuesta-tipos'
+export { planificarTemporada, semanaEnFecha, faseEnFecha, type SemanaPlan, type Temporada } from './temporada'
+export { descargar, FASES, FASE_RENDIMIENTO, FASE_RESISTENCIA, FASE_TRANSICION } from './fases'
+export type { FaseId } from './propuesta-tipos'

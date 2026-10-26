@@ -41,8 +41,10 @@ export const FASE_RESISTENCIA: Fase = {
     'evaluacion-dedos': 1, 'via-cuerda-limite': 1, 'multipresa-resistencia-fuerza': 1, 'resistencia-4x4': 1,
     tecnica: 1, arc: 1, hombro: 2,
   },
+  // El 4x4 va antes que la multipresa: solo se puede hacer en el rocódromo, mientras que la multipresa también
+  // cabe en casa; así, sin compañero en el rocódromo toca 4x4 y en casa, multipresa.
   prioridad: [
-    'evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia-fuerza', 'resistencia-4x4', 'tecnica', 'arc', 'hombro',
+    'evaluacion-dedos', 'via-cuerda-limite', 'resistencia-4x4', 'multipresa-resistencia-fuerza', 'tecnica', 'arc', 'hombro',
   ],
   prohibidos: [
     'campus', 'multipresa-maxima', 'multipresa-resistencia', 'board', 'bloque-limite', 'via-autoasegurada',
@@ -52,6 +54,8 @@ export const FASE_RESISTENCIA: Fase = {
 
 // Rendimiento: el proyecto en roca cuando hay viaje (P-60, P-61), vías al límite en sala el resto, multipresa de
 // mantenimiento y técnica. En roca, la técnica (vías por debajo del nivel) da el segundo día de un viaje.
+// Semana de sala: 2 vías + 1 multipresa = 3 intensas (el tope de P-12). Semana de viaje: los pegues van primero y
+// compiten con la vía; la regla seguridad.dedos-7dias impide pasar de 3 aunque los cupos sumen más.
 export const FASE_RENDIMIENTO: Fase = {
   id: 'rendimiento',
   nombre: 'Rendimiento y proyecto',
