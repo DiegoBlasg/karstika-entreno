@@ -7,6 +7,30 @@ const ctx = (c: Partial<Contexto> = {}): Contexto => ({
   compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 120, ...c,
 })
 
+describe('tiposPosibles: tabla completa de las 6 combinaciones', () => {
+  const sinCuerda = [
+    'arc', 'bloque-limite', 'bloque-suave', 'board', 'campus', 'descanso', 'dominadas', 'hombro',
+    'multipresa-maxima', 'multipresa-resistencia', 'resistencia-4x4', 'tecnica', 'via-autoasegurada',
+  ]
+  const enCasa = [
+    'board', 'campus', 'descanso', 'dominadas', 'hombro', 'multipresa-maxima', 'multipresa-resistencia',
+  ]
+  const tabla = [
+    ['solo', 'rocodromo', sinCuerda],
+    ['con-gente', 'rocodromo', [...sinCuerda, 'via-cuerda-limite']],
+    ['solo', 'roca', ['descanso']],
+    ['con-gente', 'roca', ['descanso', 'pegues-proyecto', 'via-cuerda-limite']],
+    ['solo', 'casa', enCasa],
+    ['con-gente', 'casa', enCasa],
+  ] as const
+  it.each(tabla)('%s en %s', (compania, lugar, esperado) => {
+    expect(tiposPosibles(ctx({ compania, lugar }))).toEqual(esperado)
+  })
+  it('lanza con minutos infinitos', () => {
+    expect(() => tiposPosibles(ctx({ minutosDisponibles: Infinity }))).toThrow(/minutosDisponibles/)
+  })
+})
+
 describe('tiposPosibles', () => {
   it('solo en rocódromo: bloque, autoasegurada, board y técnica; nunca cuerda ni pegues', () => {
     const t = tiposPosibles(ctx())
