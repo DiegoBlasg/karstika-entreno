@@ -14,16 +14,16 @@ export const FASE_BASE: Fase = {
   ],
 }
 
+// Fuerza: 2 multipresas (P-07) y 1 vía al límite por semana = 3 sesiones intensas de dedos, justo el tope de
+// P-12 para perfiles novel. La vía va antes en la prioridad para que el día con compañero sea de cuerda y la
+// multipresa caiga en los días sin compañero o en casa. El board queda para fases posteriores (tramo 2c).
 export const FASE_FUERZA: Fase = {
   id: 'fuerza-dedos',
   nombre: 'Fuerza de dedos',
-  cupos: {
-    'evaluacion-dedos': 1, 'multipresa-resistencia': 2, 'via-cuerda-limite': 1, board: 1, tecnica: 1, arc: 1, hombro: 2,
-  },
-  prioridad: [
-    'evaluacion-dedos', 'multipresa-resistencia', 'via-cuerda-limite', 'board', 'bloque-limite', 'tecnica', 'arc', 'hombro',
-  ],
+  cupos: { 'evaluacion-dedos': 1, 'via-cuerda-limite': 1, 'multipresa-resistencia': 2, tecnica: 1, arc: 1, hombro: 2 },
+  prioridad: ['evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia', 'tecnica', 'arc', 'hombro'],
   prohibidos: [
-    'campus', 'multipresa-maxima', 'via-autoasegurada', 'pegues-proyecto', 'dominadas', 'resistencia-4x4',
+    'campus', 'multipresa-maxima', 'board', 'bloque-limite', 'via-autoasegurada', 'pegues-proyecto', 'dominadas',
+    'resistencia-4x4',
   ],
 }

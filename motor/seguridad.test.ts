@@ -344,6 +344,7 @@ describe('validarSesion: varias reglas a la vez', () => {
     expect(nombres).toEqual([
       'seguridad.arqueado',
       'seguridad.carga-alta-seguida',
+      'seguridad.dedos-7dias',
       'seguridad.dedos-dia-descanso',
       'seguridad.dedos-dia-descanso',
       'seguridad.maxima-novel',
@@ -403,5 +404,31 @@ describe('seguridad.evaluacion-prematura', () => {
   it('no dispara maxima-novel: es el tipo de excepción', () => {
     const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-01')], perfilNovel)
     expect(reglas(v)).not.toContain('seguridad.maxima-novel')
+  })
+})
+
+describe('seguridad.dedos-7dias (tope semanal para perfiles novel)', () => {
+  const intensa = (id: string, fecha: string) => ses(id, fecha, 18, { tipo: 'bloque-limite' })
+  const regla = (v: ReturnType<typeof validarSesion>) => v.filter((x) => x.regla === 'seguridad.dedos-7dias')
+
+  it('3 sesiones intensas de dedos en 7 días pasan y la 4.ª viola (días alternos)', () => {
+    const h = [intensa('a', '2026-10-26'), intensa('b', '2026-10-28'), intensa('c', '2026-10-30')]
+    expect(regla(validarSesion(intensa('c', '2026-10-30'), h.slice(0, 2), perfilNovel))).toEqual([])
+    const v = regla(validarSesion(intensa('d', '2026-11-01'), h, perfilNovel))
+    expect(v).toHaveLength(1)
+    expect(v[0]!.sesionIds).toEqual(['a', 'b', 'c', 'd'])
+    expect(v[0]!.explicacion.parametros).toEqual(['P-12'])
+    expect(validarSesion(intensa('d', '2026-11-01'), h, perfilNovel).map((x) => x.regla)).toEqual(['seguridad.dedos-7dias'])
+  })
+  it('la cuarta a 8 días de la primera ya cabe', () => {
+    const h = [intensa('a', '2026-10-26'), intensa('b', '2026-10-28'), intensa('c', '2026-10-30')]
+    expect(regla(validarSesion(intensa('d', '2026-11-03'), h, perfilNovel))).toEqual([])
+  })
+  it('cuenta multipresas etiquetadas suaves y sesiones futuras, y no se aplica con experiencia', () => {
+    const mp = (id: string, fecha: string) =>
+      ses(id, fecha, 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
+    const h = [mp('a', '2026-10-26'), intensa('b', '2026-10-28'), intensa('c', '2026-11-01')]
+    expect(regla(validarSesion(intensa('d', '2026-10-30'), h, perfilNovel))).toHaveLength(1)
+    expect(regla(validarSesion(intensa('d', '2026-10-30'), h, perfilExperto))).toEqual([])
   })
 })

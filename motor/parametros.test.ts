@@ -19,7 +19,10 @@ describe('VALORES', () => {
     expect(columnas('P-12')[1]).toMatch(/< 2 años/)
     expect(columnas('P-12')[2]).toMatch(/\b20 mm/)
     expect(columnas('P-12')[2]).toMatch(/\b2 sesiones de multipresa/)
-    expect(VALORES['P-12']).toEqual({ anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 })
+    expect(columnas('P-12')[2]).toMatch(/\b3 sesiones intensas de dedos en cualquier ventana de 7 días/)
+    expect(VALORES['P-12']).toEqual({
+      anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, maxSesionesIntensasDedos7Dias: 3, regletaMinimaMm: 20,
+    })
   })
   it('P-13 coincide con el documento', () => {
     expect(columnas('P-13')[2]).toMatch(/^0 sesiones/)

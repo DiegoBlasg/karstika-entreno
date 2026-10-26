@@ -2,6 +2,7 @@ import { explicar } from './explicacion'
 import { evaluacionVigente, lastreRepeaters } from './evaluacion'
 import { VALORES } from './parametros'
 import type { Bloque, Peticion, SesionPlan } from './propuesta-tipos'
+import { diaNumero } from './tiempo'
 import type { Sesion, TipoComplemento, TipoSesion } from './tipos'
 
 const fmt = (x: number): string => String(x).replace('.', ',')
@@ -71,11 +72,15 @@ function cargaMultipresa(kg: number | undefined): string {
 }
 
 function construirMultipresa(p: Peticion): SesionPlan | null {
-  const previas = p.historial.filter((s) => s.tipo === 'multipresa-resistencia').length
+  // Solo cuentan las multipresas anteriores al día de la petición (no las futuras ya planificadas).
+  const hoy = diaNumero(p.fecha)
+  const previas = p.historial.filter((s) => s.tipo === 'multipresa-resistencia' && diaNumero(s.fecha) < hoy).length
   const { semanasConUnBloque, bloquesIniciales, bloquesDespues } = VALORES['P-04']
   const sesionesConUnBloque = semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
-  const inicial = previas < sesionesConUnBloque
-  const deseados = inicial ? bloquesIniciales : bloquesDespues
+  // Una sola subida cada vez (P-11): primero el volumen (1 → 2 bloques, P-04) y, otras tantas sesiones
+  // después, la carga (70 % → 80 %). Decisión de diseño en la dirección segura.
+  const deseados = previas < sesionesConUnBloque ? bloquesIniciales : bloquesDespues
+  const inicial = previas < 2 * sesionesConUnBloque
   const bloqueMin = minutosBloqueMultipresa()
   const total = (n: number): number => CALENTAMIENTO_MIN + n * bloqueMin + (n - 1) * PAUSA_ENTRE_BLOQUES_MIN
   let n = deseados
@@ -110,13 +115,20 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
           descansoSeriesS: VALORES['P-05'].descansoEntreSeriesS,
           ...(kg !== undefined ? { cargaKg: kg } : {}),
           cargaTexto: cargaMultipresa(kg),
-          notas: `Carga al ${porcentaje} % de tu test. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.`,
+          notas:
+            kg === undefined
+              ? 'No hay test vigente: carga por esfuerzo percibido. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.'
+              : `Carga al ${porcentaje} % de tu test. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.`,
         },
       ],
       explicacion: explicar(
         'plantilla.multipresa',
-        ['P-01', 'P-02', 'P-03', 'P-04', 'P-05', 'P-06', 'P-09', 'P-10'],
-        `Repeaters submáximos 7 s colgado : 3 s descanso, 6 series de 7 repeticiones, 2,5 min entre series, en regleta de 20 mm semiarqueado, al ${porcentaje} % de tu test (${inicial ? 'las primeras 2 semanas, por prudencia' : 'el tope de P-06'}).`,
+        ['P-01', 'P-02', 'P-03', 'P-04', 'P-05', 'P-06', 'P-09', 'P-10', 'P-11'],
+        `Repeaters submáximos 7 s colgado : 3 s descanso, 6 series de 7 repeticiones, 2,5 min entre series, en regleta de 20 mm semiarqueado, ${
+          kg === undefined
+            ? 'por esfuerzo percibido porque no hay un test vigente'
+            : `al ${porcentaje} % de tu test (${inicial ? `durante las primeras ${2 * sesionesConUnBloque} sesiones, por prudencia` : 'el tope de P-06'})`
+        }. Volumen y carga suben de uno en uno: primero de 1 a 2 bloques y después del 70 % al 80 %.`,
       ),
     })
   }

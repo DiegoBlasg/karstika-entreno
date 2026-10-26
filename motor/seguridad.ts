@@ -128,6 +128,35 @@ function reglaMaximaNovel(propuesta: Sesion, _historial: readonly Sesion[], perf
   ]
 }
 
+// Tope semanal de sesiones intensas de dedos para perfiles novel: P-14 por sí sola permitiría días alternos.
+function reglaDedos7Dias(propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  if (!esIntensaDedos(propuesta) || !esNovel(perfil)) return []
+  const max = VALORES['P-12'].maxSesionesIntensasDedos7Dias
+  const todas = [...historial, propuesta].filter(esIntensaDedos)
+  const d = diaNumero(propuesta.fecha)
+  for (let inicio = d - 6; inicio <= d; inicio++) {
+    const ventana = todas.filter((s) => {
+      const x = diaNumero(s.fecha)
+      return x >= inicio && x <= inicio + 6
+    })
+    if (ventana.length > max) {
+      return [
+        {
+          regla: 'seguridad.dedos-7dias',
+          sesionIds: ventana.map((s) => s.id).sort(),
+          mensaje: `Habría ${ventana.length} sesiones intensas de dedos en 7 días; con poca experiencia el máximo es ${max}.`,
+          explicacion: explicar(
+            'seguridad.dedos-7dias',
+            ['P-12'],
+            `Con menos de 2 años de experiencia no se superan ${max} sesiones intensas de dedos en cualquier ventana de 7 días.`,
+          ),
+        },
+      ]
+    }
+  }
+  return []
+}
+
 function reglaMultipresa7Dias(propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil): Violacion[] {
   if (!esMultipresa(propuesta) || !esNovel(perfil)) return []
   const max = VALORES['P-12'].maxSesionesMultipresa7Dias
@@ -233,7 +262,7 @@ function reglaEvaluacionPrematura(propuesta: Sesion, historial: readonly Sesion[
 
 const REGLAS: Regla[] = [
   reglaDedosDiaDescanso, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
-  reglaMultipresa7Dias, reglaRegleta, reglaArqueado, reglaEvaluacionPrematura,
+  reglaMultipresa7Dias, reglaDedos7Dias, reglaRegleta, reglaArqueado, reglaEvaluacionPrematura,
 ]
 
 const comparar = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)

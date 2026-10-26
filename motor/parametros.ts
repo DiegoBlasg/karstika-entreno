@@ -3,7 +3,7 @@ import type { ParametroId } from './metadatos'
 // Valores numéricos que usa el motor. Cada clave es un parámetro de docs/evidencia/parametros.md;
 // motor/parametros.test.ts comprueba que coinciden con el documento. Los tramos siguientes añaden los suyos.
 export const VALORES = {
-  'P-12': { anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 },
+  'P-12': { anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, maxSesionesIntensasDedos7Dias: 3, regletaMinimaMm: 20 },
   'P-13': { maxSesionesCampus: 0 },
   // Distancia mínima en días naturales: 2 = un día completo de por medio (martes → jueves).
   'P-14': { diasMinimosEntreSesionesIntensasDedos: 2 },

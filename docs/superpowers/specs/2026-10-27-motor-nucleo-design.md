@@ -12,6 +12,8 @@ Depende de: `docs/superpowers/specs/2026-10-26-entrenador-escalada-design.md` (�
 >   `seguridad.evaluacion-prematura` (28 días de base, P-32) y sujeto también a `seguridad.regleta`.
 > - `Sesion.incluye?: TipoComplemento[]`: complementos suaves (`tecnica`, `arc`, `hombro`) dentro de una sesión,
 >   validados por `validarEntrada`; cuentan para los cupos de la fase.
+> - Regla nueva `seguridad.dedos-7dias` (P-12 ampliado, perfiles novel): como mucho 3 sesiones intensas de dedos
+>   en cualquier ventana de 7 días. El `board` deja de ser posible en `casa`.
 
 ## Contexto
 

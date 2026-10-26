@@ -10,7 +10,7 @@ const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
   'via-autoasegurada': ['rocodromo'],
   'bloque-limite': ['rocodromo'],
   'bloque-suave': ['rocodromo'],
-  board: ['rocodromo', 'casa'],
+  board: ['rocodromo'],   // el usuario solo tiene multipresa en casa
   tecnica: ['rocodromo'],
   arc: ['rocodromo'],
   'resistencia-4x4': ['rocodromo'],

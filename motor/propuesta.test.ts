@@ -4,7 +4,7 @@ import { validarContexto } from './contexto'
 import { FASE_BASE, FASE_FUERZA } from './fases'
 import { proponerSesion } from './propuesta'
 import type { EvaluacionDedos, Propuesta } from './propuesta-tipos'
-import { validarSesion } from './seguridad'
+import { esIntensaDedos, validarSesion } from './seguridad'
 
 const tipos = (r: Propuesta) => [r.principal, ...r.alternativas].map((x) => x?.sesion.tipo)
 const evaluacionReciente: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 40 }
@@ -73,20 +73,26 @@ describe('proponerSesion: semana real (martes con gente, jueves solo)', () => {
 describe('proponerSesion: fase de fuerza', () => {
   const fuerza = (extra = {}) => peticion({ fase: FASE_FUERZA, historial: [antigua], ...extra })
 
-  it('sin evaluación vigente propone el test de dedos, luego multipresa y vía al límite', () => {
-    expect(tipos(proponerSesion(fuerza()))).toEqual(['evaluacion-dedos', 'multipresa-resistencia', 'via-cuerda-limite'])
+  it('sin evaluación vigente propone el test de dedos, luego vía al límite y multipresa', () => {
+    expect(tipos(proponerSesion(fuerza()))).toEqual(['evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia'])
   })
-  it('con evaluación vigente propone multipresa al 70 % las primeras semanas, completada con técnica, ARC y hombro', () => {
+  it('con evaluación vigente y compañero, el martes toca vía al límite; la multipresa al 70 % queda como alternativa', () => {
     const r = proponerSesion(fuerza({ evaluacion: evaluacionReciente }))
-    expect(tipos(r)).toEqual(['multipresa-resistencia', 'via-cuerda-limite', 'board'])
-    const e = r.principal!.bloques[1]!.ejercicios[0]!
-    expect(e.cargaKg).toBe(7) // 0,7 × 110 − 70
-    expect(r.principal!.sesion.incluye).toEqual(['tecnica', 'arc', 'hombro'])
-    expect(r.principal!.sesion.duracionMin).toBe(90) // 30 + 30 + 15 + 15
+    expect(tipos(r)).toEqual(['via-cuerda-limite', 'multipresa-resistencia', 'tecnica'])
+    expect(r.principal!.sesion.incluye).toEqual(['hombro'])
+    const mp = r.alternativas[0]!
+    expect(mp.bloques[1]!.ejercicios[0]!.cargaKg).toBe(7) // 0,7 × 110 − 70
+    expect(mp.sesion.incluye).toEqual(['tecnica', 'arc', 'hombro'])
+    expect(mp.sesion.duracionMin).toBe(90) // 30 + 30 + 15 + 15
   })
-  it('en casa solo ofrece lo que se puede hacer allí y completa con hombro', () => {
+  it('sin compañero la multipresa pasa a ser la principal', () => {
+    const solo = { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 120 } as const
+    const r = proponerSesion(fuerza({ evaluacion: evaluacionReciente, contexto: solo }))
+    expect(r.principal!.sesion.tipo).toBe('multipresa-resistencia')
+  })
+  it('en casa solo ofrece lo que se puede hacer allí (multipresa y hombro, sin board) y completa con hombro', () => {
     const r = proponerSesion(fuerza({ evaluacion: evaluacionReciente, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } }))
-    expect(tipos(r)).toEqual(['multipresa-resistencia', 'board', 'hombro'])
+    expect(tipos(r)).toEqual(['multipresa-resistencia', 'hombro'])
     expect(r.principal!.sesion.incluye).toEqual(['hombro'])
     expect(r.principal!.sesion.duracionMin).toBe(45)
   })
@@ -101,15 +107,15 @@ describe('proponerSesion: fase de fuerza', () => {
     const solo = { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 120 } as const
     const pJueves = fuerza({ fecha: '2026-10-29', contexto: solo, historial: [antigua, martesMp], evaluacion: evaluacionReciente })
     const jueves = proponerSesion(pJueves)
-    // El jueves vuelve a caber trabajo intenso de dedos. Gana el board: la multipresa ya lleva 1 de 2 esta
-    // semana y repetiría el tipo de la última sesión (50 + 7 − 30 = 27 frente a 100 + 5 = 105).
-    expect(jueves.principal!.sesion.tipo).toBe('board')
+    // El jueves vuelve a caber trabajo intenso de dedos y la multipresa tiene aún 1 de 2 pendiente: es la
+    // principal (la prioridad de la fase manda entre los tipos con cupo pendiente).
+    expect(tipos(jueves)).toEqual(['multipresa-resistencia', 'tecnica', 'arc'])
     expect(jueves.proximaVentanaIntensa).toBeUndefined()
     const mpJueves = { ...martesMp, id: 'mp2', fecha: '2026-10-29' }
     expect(validarSesion(mpJueves, pJueves.historial, pJueves.perfil)).toEqual([])
     const miercoles = proponerSesion(fuerza({ fecha: '2026-10-28', contexto: solo, historial: [antigua, martesMp], evaluacion: evaluacionReciente }))
-    expect(tipos(miercoles)).toEqual(['bloque-suave', 'tecnica', 'arc'])
-    expect(miercoles.principal!.explicaciones[0]!.motivo).toMatch(/Sustituye a board/)
+    expect(tipos(miercoles)).toEqual(['tecnica', 'arc', 'hombro'])
+    for (const plan of [miercoles.principal!, ...miercoles.alternativas]) expect(esIntensaDedos(plan.sesion)).toBe(false)
     expect(miercoles.proximaVentanaIntensa).toEqual({ fecha: '2026-10-29' })
   })
 })
@@ -152,7 +158,8 @@ describe('proponerSesion: tiempo y descanso', () => {
     const r = proponerSesion(peticion({ historial }))
     expect(r.descanso!.regla).toBe('generador.descanso-recomendado')
     expect(r.principal).not.toBeNull()
-    expect(r.principal!.sesion.incluye).toBeUndefined() // los cupos de complementos ya están cubiertos
+    // Con los cupos cubiertos el hombro no entra; solo puede añadirse volumen suave de relleno (técnica o ARC).
+    expect(r.principal!.sesion.incluye ?? []).not.toContain('hombro')
   })
   it('los complementos de sesiones pasadas cuentan para los cupos', () => {
     const conHombro = ses('v', '2026-10-25', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] })
@@ -195,5 +202,47 @@ describe('proponerSesion: entradas y propiedades', () => {
       expect(plan.bloques.reduce((a, b) => a + b.minutos, 0)).toBe(plan.sesion.duracionMin)
       for (const e of plan.explicaciones) expect(e.parametros.length).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('proponerSesion: hallazgos de la revisión final', () => {
+  const diasDesde = (inicio: string, n: number) => {
+    const [a, m, d] = inicio.split('-').map(Number) as [number, number, number]
+    return Array.from({ length: n }, (_, i) => new Date(Date.UTC(a, m - 1, d + i)).toISOString().slice(0, 10))
+  }
+  const simular = (fase: typeof FASE_BASE, perfil = peticion().perfil, dias = 14) => {
+    const historial: ReturnType<typeof ses>[] = []
+    for (const [i, fecha] of diasDesde('2026-10-26', dias).entries()) {
+      const r = proponerSesion(peticion({ fecha, fase, perfil, historial: [...historial], evaluacion: evaluacionReciente }))
+      if (r.principal) historial.push({ ...r.principal.sesion, id: `d${i}` })
+    }
+    return historial
+  }
+  const maxIntensasEn7Dias = (h: ReturnType<typeof simular>) => {
+    const intensas = h.filter((s) => esIntensaDedos(s)).map((s) => Date.parse(s.fecha) / 864e5)
+    return Math.max(0, ...intensas.map((x) => intensas.filter((y) => y >= x && y <= x + 6).length))
+  }
+
+  it('entrenando todos los días en fase base nunca pasa de 2 sesiones intensas de dedos en 7 días (los cupos)', () => {
+    expect(maxIntensasEn7Dias(simular(FASE_BASE))).toBeLessThanOrEqual(2)
+  })
+  it('en fase de fuerza un perfil novel nunca pasa de 3 sesiones intensas de dedos en 7 días', () => {
+    expect(maxIntensasEn7Dias(simular(FASE_FUERZA))).toBeLessThanOrEqual(3)
+  })
+  it('un test implausible para un novel (200 % del peso: un 7,2 tecleado como 72) se rechaza con un mensaje claro', () => {
+    const p = peticion({ fase: FASE_FUERZA, evaluacion: { fecha: '2026-10-20', pesoCorporalKg: 72, lastreKg: 72 } })
+    expect(() => proponerSesion(p)).toThrow(/poco plausible/)
+    expect(() => proponerSesion({ ...p, perfil: perfilExperto })).not.toThrow()
+  })
+  it('un historial con ids reservados se rechaza con un mensaje que explica qué hacer', () => {
+    const guardada = ses('propuesta-tecnica', '2026-10-25', 18, { tipo: 'tecnica', intensidad: 'suave' })
+    expect(() => proponerSesion(peticion({ historial: [guardada] }))).toThrow(/id reservado.*id propio/)
+  })
+  it('cuando el tope semanal bloquea lo intenso, la ventana señala el primer día en que vuelve a caber', () => {
+    const blq = (id: string, fecha: string) => ses(id, fecha, 18, { tipo: 'bloque-limite', duracionMin: 50 })
+    const historial = [blq('a', '2026-10-26'), blq('b', '2026-10-28'), blq('c', '2026-10-30')]
+    const r = proponerSesion(peticion({ fecha: '2026-11-01', historial }))
+    for (const plan of [r.principal, ...r.alternativas]) expect(esIntensaDedos(plan!.sesion)).toBe(false)
+    expect(r.proximaVentanaIntensa).toEqual({ fecha: '2026-11-02' })
   })
 })

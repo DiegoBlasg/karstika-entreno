@@ -1,5 +1,5 @@
 import { tiposPosibles, validarContexto } from './contexto'
-import { evaluacionVigente } from './evaluacion'
+import { evaluacionVigente, fuerzaRelativa } from './evaluacion'
 import { explicar, explicarContexto, type Explicacion } from './explicacion'
 import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
@@ -9,16 +9,27 @@ import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
 
 // Decisiones de diseño de la selección (no están en parametros.md).
-const PENALIZACION_REPETIR = 30
+const PESO_CUPO_PENDIENTE = 1000
+const PESO_PRIORIDAD = 10
+const PESO_FRACCION = 5        // menor que PESO_PRIORIDAD: la fracción pendiente solo desempata
+const PENALIZACION_REPETIR = 30 // equivale a bajar tres puestos de prioridad
 const DIAS_RECIENTES = 4
 const SESIONES_RECIENTES_PARA_DESCANSO = 3
 const DIAS_BUSQUEDA_VENTANA = 14
 const REGLA_DESCANSO_DEDOS = 'seguridad.dedos-dia-descanso'
+// Reglas que dependen de la carga reciente: cuando bloquean lo intenso, se calcula cuándo vuelve a caber.
+const REGLAS_DE_CARGA: readonly string[] = [REGLA_DESCANSO_DEDOS, 'seguridad.dedos-7dias', 'seguridad.carga-alta-seguida']
+const ID_PETICION = '__peticion__'
+const PREFIJO_PROPUESTA = 'propuesta-'
+// Con menos de 2 años, un test por encima de este % del peso corporal es casi seguro un error al teclear
+// (un 6b suele estar en un 110-140 %). Decisión de diseño: se rechaza y se pide revisar el dato.
+const FUERZA_RELATIVA_MAX_NOVEL = 160
 // Si una sesión intensa de bloque no es segura hoy, se ofrece su versión suave en lugar de descartarla.
 const SUSTITUTO_SUAVE: Partial<Record<TipoSesion, TipoSesion>> = { board: 'bloque-suave', 'bloque-limite': 'bloque-suave' }
 // Complementos: el hombro se elige primero (es el único con un ensayo que reduce lesiones, P-41), pero se coloca
 // siempre al final de la sesión; el orden de colocación es el de TIPOS_COMPLEMENTO (técnica, ARC, hombro).
 const PRIORIDAD_COMPLEMENTOS: readonly TipoComplemento[] = ['hombro', 'tecnica', 'arc']
+const RELLENO_SUAVE: readonly TipoComplemento[] = ['tecnica', 'arc']
 
 interface Candidato {
   tipoPlan: TipoSesion       // el tipo de la fase (difiere de plan.sesion.tipo si se sustituyó por su versión suave)
@@ -40,11 +51,25 @@ function validarPeticion(p: Peticion): void {
   if (p.contexto == null) throw new Error('proponerSesion: el contexto es obligatorio')
   if (p.perfil == null) throw new Error('proponerSesion: el perfil es obligatorio')
   if (!Array.isArray(p.historial)) throw new Error('proponerSesion: el historial debe ser un array')
+  const reservado = p.historial.find((s) => s.id === ID_PETICION || String(s.id).startsWith(PREFIJO_PROPUESTA))
+  if (reservado) {
+    throw new Error(
+      `proponerSesion: el historial contiene el id reservado «${reservado.id}». Al guardar una sesión propuesta, asígnale un id propio.`,
+    )
+  }
   // Comprueba fecha y hora de la petición con una sesión ficticia y valida de paso todo el historial.
   validarEntrada([
-    { id: 'peticion', tipo: 'descanso', intensidad: 'suave', fecha: p.fecha, horaInicio: p.horaInicio, duracionMin: 1 },
+    { id: ID_PETICION, tipo: 'descanso', intensidad: 'suave', fecha: p.fecha, horaInicio: p.horaInicio, duracionMin: 1 },
     ...p.historial,
   ])
+  if (p.evaluacion !== undefined) {
+    const relativa = fuerzaRelativa(p.evaluacion) // lanza si el test no es plausible
+    if (p.perfil.anosEscalando < VALORES['P-12'].anosMaximosPerfilNovel && relativa > FUERZA_RELATIVA_MAX_NOVEL) {
+      throw new Error(
+        `proponerSesion: un test del ${Math.round(relativa)} % del peso corporal es poco plausible con menos de 2 años escalando; revisa el dato antes de usarlo.`,
+      )
+    }
+  }
 }
 
 function evaluar(tipo: TipoSesion, p: Peticion): Candidato | null {
@@ -83,13 +108,18 @@ function completar(plan: SesionPlan, p: Peticion, posibles: ReadonlySet<TipoSesi
   const libresIniciales = p.contexto.minutosDisponibles - plan.sesion.duracionMin
   let libres = libresIniciales
   const elegidos = new Map<TipoComplemento, Bloque>()
-  for (const t of PRIORIDAD_COMPLEMENTOS) {
-    if (t === plan.sesion.tipo || !posibles.has(t) || p.fase.prohibidos.includes(t) || !cupoPendiente(p, t)) continue
+  const anadir = (t: TipoComplemento, exigirCupo: boolean): void => {
+    if (elegidos.has(t) || t === plan.sesion.tipo || !posibles.has(t) || p.fase.prohibidos.includes(t)) return
+    if (exigirCupo && !cupoPendiente(p, t)) return
     const bloque = construirComplemento(t, p, libres)
-    if (!bloque) continue
+    if (!bloque) return
     elegidos.set(t, bloque)
     libres -= bloque.minutos
   }
+  // Primero, los complementos con cupo pendiente; después, si sobra tiempo, volumen suave de técnica y ARC
+  // (más práctica técnica es lo que más margen tiene con menos de 2 años). El hombro solo entra por cupo.
+  for (const t of PRIORIDAD_COMPLEMENTOS) anadir(t, true)
+  for (const t of RELLENO_SUAVE) anadir(t, false)
   if (elegidos.size === 0) return { plan, anadidos: [] }
   const anadidos = TIPOS_COMPLEMENTO.filter((t) => elegidos.has(t))
   const bloques = [...plan.bloques, ...anadidos.map((t) => elegidos.get(t)!)]
@@ -118,17 +148,22 @@ function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComp
         : `Sustituye a ${c.tipoPlan}, que hoy no cumple una regla de seguridad.`,
     )
   }
-  if (anadidos.length > 0) partes.push(`Se completa con ${anadidos.join(', ')}, que tienen cupo pendiente en la fase.`)
+  if (anadidos.length > 0) {
+    partes.push(`Se completa con ${anadidos.join(', ')} (cupos pendientes de la fase y volumen suave para aprovechar el tiempo).`)
+  }
   return explicar('generador.eleccion', ['P-30'], partes.join(' '))
 }
 
-// Primer día a partir de mañana sin conflicto con ninguna sesión intensa de dedos del historial (pasada o futura).
+// Primer día a partir de mañana en que una sesión intensa de dedos genérica (bloque al límite) supera todas las
+// reglas de seguridad frente al historial, pasado o futuro (descanso entre días, tope semanal, días seguidos).
 function ventanaIntensa(p: Peticion): { fecha: string } | undefined {
-  const minimo = VALORES['P-14'].diasMinimosEntreSesionesIntensasDedos
-  const intensos = p.historial.filter(esIntensaDedos).map((s) => diaNumero(s.fecha))
   const d = diaNumero(p.fecha)
   for (let x = d + 1; x <= d + DIAS_BUSQUEDA_VENTANA; x++) {
-    if (intensos.every((y) => Math.abs(x - y) >= minimo)) return { fecha: fechaDesdeDia(x) }
+    const prueba: Sesion = {
+      id: '__ventana__', tipo: 'bloque-limite', intensidad: 'alta',
+      fecha: fechaDesdeDia(x), horaInicio: p.horaInicio, duracionMin: 50,
+    }
+    if (validarSesion(prueba, p.historial, p.perfil).length === 0) return { fecha: prueba.fecha }
   }
   return undefined
 }
@@ -146,11 +181,15 @@ export function proponerSesion(p: Peticion): Propuesta {
   )
 
   let huboDescansoDedos = false
+  let huboBloqueoIntenso = false
   const candidatos: Candidato[] = []
   for (const tipo of tipos) {
     let c = evaluar(tipo, p)
     if (!c) continue
+    // Los cupos son también un tope: una sesión intensa de dedos con el cupo semanal cubierto no se propone.
+    if (esIntensaDedos(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
     if (c.violaciones.some((v) => v.regla === REGLA_DESCANSO_DEDOS)) huboDescansoDedos = true
+    if (esIntensaDedos(c.plan.sesion) && c.violaciones.some((v) => REGLAS_DE_CARGA.includes(v.regla))) huboBloqueoIntenso = true
     const sustituto = SUSTITUTO_SUAVE[tipo]
     if (c.violaciones.length > 0 && sustituto && posibles.has(sustituto)) {
       const suave = evaluar(sustituto, p)
@@ -162,11 +201,17 @@ export function proponerSesion(p: Peticion): Propuesta {
   const ultima = ultimaSesion(p)
   const validos: Valido[] = candidatos
     .map((c) => {
+      // Orden: primero los tipos con cupo pendiente; entre ellos manda la prioridad de la fase; la fracción
+      // pendiente solo desempata (vale menos que un puesto de prioridad).
       const cupo = p.fase.cupos[c.tipoPlan] ?? 0
       const hechas7d = hechasEn7Dias(p, c.tipoPlan)
-      const pendiente = cupo > 0 ? (100 * Math.max(0, cupo - hechas7d)) / cupo : 0
-      const prioridad = p.fase.prioridad.length - p.fase.prioridad.indexOf(c.tipoPlan)
-      const repetir = ultima && ultima.tipo === c.plan.sesion.tipo ? PENALIZACION_REPETIR : 0
+      const fraccion = cupo > 0 ? Math.max(0, cupo - hechas7d) / cupo : 0
+      const pendiente = (fraccion > 0 ? PESO_CUPO_PENDIENTE : 0) + PESO_FRACCION * fraccion
+      const prioridad = PESO_PRIORIDAD * (p.fase.prioridad.length - p.fase.prioridad.indexOf(c.tipoPlan))
+      // Variedad: se penaliza repetir el tipo de la última sesión solo si fue ayer u hoy; con un día de por
+      // medio, repetir es justo lo que piden los cupos (p. ej. 2 multipresas por semana).
+      const ayerOHoy = ultima !== undefined && diaNumero(p.fecha) - diaNumero(ultima.fecha) <= 1
+      const repetir = ayerOHoy && ultima.tipo === c.plan.sesion.tipo ? PENALIZACION_REPETIR : 0
       return { ...c, hechas7d, puntuacion: pendiente + prioridad - repetir }
     })
     .sort((a, b) => b.puntuacion - a.puntuacion || comparar(a.plan.sesion.tipo, b.plan.sesion.tipo))
@@ -191,7 +236,7 @@ export function proponerSesion(p: Peticion): Propuesta {
       ? explicar(
           'generador.descanso',
           ['P-14', 'P-15'],
-          'Hoy no hay ninguna sesión posible: falta un día completo de descanso desde tu última sesión intensa de dedos.',
+          'Hoy no hay ninguna sesión posible: falta un día completo de descanso respecto a una sesión intensa de dedos de tu historial (hecha o planificada).',
         )
       : explicarContexto('contexto.sin-opciones', 'Con este contexto y esta fase no hay ninguna sesión posible hoy.')
   } else {
@@ -210,7 +255,9 @@ export function proponerSesion(p: Peticion): Propuesta {
     }
   }
 
-  const ventana = huboDescansoDedos ? ventanaIntensa(p) : undefined
+  // Solo tiene sentido avisar si hoy no queda ninguna sesión intensa de dedos válida.
+  const hayIntensaValida = validos.some((v) => esIntensaDedos(v.plan.sesion))
+  const ventana = huboBloqueoIntenso && !hayIntensaValida ? ventanaIntensa(p) : undefined
   return {
     principal,
     alternativas,

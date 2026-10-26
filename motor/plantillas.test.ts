@@ -52,14 +52,14 @@ describe('multipresa-resistencia', () => {
     expect(e.nombre).toMatch(/20 mm/)
     expect(e.nombre).toMatch(/semiarqueado/)
   })
-  it('las primeras 2 semanas la carga es el 70 % del test y después el tope del 80 %', () => {
+  it('la carga es el 70 % del test durante 8 sesiones y después el tope del 80 %', () => {
     const inicial = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, lastreKg: 40 } })!
     const e1 = inicial.bloques[1]!.ejercicios[0]!
     expect(e1.cargaKg).toBe(7) // 0,7 × 110 − 70
     expect(e1.cargaTexto).toBe('+7 kg de lastre')
     expect(e1.notas).toMatch(/70 %/)
     expect(inicial.bloques[1]!.explicacion.parametros).toContain('P-04')
-    const despues = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(4) })!
+    const despues = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(8) })!
     const e2 = despues.bloques[1]!.ejercicios[0]!
     expect(e2.cargaKg).toBe(10) // 0,8 × 100 − 70
     expect(e2.cargaTexto).toBe('+10 kg de lastre')
@@ -67,7 +67,7 @@ describe('multipresa-resistencia', () => {
     expect(despues.sesion.detalle?.conCarga).toBe(true)
   })
   it('un lastre fraccionario se escribe con coma y uno negativo es descarga', () => {
-    const cuatro = { ...base(), historial: multipresasPrevias(4) }
+    const cuatro = { ...base(), historial: multipresasPrevias(8) }
     const fraccion = { ...cuatro, evaluacion: { ...evaluacion, lastreKg: 31 } }
     expect(construirSesion('multipresa-resistencia', fraccion)!.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('+10,5 kg de lastre')
     const descarga = { ...cuatro, evaluacion: { ...evaluacion, lastreKg: -5 } }
@@ -288,5 +288,36 @@ describe('construirComplemento', () => {
     for (const t of ['hombro', 'arc', 'tecnica'] as const) {
       expect(construirComplemento(t, p, 60)!.explicacion.parametros.length).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('multipresa: una sola subida cada vez (P-11)', () => {
+  const base = () => peticion({ evaluacion, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } })
+  const bloquesYCarga = (n: number) => {
+    const plan = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(n) })!
+    return {
+      bloques: plan.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters')).length,
+      kg: plan.bloques[1]!.ejercicios[0]!.cargaKg,
+    }
+  }
+  it('0-3 sesiones: 1 bloque al 70 %; 4-7: 2 bloques al 70 %; 8 o más: 2 bloques al 80 %', () => {
+    expect(bloquesYCarga(3)).toEqual({ bloques: 1, kg: 0 })
+    expect(bloquesYCarga(4)).toEqual({ bloques: 2, kg: 0 })
+    expect(bloquesYCarga(7)).toEqual({ bloques: 2, kg: 0 })
+    expect(bloquesYCarga(8)).toEqual({ bloques: 2, kg: 10 })
+  })
+  it('las multipresas futuras ya planificadas no cuentan para la progresión', () => {
+    const futuras = Array.from({ length: 8 }, (_, i) =>
+      ses(`f${i}`, `2026-11-${String(1 + i * 3).padStart(2, '0')}`, 18, { tipo: 'multipresa-resistencia' }),
+    )
+    const plan = construirSesion('multipresa-resistencia', { ...base(), historial: futuras })!
+    expect(plan.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters')).length).toBe(1)
+  })
+  it('sin test vigente el texto dice que va por esfuerzo percibido, no por el test', () => {
+    const plan = construirSesion('multipresa-resistencia', { ...base(), evaluacion: undefined })!
+    expect(plan.bloques[1]!.ejercicios[0]!.notas).toMatch(/No hay test vigente/)
+    expect(plan.bloques[1]!.ejercicios[0]!.notas).not.toMatch(/% de tu test/)
+    expect(plan.bloques[1]!.explicacion.motivo).toMatch(/por esfuerzo percibido/)
+    expect(plan.bloques[1]!.explicacion.parametros).toContain('P-11')
   })
 })
