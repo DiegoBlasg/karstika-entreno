@@ -42,3 +42,15 @@ describe('FASE_FUERZA', () => {
     expect(FASE_FUERZA.prohibidos).toContain('campus')
   })
 })
+
+describe('escalar al límite desde la base (decisión del usuario)', () => {
+  it('la base incluye vía con cuerda y bloque al límite con cupo de 1 por semana cada una', () => {
+    expect(FASE_BASE.prioridad).toEqual(expect.arrayContaining(['via-cuerda-limite', 'bloque-limite']))
+    expect(FASE_BASE.cupos['via-cuerda-limite']).toBe(1)
+    expect(FASE_BASE.cupos['bloque-limite']).toBe(1)
+  })
+  it('la fase de fuerza mantiene la vía al límite junto a la multipresa', () => {
+    expect(FASE_FUERZA.prioridad).toContain('via-cuerda-limite')
+    expect(FASE_FUERZA.cupos['multipresa-resistencia']).toBe(2)
+  })
+})

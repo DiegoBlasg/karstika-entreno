@@ -54,5 +54,5 @@ export interface Propuesta {
   principal: SesionPlan | null
   alternativas: SesionPlan[]                      // 0 a 2, de tipos distintos entre sí y de la principal
   descanso?: Explicacion
-  proximaVentanaIntensa?: { fecha: string; hora: number }
+  proximaVentanaIntensa?: { fecha: string }       // primer día en que vuelve a caber una sesión intensa de dedos
 }

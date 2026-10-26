@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
-import { construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
+import { construirComplemento, construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
 import type { EvaluacionDedos } from './propuesta-tipos'
 
 const evaluacion: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 30 }
@@ -25,7 +25,8 @@ describe('multipresa-resistencia', () => {
     expect(plan.sesion).toMatchObject({
       id: 'propuesta-multipresa-resistencia', tipo: 'multipresa-resistencia', intensidad: 'alta',
       fecha: '2026-10-27', horaInicio: 19, duracionMin: 30,
-      detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: true },
+      // Al 70 % de un test de 70 + 30 kg la carga es el peso corporal: no hay lastre añadido.
+      detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: false },
     })
     expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 20])
     expect(suma(plan)).toBe(plan.sesion.duracionMin)
@@ -51,21 +52,33 @@ describe('multipresa-resistencia', () => {
     expect(e.nombre).toMatch(/20 mm/)
     expect(e.nombre).toMatch(/semiarqueado/)
   })
-  it('con evaluación vigente la carga es el lastre calculado', () => {
-    const e = construirSesion('multipresa-resistencia', base())!.bloques[1]!.ejercicios[0]!
-    expect(e.cargaKg).toBe(10)
-    expect(e.cargaTexto).toBe('+10 kg de lastre')
+  it('las primeras 2 semanas la carga es el 70 % del test y después el tope del 80 %', () => {
+    const inicial = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, lastreKg: 40 } })!
+    const e1 = inicial.bloques[1]!.ejercicios[0]!
+    expect(e1.cargaKg).toBe(7) // 0,7 × 110 − 70
+    expect(e1.cargaTexto).toBe('+7 kg de lastre')
+    expect(e1.notas).toMatch(/70 %/)
+    expect(inicial.bloques[1]!.explicacion.parametros).toContain('P-04')
+    const despues = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(4) })!
+    const e2 = despues.bloques[1]!.ejercicios[0]!
+    expect(e2.cargaKg).toBe(10) // 0,8 × 100 − 70
+    expect(e2.cargaTexto).toBe('+10 kg de lastre')
+    expect(e2.notas).toMatch(/80 %/)
+    expect(despues.sesion.detalle?.conCarga).toBe(true)
   })
   it('un lastre fraccionario se escribe con coma y uno negativo es descarga', () => {
-    const fraccion = { ...base(), evaluacion: { ...evaluacion, lastreKg: 31 } }
+    const cuatro = { ...base(), historial: multipresasPrevias(4) }
+    const fraccion = { ...cuatro, evaluacion: { ...evaluacion, lastreKg: 31 } }
     expect(construirSesion('multipresa-resistencia', fraccion)!.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('+10,5 kg de lastre')
-    const descarga = { ...base(), evaluacion: { ...evaluacion, lastreKg: -5 } }
+    const descarga = { ...cuatro, evaluacion: { ...evaluacion, lastreKg: -5 } }
     const plan = construirSesion('multipresa-resistencia', descarga)!
     expect(plan.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('descarga de 18 kg')
     expect(plan.sesion.detalle?.conCarga).toBe(false)
+    const descargaInicial = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, lastreKg: -5 } })!
+    expect(descargaInicial.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('descarga de 24,5 kg') // 0,7 × 65 − 70
   })
   it('lastre cero se escribe como peso corporal', () => {
-    const cero = { ...base(), evaluacion: { ...evaluacion, pesoCorporalKg: 60, lastreKg: 15 } }
+    const cero = { ...base(), evaluacion }
     expect(construirSesion('multipresa-resistencia', cero)!.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('Solo tu peso corporal')
   })
   it('sin evaluación vigente va por esfuerzo percibido y sin cargaKg', () => {
@@ -198,7 +211,8 @@ describe('hombro', () => {
 describe('TIPOS_CON_PLANTILLA', () => {
   it('lista exactamente los tipos que construyen sesión', () => {
     expect([...TIPOS_CON_PLANTILLA].sort()).toEqual([
-      'arc', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia', 'tecnica',
+      'arc', 'bloque-limite', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
+      'tecnica', 'via-cuerda-limite',
     ])
     for (const t of TIPOS_CON_PLANTILLA) {
       expect(construirSesion(t, peticion({ evaluacion: undefined }))).not.toBeNull()
@@ -209,6 +223,70 @@ describe('TIPOS_CON_PLANTILLA', () => {
       const plan = construirSesion(t, peticion())!
       expect(plan.bloques.reduce((a, b) => a + b.minutos, 0)).toBe(plan.sesion.duracionMin)
       expect(plan.explicaciones).toHaveLength(plan.bloques.length)
+    }
+  })
+})
+
+describe('via-cuerda-limite', () => {
+  it('con 120 min: calentamiento 10, progresivas 15 y 3 intentos de 25 = 100 min, alta', () => {
+    const plan = construirSesion('via-cuerda-limite', peticion())!
+    expect(plan.sesion).toMatchObject({ id: 'propuesta-via-cuerda-limite', tipo: 'via-cuerda-limite', intensidad: 'alta', duracionMin: 100 })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 25, 25, 25])
+  })
+  it('recorta intentos según el tiempo: 75 min con 2, 50 con 1 y null por debajo', () => {
+    const con = (m: number) => construirSesion('via-cuerda-limite', peticion({ contexto: { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: m } }))
+    expect(con(99)!.sesion.duracionMin).toBe(75)
+    expect(con(50)!.sesion.duracionMin).toBe(50)
+    expect(con(49)).toBeNull()
+  })
+  it('cada intento pide 20 min de recuperación activa, previsualización y sacudir, y cita P-51, P-52, P-53 y P-61', () => {
+    const intento = construirSesion('via-cuerda-limite', peticion())!.bloques[2]!
+    expect(intento.ejercicios[0]!.notas).toMatch(/20 min de recuperación activa/)
+    expect(intento.ejercicios[0]!.notas).toMatch(/3 min/)
+    expect(intento.ejercicios[0]!.notas).toMatch(/sacude/)
+    expect(intento.explicacion.parametros).toEqual(['P-51', 'P-52', 'P-53', 'P-61'])
+  })
+  it('nunca más de 3 intentos aunque sobre tiempo (P-61 admite 4)', () => {
+    const plan = construirSesion('via-cuerda-limite', peticion({ contexto: { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: 300 } }))!
+    expect(plan.bloques.filter((b) => b.nombre.startsWith('Intento')).length).toBe(3)
+  })
+})
+
+describe('bloque-limite', () => {
+  it('50 min con tiempo (10 + 10 + 30) y 40 min con poco (10 + 10 + 20), alta', () => {
+    const plan = construirSesion('bloque-limite', peticion())!
+    expect(plan.sesion).toMatchObject({ tipo: 'bloque-limite', intensidad: 'alta', duracionMin: 50 })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 10, 30])
+    const corto = construirSesion('bloque-limite', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 45 } }))!
+    expect(corto.bloques.map((b) => b.minutos)).toEqual([10, 10, 20])
+    expect(construirSesion('bloque-limite', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 39 } }))).toBeNull()
+  })
+  it('la dosis es decisión de diseño y lo dice', () => {
+    const e = construirSesion('bloque-limite', peticion())!.bloques[2]!.explicacion
+    expect(e.origen).toBe('diseno')
+    expect(e.motivo).toMatch(/decisión de diseño/)
+  })
+})
+
+describe('construirComplemento', () => {
+  const p = peticion()
+  it('hombro 15 min, ARC 15 o 10 min y técnica 30 min, sin calentamiento propio', () => {
+    expect(construirComplemento('hombro', p, 15)!.minutos).toBe(15)
+    expect(construirComplemento('hombro', p, 14)).toBeNull()
+    expect(construirComplemento('arc', p, 20)!.minutos).toBe(15)
+    expect(construirComplemento('arc', p, 12)!.minutos).toBe(10)
+    expect(construirComplemento('arc', p, 9)).toBeNull()
+    expect(construirComplemento('tecnica', p, 30)!.minutos).toBe(30)
+    expect(construirComplemento('tecnica', p, 29)).toBeNull()
+  })
+  it('la técnica de complemento respeta la compañía: sin compañero nunca hay cuerda', () => {
+    const solo = peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 120 } })
+    expect(construirComplemento('tecnica', solo, 30)!.ejercicios[0]!.nombre).not.toMatch(/con cuerda/)
+    expect(construirComplemento('tecnica', p, 30)!.ejercicios[0]!.nombre).toMatch(/con cuerda/)
+  })
+  it('cada complemento trae su explicación con parámetros', () => {
+    for (const t of ['hombro', 'arc', 'tecnica'] as const) {
+      expect(construirComplemento(t, p, 60)!.explicacion.parametros.length).toBeGreaterThan(0)
     }
   })
 })
