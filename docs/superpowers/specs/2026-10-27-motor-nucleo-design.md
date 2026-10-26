@@ -83,8 +83,9 @@ export interface Violacion {
 - El script `scripts/generar-metadatos.ts` lee `docs/evidencia/parametros.md` y escribe
   `motor/metadatos.ts` (commiteado). Contenido por parámetro:
   `{ id, titulo, origen: 'evidencia' | 'diseno', evidencia: string[], nivelMinimo: 'A'|'B'|'C'|'sinEvidencia' }`.
-- `origen = 'diseno'` cuando la fila contiene `sinEvidencia` en la columna de ids. Los ids de las filas
-  `sinEvidencia` son apoyo indirecto y se conservan en `evidencia`, pero nunca elevan `nivelMinimo`.
+- `origen = 'diseno'` cuando la columna de ids contiene `sinEvidencia`. En esas filas la columna no lista
+  ids (el apoyo indirecto está en las notas), así que `evidencia` queda vacía y `nivelMinimo` es
+  `sinEvidencia`. El generador falla si `origen` y `nivelMinimo` no son coherentes.
 - `ParametroId` es la unión literal `'P-01' | … | 'P-62'`, generada en el mismo fichero.
 - Test de deriva: regenerar y comparar con el fichero commiteado; si difieren, el test falla.
 - Test de integridad: todos los ids `EV-…` existen en `evidencia/index.ts` y hay exactamente 62 parámetros.
@@ -98,7 +99,7 @@ export const VALORES = {
   'P-12': { anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 },
   'P-13': { maxSesionesCampus: 0 },
   'P-14': { horasMinimasEntreSesionesIntensasDedos: 48 },
-  'P-15': { tiposIntensosDedos: ['multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite', 'via-cuerda-limite', 'pegues-proyecto'] },
+  'P-15': { tiposIntensosDedos: ['multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite', 'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto'] },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },
 } as const satisfies Partial<Record<ParametroId, object>>
 ```
@@ -175,7 +176,7 @@ Solo devuelve violaciones en las que interviene la propuesta. Cada violación ll
 | `seguridad.carga-alta-seguida` | Con la propuesta habría más de 2 días naturales consecutivos con alguna sesión de intensidad `alta` (la propuesta es de intensidad `alta`) | P-16 |
 | `seguridad.campus` | La propuesta es `campus` y `anosEscalando < 2` | P-13, P-12 |
 | `seguridad.maxima-novel` | La propuesta es `multipresa-maxima` y `anosEscalando < 2` | P-01, P-12 |
-| `seguridad.multipresa-7dias` | Con la propuesta habría más de 2 sesiones de multipresa en los 7 días naturales que acaban el día de la propuesta y `anosEscalando < 2` | P-12 |
+| `seguridad.multipresa-7dias` | Con la propuesta habría más de 2 sesiones de multipresa en alguna ventana de 7 días naturales que contenga el día de la propuesta (se cuentan también sesiones futuras ya confirmadas) y `anosEscalando < 2` | P-12 |
 | `seguridad.regleta` | `detalle.regletaMm < 20` en multipresa y `anosEscalando < 2` | P-12 |
 | `seguridad.arqueado` | `detalle.agarre === 'arqueado'` y `detalle.conCarga` verdadero (siempre, también con experiencia) | P-10, P-12 |
 
