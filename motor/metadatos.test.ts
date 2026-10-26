@@ -28,4 +28,14 @@ describe('metadatos de parámetros', () => {
       if (m.origen === 'diseno') expect(m.evidencia).toEqual([])
     }
   })
+  it('valores fijados a mano, independientes del parser', () => {
+    expect(PARAMETRO_IDS.filter((id) => METADATOS[id].origen === 'diseno')).toHaveLength(27)
+    // P-48 nombra sinEvidencia en la columna de valor, pero su columna de ids sí cita evidencia.
+    expect(METADATOS['P-48']).toMatchObject({ origen: 'evidencia', nivelMinimo: 'C', evidencia: ['EV-PERIOD-008'] })
+    expect(METADATOS['P-60']).toMatchObject({ origen: 'diseno', nivelMinimo: 'sinEvidencia', evidencia: [] })
+    expect(METADATOS['P-14']).toMatchObject({ origen: 'diseno', nivelMinimo: 'sinEvidencia' })
+    expect(METADATOS['P-02']).toMatchObject({
+      origen: 'evidencia', nivelMinimo: 'A', evidencia: ['EV-DEDOS-004', 'EV-DEDOS-005'],
+    })
+  })
 })
