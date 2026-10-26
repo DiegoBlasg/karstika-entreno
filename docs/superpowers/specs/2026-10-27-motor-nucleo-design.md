@@ -4,6 +4,15 @@ Fecha: 2026-10-27 · Estado: diseño aprobado en brainstorming (revisado tras el
 Depende de: `docs/superpowers/specs/2026-10-26-entrenador-escalada-design.md` (§4) y
 `docs/evidencia/parametros.md` (62 parámetros, P-01…P-62).
 
+> **Revisión del 2026-10-28 (decisiones del usuario; prevalece sobre el texto de abajo):**
+> - P-14 pasa de «48 h del fin al inicio» a **un día natural completo sin sesión intensa de dedos entre dos días
+>   que la tienen** (martes y jueves sí; días seguidos o dos el mismo día, no). La regla se llama
+>   `seguridad.dedos-dia-descanso` y `VALORES['P-14'] = { diasMinimosEntreSesionesIntensasDedos: 2 }`.
+> - Tipo nuevo `evaluacion-dedos` (test máximo de dedos), intenso por tipo, con su regla
+>   `seguridad.evaluacion-prematura` (28 días de base, P-32) y sujeto también a `seguridad.regleta`.
+> - `Sesion.incluye?: TipoComplemento[]`: complementos suaves (`tecnica`, `arc`, `hombro`) dentro de una sesión,
+>   validados por `validarEntrada`; cuentan para los cupos de la fase.
+
 ## Contexto
 
 El motor (spec global §4) se construye en 4 tramos: **2a núcleo** (este), 2b generador de sesión a demanda,
@@ -62,7 +71,7 @@ export interface Sesion {
 }
 
 export interface Violacion {
-  regla: string            // p. ej. 'seguridad.dedos-48h' o 'contexto.sin-cuerda'
+  regla: string            // p. ej. 'seguridad.dedos-dia-descanso' o 'contexto.sin-cuerda'
   sesionIds: string[]
   mensaje: string
   explicacion: Explicacion
@@ -74,7 +83,7 @@ export interface Violacion {
 - `via-cuerda-limite` y `pegues-proyecto` necesitan compañero; `via-autoasegurada` solo existe en rocódromo.
 - Tiempo absoluto de una sesión: `Date.UTC(año, mes-1, día) / 3.6e6 + horaInicio` horas. Se usa la hora
   local del usuario como si fuera continua; los cambios de hora de verano pueden desplazar un resultado
-  una hora y no se corrigen (limitación documentada; el margen de 48 h lo absorbe en la práctica).
+  una hora y no se corrigen (limitación documentada; la regla de P-14 se cuenta por días naturales y no le afecta).
 - Una fecha mal formada, `horaInicio` fuera de `[0, 24)`, `duracionMin <= 0`, ids duplicados o vacíos,
   o un `detalle` inválido lanzan error de entrada inválida (no se silencian). Validación de `detalle`:
   `agarre` (si existe) es `abierto`, `semiarqueado` o `arqueado`; `conCarga` (si existe) es booleano;
@@ -103,7 +112,7 @@ Solo los valores que el tramo 2a usa; los siguientes tramos añaden los suyos co
 export const VALORES = {
   'P-12': { anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 },
   'P-13': { maxSesionesCampus: 0 },
-  'P-14': { horasMinimasEntreSesionesIntensasDedos: 48 },
+  'P-14': { diasMinimosEntreSesionesIntensasDedos: 2 },
   'P-15': { tiposIntensosDedos: ['multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite', 'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto', 'campus'] },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },
 } as const satisfies Partial<Record<ParametroId, object>>
@@ -112,9 +121,9 @@ export const VALORES = {
 Un test comprueba que cada clave de `VALORES` existe en `metadatos` y que los números coinciden con
 `parametros.md`.
 
-Decisión de este diseño: la distancia de P-14 se mide **del fin de una sesión al inicio de la siguiente**
-(`inicio + duracionMin/60`), que es la lectura segura (más descanso). El generador del tramo 2b tendrá que
-respetarla.
+Decisión de este diseño (revisada el 2026-10-28): P-14 se mide en **días naturales** por la fecha de inicio:
+entre dos días con sesión intensa de dedos tiene que haber al menos un día completo sin ella (distancia ≥ 2).
+La versión anterior (48 h del fin al inicio) bloqueaba el patrón martes/jueves sin ventaja demostrada.
 
 ## 4. Explicación (`motor/explicacion.ts`)
 
@@ -177,7 +186,7 @@ Solo devuelve violaciones en las que interviene la propuesta. Cada violación ll
 
 | Regla | Condición de violación | Parámetros |
 |---|---|---|
-| `seguridad.dedos-48h` | La propuesta y alguna sesión del historial son intensas de dedos (tipo en `tiposIntensosDedos`, con intensidad `alta`; multipresas y campus cuentan siempre) y hay menos de 48 h entre el fin de la anterior y el inicio de la posterior | P-14, P-15 |
+| `seguridad.dedos-dia-descanso` | La propuesta y alguna sesión del historial son intensas de dedos (tipo en `tiposIntensosDedos`, con intensidad `alta`; multipresas, campus y el test de dedos cuentan siempre) y sus fechas de inicio están a menos de 2 días naturales (mismo día o días seguidos) | P-14, P-15 |
 | `seguridad.carga-alta-seguida` | Con la propuesta habría más de 2 días naturales consecutivos con alguna sesión de carga alta (etiqueta `alta` o intensa de dedos por tipo; la propuesta también es de carga alta) | P-16 |
 | `seguridad.campus` | La propuesta es `campus` y `anosEscalando < 2` | P-13, P-12 |
 | `seguridad.maxima-novel` | La propuesta es `multipresa-maxima` y `anosEscalando < 2` | P-01, P-12 |
@@ -191,10 +200,10 @@ Solo devuelve violaciones en las que interviene la propuesta. Cada violación ll
 
 ## 7. Pruebas
 
-- **Seguridad**, por regla: caso que viola, caso que pasa y caso límite (47,9 h falla y 48,0 h pasa; 2 días
+- **Seguridad**, por regla: caso que viola, caso que pasa y caso límite (días seguidos fallan y un día de por medio pasa; 2 días
   seguidos pasa y 3 falla; 2 multipresas en 7 días pasan y 3 fallan; regleta de 20 mm pasa y 19 mm falla).
   Historial con sesiones de semanas distintas (cruce de fin de semana y de fin de mes).
-- **Perfil**: las reglas de principiante no se aplican con `anosEscalando >= 2`; `dedos-48h`,
+- **Perfil**: las reglas de principiante no se aplican con `anosEscalando >= 2`; `dedos-dia-descanso`,
   `carga-alta-seguida` y `arqueado` con carga se aplican siempre (el arqueado sin carga solo viola a novel).
 - **Contexto**: cada fila de la tabla (solo/con gente × rocódromo/roca/casa); `tiposPosibles` nunca vacío;
   caso real del usuario: martes con gente en rocódromo (vías con cuerda sí) y jueves solo en rocódromo

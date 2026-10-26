@@ -1,5 +1,7 @@
 # Motor, tramo 2b: generador de sesión a demanda — Implementation Plan
 
+> **Nota (2026-10-28):** las tareas 6 y 7 de este plan se sustituyeron por una implementación directa tras la revisión del producto (sesiones al límite, sesiones compuestas, P-14 por días naturales, carga inicial al 70 %). El estado real está en la sección «Revisión del 2026-10-28» del spec y en el código de la rama `motor-generador`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Construir `proponerSesion`: dado un día, una hora, un contexto, el perfil, el historial y la fase, devolver una sesión principal y dos alternativas completas (bloques, series, descansos y cargas), cada decisión con su explicación, o la recomendación de descansar.
