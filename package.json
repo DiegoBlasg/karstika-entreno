@@ -1,0 +1,7 @@
+{
+  "name": "karstika-entreno",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "vitest run", "tsc": "tsc --noEmit" },
+  "devDependencies": { "typescript": "^5.6.0", "vitest": "^2.1.0" }
+}
