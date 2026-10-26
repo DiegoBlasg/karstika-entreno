@@ -170,12 +170,173 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
   return plan(sesion, bloques)
 }
 
+// Decisiones de diseño de este tramo (duraciones de bloques que no están en parametros.md).
+const BLOQUE_PRINCIPAL_MIN = 35
+
+function bloquePrincipalMasCalentamiento(
+  p: Peticion,
+  nombre: string,
+  ejercicios: Bloque['ejercicios'],
+  explicacion: Bloque['explicacion'],
+): { total: number; bloques: Bloque[] } | null {
+  const total = CALENTAMIENTO_MIN + BLOQUE_PRINCIPAL_MIN
+  if (total > p.contexto.minutosDisponibles) return null
+  return {
+    total,
+    bloques: [bloqueCalentamiento(), { nombre, minutos: BLOQUE_PRINCIPAL_MIN, ejercicios, explicacion }],
+  }
+}
+
+function construirBoard(p: Peticion): SesionPlan | null {
+  const base = bloquePrincipalMasCalentamiento(
+    p,
+    'Bloques en board por debajo del máximo',
+    [
+      {
+        nombre: '5 bloques en board, uno o dos grados por debajo de tu límite',
+        series: 5,
+        repeticiones: 3,
+        descansoSeriesS: 180,
+        cargaTexto: 'Esfuerzo percibido 6–7 de 10',
+        notas: '3 intentos por bloque con 3 min de descanso. Para ante cualquier dolor.',
+      },
+    ],
+    explicar(
+      'plantilla.board',
+      ['P-38', 'P-49'],
+      'En la fase de fuerza, una sesión semanal de bloques en board por debajo del máximo; cuenta como sesión intensa de dedos.',
+    ),
+  )
+  return base && plan(sesionDe('board', p, base.total, 'alta'), base.bloques)
+}
+
+function construirBloqueSuave(p: Peticion): SesionPlan | null {
+  const base = bloquePrincipalMasCalentamiento(
+    p,
+    'Bloques cómodos',
+    [
+      {
+        nombre: '4 bloques cómodos para tu nivel, variando tipos de presa',
+        series: 4,
+        cargaTexto: 'Esfuerzo percibido 3–5 de 10',
+        notas: 'Sustituye al board cuando las 48 h entre sesiones intensas no se cumplen.',
+      },
+    ],
+    explicar('plantilla.bloque-suave', ['P-54'], 'Variar vías y tipos de presa mantiene la práctica técnica sin cargar los dedos.'),
+  )
+  return base && plan(sesionDe('bloque-suave', p, base.total, 'suave'), base.bloques)
+}
+
+function construirTecnica(p: Peticion): SesionPlan | null {
+  const conCuerda = p.contexto.compania === 'con-gente' && p.contexto.lugar === 'rocodromo'
+  const modalidad = conCuerda ? 'Vías con cuerda de nivel cómodo' : 'Bloque y vías autoaseguradas de nivel cómodo'
+  const base = bloquePrincipalMasCalentamiento(
+    p,
+    'Práctica técnica',
+    [
+      { nombre: `${modalidad}, variando vías y tipos de presa`, series: 3, cargaTexto: 'Esfuerzo percibido 4–5 de 10' },
+      {
+        nombre: `Previsualiza la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes de cada intento`,
+        cargaTexto: 'Sin esfuerzo',
+      },
+      { nombre: 'Graba al menos una vía en vídeo y revísala', cargaTexto: 'Sin esfuerzo' },
+    ],
+    explicar(
+      'plantilla.tecnica',
+      ['P-53', 'P-54', 'P-55'],
+      'Práctica técnica variada, con lectura previa de hasta 3 min de la vía y vídeo para revisar la ejecución.',
+    ),
+  )
+  return base && plan(sesionDe('tecnica', p, base.total, 'suave'), base.bloques)
+}
+
+function construirArc(p: Peticion): SesionPlan | null {
+  const { series, minutosSerie, minutosSerieCorta, descansoMin } = VALORES['P-35']
+  const total = (serieMin: number): number =>
+    CALENTAMIENTO_MIN + series * serieMin + (series - 1) * descansoMin
+  const serieMin = [minutosSerie, minutosSerieCorta].find((m) => total(m) <= p.contexto.minutosDisponibles)
+  if (serieMin === undefined) return null
+  const bloques: Bloque[] = [bloqueCalentamiento()]
+  for (let i = 1; i <= series; i++) {
+    if (i > 1) {
+      bloques.push({
+        nombre: 'Descanso entre series',
+        minutos: descansoMin,
+        ejercicios: [{ nombre: 'Descanso suave, hidrátate', cargaTexto: 'Sin esfuerzo' }],
+        explicacion: explicar('plantilla.arc-descanso', ['P-35'], 'Entre las series de ARC se descansa 10 minutos.'),
+      })
+    }
+    bloques.push({
+      nombre: `Serie de ARC ${i}`,
+      minutos: serieMin,
+      ejercicios: [
+        {
+          nombre: `${serieMin} min de escalada continua sin bombeo marcado`,
+          cargaTexto: 'Esfuerzo percibido 3–4 de 10',
+          notas: 'Si notas bombeo, baja la dificultad.',
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.arc',
+        ['P-35'],
+        'Capacidad: 2 series de 10-15 minutos de escalada continua sin bombeo marcado, con 10 minutos de descanso.',
+      ),
+    })
+  }
+  return plan(sesionDe('arc', p, total(serieMin), 'suave'), bloques)
+}
+
+function construirHombro(p: Peticion): SesionPlan | null {
+  const activacionMin = 5
+  const total = activacionMin + VALORES['P-41'].minutos
+  if (total > p.contexto.minutosDisponibles) return null
+  const bloques: Bloque[] = [
+    {
+      nombre: 'Movilidad y activación',
+      minutos: activacionMin,
+      ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular suave', cargaTexto: 'Esfuerzo percibido 2–3 de 10' }],
+      explicacion: explicar('plantilla.hombro-activacion', ['P-41'], 'Se activa el hombro antes del trabajo de fuerza.'),
+    },
+    {
+      nombre: 'Hombro y antagonistas',
+      minutos: VALORES['P-41'].minutos,
+      ejercicios: [
+        {
+          nombre: 'Ejercicios de hombro en cadena cerrada, excéntricos y de fuerza',
+          cargaTexto: 'Esfuerzo percibido 5–6 de 10',
+          notas: 'Extensores de dedos: opcional.',
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.hombro',
+        ['P-41'],
+        'Hombro en cadena cerrada, excéntricos y de fuerza, 2 veces por semana y 15 minutos (la dosis es decisión de diseño).',
+      ),
+    },
+  ]
+  return plan(sesionDe('hombro', p, total, 'suave'), bloques)
+}
+
+export const TIPOS_CON_PLANTILLA: readonly TipoSesion[] = [
+  'arc', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia', 'tecnica',
+]
+
 export function construirSesion(tipo: TipoSesion, p: Peticion): SesionPlan | null {
   switch (tipo) {
     case 'multipresa-resistencia':
       return construirMultipresa(p)
     case 'evaluacion-dedos':
       return construirEvaluacion(p)
+    case 'board':
+      return construirBoard(p)
+    case 'bloque-suave':
+      return construirBloqueSuave(p)
+    case 'tecnica':
+      return construirTecnica(p)
+    case 'arc':
+      return construirArc(p)
+    case 'hombro':
+      return construirHombro(p)
     default:
       return null
   }

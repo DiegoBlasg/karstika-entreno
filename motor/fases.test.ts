@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { FASE_BASE, FASE_FUERZA } from './fases'
+import { TIPOS_CON_PLANTILLA } from './plantillas'
+
+describe.each([FASE_BASE, FASE_FUERZA])('fase $id: plantillas', (fase) => {
+  it('todos los tipos prioritarios tienen plantilla', () => {
+    for (const t of fase.prioridad) expect(TIPOS_CON_PLANTILLA, t).toContain(t)
+  })
+})
 
 describe.each([FASE_BASE, FASE_FUERZA])('fase $id', (fase) => {
   it('ningún tipo está a la vez en prioridad y en prohibidos', () => {

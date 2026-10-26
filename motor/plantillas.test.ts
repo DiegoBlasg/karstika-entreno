@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
-import { construirSesion } from './plantillas'
+import { construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
 import type { EvaluacionDedos } from './propuesta-tipos'
 
 const evaluacion: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 30 }
@@ -116,5 +116,99 @@ describe('evaluacion-dedos', () => {
   it('devuelve null si no caben 30 min', () => {
     const corto = { ...base(), contexto: { ...base().contexto, minutosDisponibles: 29 } }
     expect(construirSesion('evaluacion-dedos', corto)).toBeNull()
+  })
+})
+
+describe('board', () => {
+  it('dura 45 min, es alta y cita P-38 (diseño)', () => {
+    const plan = construirSesion('board', peticion())!
+    expect(plan.sesion).toMatchObject({ id: 'propuesta-board', tipo: 'board', intensidad: 'alta', duracionMin: 45 })
+    expect(plan.sesion.detalle).toBeUndefined()
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 35])
+    expect(plan.bloques[1]!.ejercicios[0]).toMatchObject({ series: 5, repeticiones: 3, descansoSeriesS: 180 })
+    expect(plan.bloques[1]!.explicacion.parametros).toContain('P-38')
+    expect(plan.bloques[1]!.explicacion.origen).toBe('diseno')
+  })
+  it('devuelve null si no caben 45 min', () => {
+    expect(construirSesion('board', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 44 } }))).toBeNull()
+  })
+})
+
+describe('bloque-suave', () => {
+  it('dura 45 min y es suave', () => {
+    const plan = construirSesion('bloque-suave', peticion())!
+    expect(plan.sesion).toMatchObject({ tipo: 'bloque-suave', intensidad: 'suave', duracionMin: 45 })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 35])
+    expect(plan.bloques[1]!.explicacion.parametros).toContain('P-54')
+  })
+})
+
+describe('tecnica', () => {
+  it('con gente en rocódromo usa vías con cuerda de nivel cómodo', () => {
+    const plan = construirSesion('tecnica', peticion())!
+    expect(plan.sesion).toMatchObject({ tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 })
+    expect(plan.bloques[1]!.ejercicios[0]!.nombre).toMatch(/cuerda/)
+  })
+  it('solo usa bloque y vías autoaseguradas, nunca cuerda', () => {
+    const plan = construirSesion('tecnica', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 120 } }))!
+    const texto = plan.bloques[1]!.ejercicios.map((e) => e.nombre).join(' ')
+    expect(texto).toMatch(/autoasegurad/)
+    expect(texto).not.toMatch(/con cuerda/)
+  })
+  it('incluye previsualización de 3 min y vídeo, citando P-53, P-54 y P-55', () => {
+    const plan = construirSesion('tecnica', peticion())!
+    const textos = plan.bloques[1]!.ejercicios.map((e) => e.nombre).join(' ')
+    expect(textos).toMatch(/3 min/)
+    expect(textos).toMatch(/vídeo|graba/i)
+    expect(plan.bloques[1]!.explicacion.parametros).toEqual(expect.arrayContaining(['P-53', 'P-54', 'P-55']))
+  })
+})
+
+describe('arc', () => {
+  it('con tiempo: 10 + 15 + 10 + 15 = 50 min', () => {
+    const plan = construirSesion('arc', peticion())!
+    expect(plan.sesion).toMatchObject({ tipo: 'arc', intensidad: 'suave', duracionMin: 50 })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 10, 15])
+  })
+  it('con poco tiempo usa series de 10 min: 40 min', () => {
+    const plan = construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 45 } }))!
+    expect(plan.sesion.duracionMin).toBe(40)
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 10, 10, 10])
+  })
+  it('devuelve null si no caben 40 min', () => {
+    expect(construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 39 } }))).toBeNull()
+  })
+  it('cita P-35', () => {
+    expect(construirSesion('arc', peticion())!.bloques[1]!.explicacion.parametros).toContain('P-35')
+  })
+})
+
+describe('hombro', () => {
+  it('dura 20 min: 5 de activación y 15 de ejercicios', () => {
+    const plan = construirSesion('hombro', peticion())!
+    expect(plan.sesion).toMatchObject({ tipo: 'hombro', intensidad: 'suave', duracionMin: 20 })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([5, 15])
+    expect(plan.bloques[1]!.explicacion.parametros).toContain('P-41')
+  })
+  it('devuelve null si no caben 20 min', () => {
+    expect(construirSesion('hombro', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 19 } }))).toBeNull()
+  })
+})
+
+describe('TIPOS_CON_PLANTILLA', () => {
+  it('lista exactamente los tipos que construyen sesión', () => {
+    expect([...TIPOS_CON_PLANTILLA].sort()).toEqual([
+      'arc', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia', 'tecnica',
+    ])
+    for (const t of TIPOS_CON_PLANTILLA) {
+      expect(construirSesion(t, peticion({ evaluacion: undefined }))).not.toBeNull()
+    }
+  })
+  it('todas las sesiones suman sus minutos y traen explicación por bloque', () => {
+    for (const t of TIPOS_CON_PLANTILLA) {
+      const plan = construirSesion(t, peticion())!
+      expect(plan.bloques.reduce((a, b) => a + b.minutos, 0)).toBe(plan.sesion.duracionMin)
+      expect(plan.explicaciones).toHaveLength(plan.bloques.length)
+    }
   })
 })
