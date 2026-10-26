@@ -140,7 +140,7 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'B',
     aplicaA: { nivel: 'escaladores deportivos (nivel no verificado en el resumen)', objetivo: 'deportiva' },
     limitaciones:
-      'n=12, estudio de laboratorio; nivel de los participantes no verificado. Matiza el uso de CF en EV-RENDIM-004 y desaconseja interpretar NIRS de antebrazo como indicador fino de estado metabólico.',
+      'n=12, estudio de laboratorio; nivel de los participantes no verificado. Matiza el uso de CF en EV-RENDIM-004 y desaconseja interpretar NIRS de antebrazo como indicador fino de estado metabólico. Verificado solo con el resumen del estudio, no con el texto completo.',
     verificada: { fecha: FECHA, metodo: 'resumen' },
   },
   {
@@ -154,7 +154,7 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'B',
     aplicaA: { nivel: 'no verificado en el resumen leído', objetivo: 'deportiva frente a bloque' },
     limitaciones:
-      'Solo hombres, muestras muy pequeñas, transversal; nivel de grado de los grupos no verificado. Los autores sugieren entrenamiento aeróbico específico de antebrazo, pero el estudio no lo prueba.',
+      'Solo hombres, muestras muy pequeñas, transversal; nivel de grado de los grupos no verificado. Los autores sugieren entrenamiento aeróbico específico de antebrazo, pero el estudio no lo prueba. Verificado solo con el resumen del estudio, no con el texto completo.',
     verificada: { fecha: FECHA, metodo: 'resumen' },
   },
   {

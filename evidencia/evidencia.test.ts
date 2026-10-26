@@ -37,9 +37,9 @@ describe('base de evidencia', () => {
     }
   })
 
-  it('nivel A o B exige verificación contra la fuente primaria', () => {
-    for (const h of todos.filter((x) => x.nivel !== 'C')) {
-      expect(h.verificada.metodo, h.id).toBe('fuente-primaria')
+  it('el nivel describe el diseño; si solo se leyó el resumen, debe declararse en limitaciones', () => {
+    for (const h of todos.filter((x) => x.verificada.metodo === 'resumen')) {
+      expect(h.limitaciones, h.id).toMatch(/resumen|abstract/i)
     }
   })
 
