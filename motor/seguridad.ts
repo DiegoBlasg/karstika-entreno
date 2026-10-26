@@ -10,7 +10,9 @@ export const esIntensaDedos = (s: Sesion): boolean => s.intensidad === 'alta' &&
 
 type Regla = (propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil) => Violacion[]
 
-const redondear = (x: number): number => Math.round(x * 10) / 10
+// Trunca (nunca redondea hacia arriba) a 2 decimales para que el mensaje no contradiga la regla:
+// un hueco de 47,96 h no debe mostrarse como "48 h". El 1e-6 absorbe el ruido de coma flotante.
+const truncar2 = (x: number): number => Math.floor(x * 100 + 1e-6) / 100
 
 function validarPerfil(perfil: Perfil): void {
   if (!Number.isFinite(perfil.anosEscalando) || perfil.anosEscalando < 0) {
@@ -35,7 +37,7 @@ function reglaDedos48h(propuesta: Sesion, historial: readonly Sesion[]): Violaci
       out.push({
         regla: 'seguridad.dedos-48h',
         sesionIds: [h.id, propuesta.id].sort(),
-        mensaje: `Solo hay ${redondear(Math.max(0, hueco))} h entre ${h.id} y ${propuesta.id}; las sesiones intensas de dedos necesitan al menos ${minimo} h.`,
+        mensaje: `Solo hay ${truncar2(Math.max(0, hueco))} h entre ${h.id} y ${propuesta.id}; las sesiones intensas de dedos necesitan al menos ${minimo} h.`,
         explicacion: explicar(
           'seguridad.dedos-48h',
           ['P-14', 'P-15'],
@@ -47,6 +49,8 @@ function reglaDedos48h(propuesta: Sesion, historial: readonly Sesion[]): Violaci
   return out
 }
 
+// Decisión: una sesión cuenta solo en su día de INICIO (s.fecha), aunque cruce la medianoche
+// (p. ej. 23:30 durante 5 h cuenta para ese día y no para el siguiente).
 function reglaCargaAltaSeguida(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
   if (propuesta.intensidad !== 'alta') return []
   const max = VALORES['P-16'].maxDiasSeguidosCargaAlta
@@ -147,6 +151,7 @@ function reglaMultipresa7Dias(propuesta: Sesion, historial: readonly Sesion[], p
   return []
 }
 
+// Nota: un regletaMm NaN falla cerrado por diseño: `NaN >= minimo` es false, así que se marca como violación.
 function reglaRegleta(propuesta: Sesion, _historial: readonly Sesion[], perfil: Perfil): Violacion[] {
   const mm = propuesta.detalle?.regletaMm
   const minimo = VALORES['P-12'].regletaMinimaMm
@@ -189,6 +194,9 @@ const REGLAS: Regla[] = [
 const comparar = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
 export function validarSesion(propuesta: Sesion, historial: Sesion[], perfil: Perfil): Violacion[] {
+  if (propuesta == null) throw new Error('validarSesion: propuesta es obligatoria')
+  if (!Array.isArray(historial)) throw new Error('validarSesion: historial debe ser un array')
+  if (perfil == null) throw new Error('validarSesion: perfil es obligatorio')
   validarPerfil(perfil)
   validarEntrada([propuesta, ...historial])
   return REGLAS.flatMap((regla) => regla(propuesta, historial, perfil)).sort(
