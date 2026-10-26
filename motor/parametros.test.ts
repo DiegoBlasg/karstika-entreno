@@ -17,8 +17,8 @@ describe('VALORES', () => {
   })
   it('P-12 coincide con el documento', () => {
     expect(columnas('P-12')[1]).toMatch(/< 2 años/)
-    expect(columnas('P-12')[2]).toMatch(/20 mm/)
-    expect(columnas('P-12')[2]).toMatch(/2 sesiones de multipresa/)
+    expect(columnas('P-12')[2]).toMatch(/\b20 mm/)
+    expect(columnas('P-12')[2]).toMatch(/\b2 sesiones de multipresa/)
     expect(VALORES['P-12']).toEqual({ anosMaximosPerfilNovel: 2, maxSesionesMultipresa7Dias: 2, regletaMinimaMm: 20 })
   })
   it('P-13 coincide con el documento', () => {
@@ -32,6 +32,13 @@ describe('VALORES', () => {
   it('P-15 coincide con el documento', () => {
     const texto = columnas('P-15')[2]!.toLowerCase()
     for (const palabra of ['multipresa', 'board', 'bloque', 'vías', 'pegues']) expect(texto).toContain(palabra)
+    // Cada tipo del código debe tener su palabra en el texto del documento.
+    const palabraDe: Record<string, string> = {
+      'multipresa-resistencia': 'multipresa', 'multipresa-maxima': 'multipresa', board: 'board',
+      'bloque-limite': 'bloque', 'via-cuerda-limite': 'con cuerda', 'via-autoasegurada': 'autoasegurada',
+      'pegues-proyecto': 'pegues',
+    }
+    for (const tipo of VALORES['P-15'].tiposIntensosDedos) expect(texto, tipo).toContain(palabraDe[tipo]!)
     expect([...VALORES['P-15'].tiposIntensosDedos].sort()).toEqual([
       'board', 'bloque-limite', 'multipresa-maxima', 'multipresa-resistencia',
       'pegues-proyecto', 'via-autoasegurada', 'via-cuerda-limite',
