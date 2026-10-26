@@ -197,11 +197,16 @@ describe('arc', () => {
 })
 
 describe('hombro', () => {
-  it('dura 20 min: 5 de activación y 15 de ejercicios', () => {
-    const plan = construirSesion('hombro', peticion())!
+  it('con menos de 40 min dura 20: 5 de activación y 15 de ejercicios', () => {
+    const plan = construirSesion('hombro', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 39 } }))!
     expect(plan.sesion).toMatchObject({ tipo: 'hombro', intensidad: 'suave', duracionMin: 20 })
     expect(plan.bloques.map((b) => b.minutos)).toEqual([5, 15])
     expect(plan.bloques[1]!.explicacion.parametros).toContain('P-41')
+  })
+  it('con 40 min o más añade antagonistas y movilidad: 5 + 15 + 20 = 40', () => {
+    const plan = construirSesion('hombro', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 45 } }))!
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([5, 15, 20])
+    expect(plan.sesion.duracionMin).toBe(40)
   })
   it('devuelve null si no caben 20 min', () => {
     expect(construirSesion('hombro', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 19 } }))).toBeNull()
@@ -212,7 +217,7 @@ describe('TIPOS_CON_PLANTILLA', () => {
   it('lista exactamente los tipos que construyen sesión', () => {
     expect([...TIPOS_CON_PLANTILLA].sort()).toEqual([
       'arc', 'bloque-limite', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
-      'tecnica', 'via-cuerda-limite',
+      'multipresa-resistencia-fuerza', 'pegues-proyecto', 'resistencia-4x4', 'tecnica', 'via-cuerda-limite',
     ])
     for (const t of TIPOS_CON_PLANTILLA) {
       expect(construirSesion(t, peticion({ evaluacion: undefined }))).not.toBeNull()
@@ -319,5 +324,59 @@ describe('multipresa: una sola subida cada vez (P-11)', () => {
     expect(plan.bloques[1]!.ejercicios[0]!.notas).not.toMatch(/% de tu test/)
     expect(plan.bloques[1]!.explicacion.motivo).toMatch(/por esfuerzo percibido/)
     expect(plan.bloques[1]!.explicacion.parametros).toContain('P-11')
+  })
+})
+
+describe('plantillas del tramo 2c', () => {
+  const casa = { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } as const
+  const roca = { compania: 'con-gente', lugar: 'roca', minutosDisponibles: 180 } as const
+
+  it('multipresa de resistencia de fuerza: P-36 (10 s : 5 s, 5 repeticiones, 4 series, 60 s), 10 + 10 = 20 min, a 20 mm', () => {
+    const plan = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, evaluacion }))!
+    expect(plan.sesion).toMatchObject({ tipo: 'multipresa-resistencia-fuerza', intensidad: 'alta', duracionMin: 20 })
+    expect(plan.sesion.detalle).toMatchObject({ regletaMm: 20, agarre: 'semiarqueado' })
+    expect(plan.bloques[1]!.ejercicios[0]).toMatchObject({ trabajoS: 10, descansoS: 5, repeticiones: 5, series: 4, descansoSeriesS: 60 })
+    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(0) // 70 % de 70 + 30 kg
+    expect(plan.bloques[1]!.explicacion.parametros).toContain('P-36')
+  })
+  it('4x4: P-37 (4 bloques, 4 vueltas, 4 min), 10 + 10 + 30 = 50 min, carga alta', () => {
+    const plan = construirSesion('resistencia-4x4', peticion())!
+    expect(plan.sesion).toMatchObject({ tipo: 'resistencia-4x4', intensidad: 'alta', duracionMin: 50 })
+    expect(plan.bloques[2]!.ejercicios[0]).toMatchObject({ series: 4, repeticiones: 4, descansoSeriesS: 240 })
+    expect(plan.bloques[2]!.explicacion.origen).toBe('diseno')
+  })
+  it('pegues en roca: calentamiento 20 y hasta 4 pegues de 25 min (P-61, P-51)', () => {
+    const plan = construirSesion('pegues-proyecto', peticion({ contexto: roca }))!
+    expect(plan.sesion).toMatchObject({ tipo: 'pegues-proyecto', intensidad: 'alta', duracionMin: 120 })
+    expect(plan.bloques.filter((b) => b.nombre.startsWith('Pegue')).length).toBe(4)
+    const corto = construirSesion('pegues-proyecto', peticion({ contexto: { ...roca, minutosDisponibles: 70 } }))!
+    expect(corto.bloques.filter((b) => b.nombre.startsWith('Pegue')).length).toBe(2)
+    expect(construirSesion('pegues-proyecto', peticion({ contexto: { ...roca, minutosDisponibles: 44 } }))).toBeNull()
+    expect(plan.bloques[1]!.explicacion.parametros).toEqual(['P-51', 'P-52', 'P-53', 'P-61'])
+  })
+  it('la técnica en roca es de vías por debajo del nivel', () => {
+    const plan = construirSesion('tecnica', peticion({ contexto: roca }))!
+    expect(plan.bloques[1]!.ejercicios[0]!.nombre).toMatch(/por debajo de tu nivel en roca/)
+  })
+})
+
+describe('plantillas en semana de descarga (P-48)', () => {
+  const descarga = { ...peticion().fase, descarga: true }
+  const casa = { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } as const
+
+  it('multipresa: un solo bloque con la mitad de series, aunque ya tocaran 2 bloques', () => {
+    const plan = construirSesion('multipresa-resistencia', peticion({ contexto: casa, fase: descarga, evaluacion, historial: multipresasPrevias(8) }))!
+    const repeaters = plan.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters'))
+    expect(repeaters).toHaveLength(1)
+    expect(repeaters[0]!.ejercicios[0]!.series).toBe(3)
+    expect(repeaters[0]!.explicacion.parametros).toContain('P-48')
+    expect(repeaters[0]!.ejercicios[0]!.cargaKg).toBe(10) // la carga se mantiene; baja el volumen
+  })
+  it('resistencia de fuerza: la mitad de series; 4x4: la mitad de vueltas', () => {
+    const rf = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, fase: descarga }))!
+    expect(rf.bloques[1]!.ejercicios[0]!.series).toBe(2)
+    const cuatro = construirSesion('resistencia-4x4', peticion({ fase: descarga }))!
+    expect(cuatro.bloques[2]!.ejercicios[0]!.series).toBe(2)
+    expect(cuatro.sesion.duracionMin).toBe(35)
   })
 })

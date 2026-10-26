@@ -1,12 +1,16 @@
 import type { Explicacion } from './explicacion'
 import type { Contexto, Perfil, Sesion, TipoSesion } from './tipos'
 
+export type FaseId = 'base' | 'fuerza' | 'resistencia' | 'rendimiento' | 'transicion'
+
 export interface Fase {
-  id: string
+  id: FaseId
   nombre: string
   cupos: Partial<Record<TipoSesion, number>>      // sesiones deseadas por cada 7 días
   prioridad: TipoSesion[]                         // de más a menos preferida
   prohibidos: TipoSesion[]
+  descarga?: boolean                              // semana de descarga (P-47, P-48): mitad de volumen, nada al límite
+  reevaluar?: boolean                             // última semana de fase: toca repetir los tests (P-26)
 }
 
 export interface EvaluacionDedos {

@@ -56,9 +56,9 @@ function plan(sesion: Sesion, bloques: Bloque[]): SesionPlan {
   return { sesion, bloques, explicaciones: bloques.map((b) => b.explicacion) }
 }
 
-function minutosBloqueMultipresa(): number {
+function minutosBloqueMultipresa(seriesPorBloque: number = VALORES['P-03'].seriesPorBloque): number {
   const { trabajoS, descansoS } = VALORES['P-02']
-  const { repeticionesPorSerie, seriesPorBloque } = VALORES['P-03']
+  const { repeticionesPorSerie } = VALORES['P-03']
   const segundos =
     seriesPorBloque * repeticionesPorSerie * (trabajoS + descansoS) +
     (seriesPorBloque - 1) * VALORES['P-05'].descansoEntreSeriesS
@@ -71,27 +71,40 @@ function cargaMultipresa(kg: number | undefined): string {
   return kg > 0 ? `+${fmt(kg)} kg de lastre` : `descarga de ${fmt(-kg)} kg`
 }
 
-function construirMultipresa(p: Peticion): SesionPlan | null {
-  // Solo cuentan las multipresas anteriores al día de la petición (no las futuras ya planificadas).
+const TIPOS_MULTIPRESA_PROGRESION: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-resistencia-fuerza']
+
+// Progresión común a las multipresas. Solo cuentan las anteriores al día de la petición (no las futuras ya
+// planificadas). Una sola subida cada vez (P-11): primero el volumen (1 → 2 bloques, P-04) y, otras tantas
+// sesiones después, la carga (70 % → 80 %). Decisión de diseño en la dirección segura.
+function progresionMultipresa(p: Peticion) {
   const hoy = diaNumero(p.fecha)
-  const previas = p.historial.filter((s) => s.tipo === 'multipresa-resistencia' && diaNumero(s.fecha) < hoy).length
-  const { semanasConUnBloque, bloquesIniciales, bloquesDespues } = VALORES['P-04']
-  const sesionesConUnBloque = semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
-  // Una sola subida cada vez (P-11): primero el volumen (1 → 2 bloques, P-04) y, otras tantas sesiones
-  // después, la carga (70 % → 80 %). Decisión de diseño en la dirección segura.
-  const deseados = previas < sesionesConUnBloque ? bloquesIniciales : bloquesDespues
+  const previas = p.historial.filter((s) => TIPOS_MULTIPRESA_PROGRESION.includes(s.tipo) && diaNumero(s.fecha) < hoy).length
+  const sesionesConUnBloque = VALORES['P-04'].semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
   const inicial = previas < 2 * sesionesConUnBloque
-  const bloqueMin = minutosBloqueMultipresa()
+  const fraccion = inicial ? FRACCION_INICIAL_REPEATERS : VALORES['P-06'].fraccionMaximaRepeaters
+  const kg = evaluacionVigente(p.evaluacion, p.fecha) ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
+  return { previas, sesionesConUnBloque, inicial, kg, porcentaje: Math.round(fraccion * 100) }
+}
+
+function notasCarga(kg: number | undefined, porcentaje: number): string {
+  return kg === undefined
+    ? 'No hay test vigente: carga por esfuerzo percibido. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.'
+    : `Carga al ${porcentaje} % de tu test. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.`
+}
+
+function construirMultipresa(p: Peticion): SesionPlan | null {
+  const { previas, sesionesConUnBloque, inicial, kg, porcentaje } = progresionMultipresa(p)
+  const { bloquesIniciales, bloquesDespues } = VALORES['P-04']
+  const { trabajoS, descansoS } = VALORES['P-02']
+  const { repeticionesPorSerie } = VALORES['P-03']
+  // Descarga (P-48): un solo bloque con la mitad de series, misma carga y frecuencia.
+  const seriesPorBloque = p.fase.descarga ? VALORES['P-03'].seriesPorBloque / 2 : VALORES['P-03'].seriesPorBloque
+  const deseados = p.fase.descarga ? 1 : previas < sesionesConUnBloque ? bloquesIniciales : bloquesDespues
+  const bloqueMin = minutosBloqueMultipresa(seriesPorBloque)
   const total = (n: number): number => CALENTAMIENTO_MIN + n * bloqueMin + (n - 1) * PAUSA_ENTRE_BLOQUES_MIN
   let n = deseados
   while (n >= 1 && total(n) > p.contexto.minutosDisponibles) n--
   if (n < 1) return null
-
-  const fraccion = inicial ? FRACCION_INICIAL_REPEATERS : VALORES['P-06'].fraccionMaximaRepeaters
-  const kg = evaluacionVigente(p.evaluacion, p.fecha) ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
-  const porcentaje = Math.round(fraccion * 100)
-  const { trabajoS, descansoS } = VALORES['P-02']
-  const { repeticionesPorSerie, seriesPorBloque } = VALORES['P-03']
   const bloques: Bloque[] = [bloqueCalentamiento()]
   for (let i = 1; i <= n; i++) {
     if (i > 1) {
@@ -115,16 +128,15 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
           descansoSeriesS: VALORES['P-05'].descansoEntreSeriesS,
           ...(kg !== undefined ? { cargaKg: kg } : {}),
           cargaTexto: cargaMultipresa(kg),
-          notas:
-            kg === undefined
-              ? 'No hay test vigente: carga por esfuerzo percibido. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.'
-              : `Carga al ${porcentaje} % de tu test. Completa todas las repeticiones sin llegar al fallo. Si aparece dolor, para.`,
+          notas: notasCarga(kg, porcentaje),
         },
       ],
       explicacion: explicar(
         'plantilla.multipresa',
-        ['P-01', 'P-02', 'P-03', 'P-04', 'P-05', 'P-06', 'P-09', 'P-10', 'P-11'],
-        `Repeaters submáximos 7 s colgado : 3 s descanso, 6 series de 7 repeticiones, 2,5 min entre series, en regleta de 20 mm semiarqueado, ${
+        p.fase.descarga
+          ? ['P-01', 'P-02', 'P-03', 'P-05', 'P-06', 'P-09', 'P-10', 'P-48']
+          : ['P-01', 'P-02', 'P-03', 'P-04', 'P-05', 'P-06', 'P-09', 'P-10', 'P-11'],
+        `${p.fase.descarga ? 'Semana de descarga: la mitad de series en un solo bloque. ' : ''}Repeaters submáximos 7 s colgado : 3 s descanso, ${seriesPorBloque} series de 7 repeticiones, 2,5 min entre series, en regleta de 20 mm semiarqueado, ${
           kg === undefined
             ? 'por esfuerzo percibido porque no hay un test vigente'
             : `al ${porcentaje} % de tu test (${inicial ? `durante las primeras ${2 * sesionesConUnBloque} sesiones, por prudencia` : 'el tope de P-06'})`
@@ -138,6 +150,125 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
     conCarga: kg !== undefined && kg > 0,
   })
   return plan(sesion, bloques)
+}
+
+// Resistencia de fuerza en multipresa (P-36, A): 10 s : 5 s, 5 repeticiones, 4 series, 60 s entre series. En
+// descarga, la mitad de series. Misma progresión de carga que los repeaters.
+function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
+  const { kg, porcentaje } = progresionMultipresa(p)
+  const { trabajoS, descansoS, repeticiones, descansoSeriesS } = VALORES['P-36']
+  const series = p.fase.descarga ? VALORES['P-36'].series / 2 : VALORES['P-36'].series
+  const segundos = series * repeticiones * (trabajoS + descansoS) + (series - 1) * descansoSeriesS
+  const bloqueMin = Math.max(5, Math.ceil(segundos / 60 / 5) * 5)
+  const total = CALENTAMIENTO_MIN + bloqueMin
+  if (total > p.contexto.minutosDisponibles) return null
+  const bloques: Bloque[] = [
+    bloqueCalentamiento(),
+    {
+      nombre: 'Resistencia de fuerza en multipresa',
+      minutos: bloqueMin,
+      ejercicios: [
+        {
+          nombre: `Suspensiones ${trabajoS} s : ${descansoS} s en regleta de ${REGLETA_MM} mm, agarre semiarqueado`,
+          series,
+          repeticiones,
+          trabajoS,
+          descansoS,
+          descansoSeriesS,
+          ...(kg !== undefined ? { cargaKg: kg } : {}),
+          cargaTexto: cargaMultipresa(kg),
+          notas: notasCarga(kg, porcentaje),
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.multipresa-resistencia-fuerza',
+        p.fase.descarga ? ['P-36', 'P-06', 'P-09', 'P-10', 'P-48'] : ['P-36', 'P-06', 'P-09', 'P-10', 'P-11'],
+        `${p.fase.descarga ? 'Semana de descarga: la mitad de series. ' : ''}Resistencia de fuerza: ${trabajoS} s colgado : ${descansoS} s de descanso, ${repeticiones} repeticiones, ${series} series y 1 min entre series, en regleta de 20 mm semiarqueado.`,
+      ),
+    },
+  ]
+  return plan(
+    sesionDe('multipresa-resistencia-fuerza', p, total, 'alta', {
+      regletaMm: REGLETA_MM, agarre: 'semiarqueado', conCarga: kg !== undefined && kg > 0,
+    }),
+    bloques,
+  )
+}
+
+// 4x4 (P-37, diseño): 4 bloques fáciles, 4 vueltas, 4 min entre vueltas (cada vuelta ≈ 4 min). En descarga, 2 vueltas.
+function construir4x4(p: Peticion): SesionPlan | null {
+  const { bloques: nBloques, descansoVueltaMin } = VALORES['P-37']
+  const vueltas = p.fase.descarga ? VALORES['P-37'].vueltas / 2 : VALORES['P-37'].vueltas
+  const minutosVuelta = nBloques // unos 1 min por bloque fácil
+  const principal = Math.ceil((vueltas * minutosVuelta + (vueltas - 1) * descansoVueltaMin) / 5) * 5
+  const total = CALENTAMIENTO_MIN + PROGRESIVOS_BLOQUE_MIN + principal
+  if (total > p.contexto.minutosDisponibles) return null
+  const bloques: Bloque[] = [
+    bloqueCalentamiento(),
+    {
+      nombre: 'Bloques progresivos',
+      minutos: PROGRESIVOS_BLOQUE_MIN,
+      ejercicios: [{ nombre: '3-4 bloques por debajo de tu nivel, de menos a más', cargaTexto: 'Esfuerzo percibido 5–7 de 10' }],
+      explicacion: explicar('plantilla.progresivos', ['P-49'], 'Antes del 4x4 se sube la intensidad poco a poco.'),
+    },
+    {
+      nombre: '4x4',
+      minutos: principal,
+      ejercicios: [
+        {
+          nombre: `${nBloques} bloques fáciles para tu nivel encadenados, ${vueltas} vueltas`,
+          series: vueltas,
+          repeticiones: nBloques,
+          descansoSeriesS: descansoVueltaMin * 60,
+          cargaTexto: 'Esfuerzo alto por el bombeo, 7–8 de 10',
+          notas: 'Bloques fáciles: el objetivo es el bombeo acumulado, no la dificultad. Para ante cualquier dolor.',
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.4x4',
+        p.fase.descarga ? ['P-37', 'P-48'] : ['P-37'],
+        `${p.fase.descarga ? 'Semana de descarga: la mitad de vueltas. ' : ''}4x4: ${nBloques} bloques fáciles, ${vueltas} vueltas y 4 min de descanso entre vueltas (decisión de diseño, sin estudio directo).`,
+      ),
+    },
+  ]
+  return plan(sesionDe('resistencia-4x4', p, total, 'alta'), bloques)
+}
+
+// Pegues a un proyecto en roca (P-61: como mucho 4 intentos; P-51: 20 min de recuperación activa entre ellos).
+const CALENTAMIENTO_ROCA_MIN = 20
+
+function construirPegues(p: Peticion): SesionPlan | null {
+  const total = (n: number): number => CALENTAMIENTO_ROCA_MIN + n * INTENTO_VIA_MIN
+  let n = VALORES['P-61'].maxIntentos
+  while (n >= 1 && total(n) > p.contexto.minutosDisponibles) n--
+  if (n < 1) return null
+  const bloques: Bloque[] = [
+    {
+      nombre: 'Calentamiento en roca',
+      minutos: CALENTAMIENTO_ROCA_MIN,
+      ejercicios: [{ nombre: '2-3 vías fáciles de menos a más', cargaTexto: 'Esfuerzo percibido 3–6 de 10' }],
+      explicacion: explicar('plantilla.calentamiento', ['P-49'], 'Calentamiento específico de menos a más antes de los pegues.'),
+    },
+  ]
+  for (let i = 1; i <= n; i++) {
+    bloques.push({
+      nombre: `Pegue ${i} al proyecto`,
+      minutos: INTENTO_VIA_MIN,
+      ejercicios: [
+        {
+          nombre: 'Pegue a tu proyecto: trabaja las secuencias o intenta encadenar',
+          cargaTexto: 'Esfuerzo máximo, 9–10 de 10',
+          notas: `Lee la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes. En los reposos, sacude el brazo colgando. Después, 20 min de recuperación activa suave, no reposo pasivo.`,
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.pegues',
+        ['P-51', 'P-52', 'P-53', 'P-61'],
+        `Hasta ${VALORES['P-61'].maxIntentos} pegues al límite por sesión, con lectura previa, reposos sacudiendo y al menos 20 min de recuperación activa entre ellos.`,
+      ),
+    })
+  }
+  return plan(sesionDe('pegues-proyecto', p, total(n), 'alta'), bloques)
 }
 
 function construirEvaluacion(p: Peticion): SesionPlan | null {
@@ -245,9 +376,16 @@ function construirBloqueSuave(p: Peticion): SesionPlan | null {
   return base && plan(sesionDe('bloque-suave', p, base.total, 'suave'), base.bloques)
 }
 
+// Modalidad de la práctica técnica según el contexto: en roca, vías por debajo del nivel; con compañero en el
+// rocódromo, vías con cuerda; sin compañero, bloque y autoaseguradas (nunca cuerda).
+function modalidadTecnica(p: Peticion): string {
+  if (p.contexto.lugar === 'roca') return 'Vías por debajo de tu nivel en roca'
+  if (p.contexto.compania === 'con-gente') return 'Vías con cuerda de nivel cómodo'
+  return 'Bloque y vías autoaseguradas de nivel cómodo'
+}
+
 function construirTecnica(p: Peticion): SesionPlan | null {
-  const conCuerda = p.contexto.compania === 'con-gente' && p.contexto.lugar === 'rocodromo'
-  const modalidad = conCuerda ? 'Vías con cuerda de nivel cómodo' : 'Bloque y vías autoaseguradas de nivel cómodo'
+  const modalidad = modalidadTecnica(p)
   const base = bloquePrincipalMasCalentamiento(
     p,
     'Práctica técnica',
@@ -304,10 +442,15 @@ function construirArc(p: Peticion): SesionPlan | null {
   return plan(sesionDe('arc', p, total(serieMin), 'suave'), bloques)
 }
 
+// Con 40 min o más se añaden antagonistas y movilidad (decisión del usuario: días en casa de la fase base).
+const ANTAGONISTAS_MOVILIDAD_MIN = 20
+
 function construirHombro(p: Peticion): SesionPlan | null {
   const activacionMin = 5
-  const total = activacionMin + VALORES['P-41'].minutos
-  if (total > p.contexto.minutosDisponibles) return null
+  const corto = activacionMin + VALORES['P-41'].minutos
+  if (corto > p.contexto.minutosDisponibles) return null
+  const largo = corto + ANTAGONISTAS_MOVILIDAD_MIN <= p.contexto.minutosDisponibles
+  const total = largo ? corto + ANTAGONISTAS_MOVILIDAD_MIN : corto
   const bloques: Bloque[] = [
     {
       nombre: 'Movilidad y activación',
@@ -331,6 +474,23 @@ function construirHombro(p: Peticion): SesionPlan | null {
         'Hombro en cadena cerrada, excéntricos y de fuerza, 2 veces por semana y 15 minutos (la dosis es decisión de diseño).',
       ),
     },
+    ...(largo
+      ? [
+          {
+            nombre: 'Antagonistas y movilidad',
+            minutos: ANTAGONISTAS_MOVILIDAD_MIN,
+            ejercicios: [
+              { nombre: 'Empujes y extensores de dedos con banda', cargaTexto: 'Esfuerzo percibido 4–5 de 10' },
+              { nombre: 'Movilidad de cadera, hombro y muñecas', cargaTexto: 'Sin esfuerzo' },
+            ],
+            explicacion: explicar(
+              'plantilla.antagonistas',
+              ['P-41'],
+              'Antagonistas (extensores de dedos opcionales) y movilidad para completar el día sin cargar los dedos.',
+            ),
+          },
+        ]
+      : []),
   ]
   return plan(sesionDe('hombro', p, total, 'suave'), bloques)
 }
@@ -441,8 +601,7 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
     }
     case 'tecnica': {
       if (TECNICA_COMPLEMENTO_MIN > minutosLibres) return null
-      const conCuerda = p.contexto.compania === 'con-gente' && p.contexto.lugar === 'rocodromo'
-      const modalidad = conCuerda ? 'Vías con cuerda de nivel cómodo' : 'Bloque y vías autoaseguradas de nivel cómodo'
+      const modalidad = modalidadTecnica(p)
       return {
         nombre: 'Complemento: práctica técnica',
         minutos: TECNICA_COMPLEMENTO_MIN,
@@ -458,13 +617,19 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
 
 export const TIPOS_CON_PLANTILLA: readonly TipoSesion[] = [
   'arc', 'bloque-limite', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
-  'tecnica', 'via-cuerda-limite',
+  'multipresa-resistencia-fuerza', 'pegues-proyecto', 'resistencia-4x4', 'tecnica', 'via-cuerda-limite',
 ]
 
 export function construirSesion(tipo: TipoSesion, p: Peticion): SesionPlan | null {
   switch (tipo) {
     case 'via-cuerda-limite':
       return construirViaLimite(p)
+    case 'multipresa-resistencia-fuerza':
+      return construirMultipresaResistenciaFuerza(p)
+    case 'resistencia-4x4':
+      return construir4x4(p)
+    case 'pegues-proyecto':
+      return construirPegues(p)
     case 'bloque-limite':
       return construirBloqueLimite(p)
     case 'multipresa-resistencia':
