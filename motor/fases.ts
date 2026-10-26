@@ -54,17 +54,18 @@ export const FASE_RESISTENCIA: Fase = {
 
 // Rendimiento: el proyecto en roca cuando hay viaje (P-60, P-61), vías al límite en sala el resto, multipresa de
 // mantenimiento y técnica. En roca, la técnica (vías por debajo del nivel) da el segundo día de un viaje.
-// Semana de sala: 2 vías + 1 multipresa = 3 intensas (el tope de P-12). Semana de viaje: los pegues van primero y
-// compiten con la vía; la regla seguridad.dedos-7dias impide pasar de 3 aunque los cupos sumen más.
+// Semana de sala: vía (con compañero) + bloque al límite (sin compañero) + multipresa de mantenimiento (1 bloque)
+// = 3 intensas, el tope de P-12. Semana de viaje: los pegues van primero y compiten con lo demás; la regla
+// seguridad.dedos-7dias impide pasar de 3 aunque los cupos sumen más.
 export const FASE_RENDIMIENTO: Fase = {
   id: 'rendimiento',
   nombre: 'Rendimiento y proyecto',
   cupos: {
-    'pegues-proyecto': 2, 'via-cuerda-limite': 2, 'multipresa-resistencia': 1, tecnica: 1, arc: 1, hombro: 2,
+    'pegues-proyecto': 2, 'via-cuerda-limite': 1, 'bloque-limite': 1, 'multipresa-resistencia': 1, tecnica: 1, arc: 1, hombro: 2,
   },
-  prioridad: ['pegues-proyecto', 'via-cuerda-limite', 'multipresa-resistencia', 'tecnica', 'arc', 'hombro'],
+  prioridad: ['pegues-proyecto', 'via-cuerda-limite', 'bloque-limite', 'multipresa-resistencia', 'tecnica', 'arc', 'hombro'],
   prohibidos: [
-    'campus', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'board', 'bloque-limite', 'via-autoasegurada',
+    'campus', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'board', 'via-autoasegurada',
     'dominadas', 'resistencia-4x4', 'evaluacion-dedos',
   ],
 }
@@ -81,13 +82,22 @@ export const FASE_TRANSICION: Fase = {
   ],
 }
 
-export const FASES: Record<FaseId, Fase> = {
+// Las fases son constantes compartidas: se congelan para que nadie pueda cambiarlas por accidente desde fuera.
+function congelar(f: Fase): Fase {
+  Object.freeze(f.cupos)
+  Object.freeze(f.prioridad)
+  Object.freeze(f.prohibidos)
+  return Object.freeze(f)
+}
+for (const f of [FASE_BASE, FASE_FUERZA, FASE_RESISTENCIA, FASE_RENDIMIENTO, FASE_TRANSICION]) congelar(f)
+
+export const FASES: Readonly<Record<FaseId, Fase>> = Object.freeze({
   base: FASE_BASE,
   fuerza: FASE_FUERZA,
   resistencia: FASE_RESISTENCIA,
   rendimiento: FASE_RENDIMIENTO,
   transicion: FASE_TRANSICION,
-}
+})
 
 // Lo que se quita en una semana de descarga (P-48: sin sesiones al límite).
 const AL_LIMITE: readonly TipoSesion[] = [

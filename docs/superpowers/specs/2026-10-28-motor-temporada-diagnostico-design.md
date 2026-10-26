@@ -109,7 +109,7 @@ Plantilla de 48 semanas:
 
 ## Pruebas (parte 1)
 
-- Temporada: 48 semanas con la plantilla exacta; ajuste a 44 y 52 semanas; errores fuera de 40-56; descargas cada
+- Temporada: 48 semanas con la plantilla exacta; ajuste a 44 y 52 semanas; errores fuera de 42-53; descargas cada
   4.ª semana de las fases que cuentan; afinado final; `reevaluar` en las últimas semanas; `faseEnFecha` devuelve la
   fase descargada en semanas de descarga.
 - Fases: coherencia de cupos, prioridad y prohibidos; tope de 3 intensas para novel; transición sin nada intenso.
@@ -125,3 +125,15 @@ viajes de fin de semana, incluida como prueba (`motor/temporada-simulacion.test.
 2-3 sesiones intensas de dedos por semana y nunca en días seguidos; descargas sin nada al límite; test de dedos al
 final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en el afinado); multipresa siempre
 ≤ 80 % del test; en los viajes, pegues el primer día y vías cómodas el segundo.
+
+## Revisión final de la parte 1 (2026-10-28)
+
+- `FASE_RENDIMIENTO`: vía al límite 1, **bloque al límite 1** (para el día sin compañero), multipresa de
+  mantenimiento 1 (**un solo bloque**) y pegues 2 en roca. Semana de sala del usuario: 3 sesiones al límite.
+- Los cupos son tope para toda sesión de **carga alta** (no solo intensa de dedos): p. ej. el 4x4 una vez por semana.
+- `reevaluar`: no en la base (su test lo desbloquea P-32); sí a mitad de los rendimientos de más de 6 semanas, para
+  no pasar de 10 semanas sin test (P-08).
+- La semana objetivo y la siguiente devuelven `FASE_RENDIMIENTO` (sin test ni descarga) en lugar de un error.
+- La resistencia de fuerza en multipresa tiene progresión propia (vuelve a empezar al 70 %, P-11) y su
+  explicación aclara que la carga viene de P-06.
+- El mínimo de 6 sesiones de base no cuenta los `descanso`. Las fases constantes están congeladas.

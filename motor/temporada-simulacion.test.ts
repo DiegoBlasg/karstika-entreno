@@ -99,3 +99,34 @@ describe('simulación de la temporada completa (48 semanas)', () => {
     expect(tiposEn('transicion').filter((t) => ['via-cuerda-limite', 'multipresa-resistencia', 'bloque-limite'].includes(t))).toEqual([])
   })
 })
+
+describe('simulación: hallazgos de la revisión', () => {
+  const semanaDe = (f: string) => temporada.semanas[Math.floor((diaNumero(f) - diaNumero(temporada.inicio)) / 7)]!
+  it('cada test de dedos cae en una semana de reevaluación, salvo el primero (lo desbloquea la base, P-32)', () => {
+    const tests = historial.filter((s) => s.tipo === 'evaluacion-dedos').map((s) => s.fecha)
+    for (const f of tests.slice(1)) expect(semanaDe(f).reevaluar, f).toBe(true)
+  })
+  it('en rendimiento hay bloque al límite el día sin compañero y la multipresa es de mantenimiento (1 bloque)', () => {
+    const enRendimiento = historial.filter((h) => semanaDe(h.fecha).faseId === 'rendimiento')
+    expect(enRendimiento.map((h) => h.tipo)).toContain('bloque-limite')
+    for (const paso of pasos.filter((p) => semanaDe(p.fecha).faseId === 'rendimiento' && p.plan?.sesion.tipo === 'multipresa-resistencia')) {
+      expect(paso.plan!.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters')), paso.fecha).toHaveLength(1)
+    }
+  })
+})
+
+describe('simulación con disponibilidad diaria: la carga alta no pasa de los cupos', () => {
+  it('en resistencia, el 4x4 no se repite en 7 días aunque se pueda entrenar todos los días', () => {
+    const h: Sesion[] = []
+    const inicio = temporada.semanas.find((s) => s.ciclo === 1 && s.faseId === 'resistencia' && s.semanaDeFase === 1)!.lunes
+    for (let i = 0; i < 21; i++) {
+      const fecha = fechaDesdeDia(diaNumero(inicio) + i)
+      const ctx: Contexto = { compania: [1, 4].includes(i % 7) ? 'con-gente' : 'solo', lugar: 'rocodromo', minutosDisponibles: 120 }
+      const r = proponerSesion({ fecha, horaInicio: 19, contexto: ctx, perfil, historial: [...h], fase: faseEnFecha(temporada, fecha), evaluacion: { fecha: inicio, pesoCorporalKg: 72, lastreKg: 20 } })
+      if (r.principal) h.push({ ...r.principal.sesion, id: `d${i}` })
+    }
+    const cuatro = h.filter((s) => s.tipo === 'resistencia-4x4').map((s) => diaNumero(s.fecha))
+    expect(cuatro.length).toBeGreaterThan(0)
+    for (const d of cuatro) expect(cuatro.filter((x) => x > d && x <= d + 6)).toEqual([])
+  })
+})

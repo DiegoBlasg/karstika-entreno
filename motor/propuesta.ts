@@ -218,8 +218,9 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
   for (const tipo of tipos) {
     let c = evaluar(tipo, p)
     if (!c) continue
-    // Los cupos son también un tope: una sesión intensa de dedos con el cupo semanal cubierto no se propone.
-    if (esIntensaDedos(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
+    // Los cupos son también un tope: una sesión de carga alta (intensa de dedos, 4x4…) con el cupo semanal
+    // cubierto no se propone.
+    if (esCargaAlta(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
     if (c.violaciones.some((v) => v.regla === REGLA_DESCANSO_DEDOS)) huboDescansoDedos = true
     // Solo cuenta como bloqueo por carga si las únicas reglas que lo impiden son de carga reciente
     // (p. ej. un test de dedos prematuro no se resuelve esperando un día).

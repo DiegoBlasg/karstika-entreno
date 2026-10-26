@@ -247,7 +247,11 @@ function reglaEvaluacionPrematura(propuesta: Sesion, historial: readonly Sesion[
   const d = diaNumero(propuesta.fecha)
   const dias = historial.map((s) => diaNumero(s.fecha))
   const suficientesDias = dias.length > 0 && d - Math.min(...dias) >= minimo
-  const enLaBase = dias.filter((x) => x >= d - minimo && x <= d - 1).length
+  // El descanso no cuenta como sesión de base.
+  const enLaBase = historial
+    .filter((s) => s.tipo !== 'descanso')
+    .map((s) => diaNumero(s.fecha))
+    .filter((x) => x >= d - minimo && x <= d - 1).length
   if (suficientesDias && enLaBase >= sesionesMinimasBase) return []
   return [
     {

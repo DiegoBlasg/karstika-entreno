@@ -46,6 +46,9 @@ const ORDEN_AJUSTE = [7, 4, 3] as const
 // P-47: 1 semana de descarga de cada 4 para < 2 años. Solo cuentan las fases de carga.
 const CADA_CUANTAS_DESCARGA = 4
 const FASES_QUE_CUENTAN: readonly FaseId[] = ['fuerza', 'resistencia', 'rendimiento']
+const MAX_SEMANAS_SIN_TEST = 6
+// La semana objetivo y la siguiente (el viaje del 7a) se tratan como rendimiento sin test ni descarga.
+const SEMANAS_TRAS_OBJETIVO = 2
 
 // 1970-01-01 fue jueves: el día 4 fue lunes.
 const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
@@ -88,7 +91,11 @@ export function planificarTemporada(inicio: string, objetivo: string): Temporada
         faseId: t.faseId,
         semanaDeFase: k,
         descarga,
-        reevaluar: k === t.semanas && t.faseId !== 'transicion',
+        // Test al final de cada fase (P-26) y a mitad de los rendimientos largos para no pasar de 10 semanas sin
+        // reevaluar (P-08). La base no: su test lo desbloquea P-32 (28 días y 6 sesiones), no el calendario.
+        reevaluar:
+          t.faseId !== 'transicion' && t.faseId !== 'base' &&
+          (k === t.semanas || (t.faseId === 'rendimiento' && t.semanas > MAX_SEMANAS_SIN_TEST && k === Math.floor(t.semanas / 2))),
       })
     }
   }
@@ -108,6 +115,8 @@ export function semanaEnFecha(t: Temporada, fecha: string): SemanaPlan | undefin
 // dedos permitido (también si coincide con una descarga: es poco volumen y medir tras descargar es lo habitual).
 export function faseEnFecha(t: Temporada, fecha: string): Fase {
   const s = semanaEnFecha(t, fecha)
+  const desdeObjetivo = diaNumero(fecha) - diaNumero(t.objetivo)
+  if (!s && desdeObjetivo >= 0 && desdeObjetivo < 7 * SEMANAS_TRAS_OBJETIVO) return FASES.rendimiento
   if (!s) throw new Error(`La fecha ${fecha} está fuera de la temporada (${t.inicio} a ${t.objetivo}).`)
   let fase = FASES[s.faseId]
   if (s.descarga) fase = descargar(fase)

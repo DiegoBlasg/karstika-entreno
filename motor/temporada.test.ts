@@ -33,10 +33,10 @@ describe('planificarTemporada', () => {
   it('la base y la transición no tienen descargas (ya son suaves)', () => {
     expect(temporada.semanas.filter((s) => (s.faseId === 'base' || s.faseId === 'transicion') && s.descarga)).toEqual([])
   })
-  it('se reevalúa la última semana de cada fase salvo la transición y el afinado final (P-26)', () => {
+  it('se reevalúa al final de cada fase (P-26) y a mitad del rendimiento final (P-08), salvo base, transición y afinado', () => {
     const reev = temporada.semanas.filter((s) => s.reevaluar).map((s) => `${s.ciclo}:${s.faseId}:${s.semanaDeFase}`)
     expect(reev).toEqual([
-      '1:base:4', '1:fuerza:8', '1:resistencia:6', '1:rendimiento:4', '2:fuerza:8', '2:resistencia:6',
+      '1:fuerza:8', '1:resistencia:6', '1:rendimiento:4', '2:fuerza:8', '2:resistencia:6', '2:rendimiento:5',
     ])
   })
   it('un objetivo a mitad de semana se normaliza a su lunes', () => {
@@ -77,9 +77,22 @@ describe('semanaEnFecha y faseEnFecha', () => {
     expect(f.prohibidos).not.toContain('evaluacion-dedos')
     expect(f.prioridad).not.toContain('via-cuerda-limite')
   })
+  it('la semana objetivo y la siguiente son de rendimiento, sin test ni descarga', () => {
+    for (const f of ['2027-10-04', '2027-10-09', '2027-10-17']) {
+      const fase = faseEnFecha(temporada, f)
+      expect(fase.id).toBe('rendimiento')
+      expect(fase.descarga).toBeUndefined()
+      expect(fase.prohibidos).toContain('evaluacion-dedos')
+    }
+  })
   it('fuera de la temporada lanza un error claro', () => {
     expect(() => faseEnFecha(temporada, '2026-10-30')).toThrow(/fuera de la temporada/)
-    expect(() => faseEnFecha(temporada, '2027-10-04')).toThrow(/fuera de la temporada/)
+    expect(() => faseEnFecha(temporada, '2027-10-18')).toThrow(/fuera de la temporada/)
+  })
+  it('las fases devueltas no se pueden modificar por accidente', () => {
+    const fase = faseEnFecha(temporada, '2026-11-05')
+    expect(() => fase.prioridad.push('campus')).toThrow()
+    expect(faseEnFecha(temporada, '2026-11-05').prioridad).not.toContain('campus')
   })
 })
 

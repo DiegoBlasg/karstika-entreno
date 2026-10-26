@@ -76,9 +76,9 @@ const TIPOS_MULTIPRESA_PROGRESION: readonly TipoSesion[] = ['multipresa-resisten
 // Progresión común a las multipresas. Solo cuentan las anteriores al día de la petición (no las futuras ya
 // planificadas). Una sola subida cada vez (P-11): primero el volumen (1 → 2 bloques, P-04) y, otras tantas
 // sesiones después, la carga (70 % → 80 %). Decisión de diseño en la dirección segura.
-function progresionMultipresa(p: Peticion) {
+function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_MULTIPRESA_PROGRESION) {
   const hoy = diaNumero(p.fecha)
-  const previas = p.historial.filter((s) => TIPOS_MULTIPRESA_PROGRESION.includes(s.tipo) && diaNumero(s.fecha) < hoy).length
+  const previas = p.historial.filter((s) => tipos.includes(s.tipo) && diaNumero(s.fecha) < hoy).length
   const sesionesConUnBloque = VALORES['P-04'].semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
   const inicial = previas < 2 * sesionesConUnBloque
   const fraccion = inicial ? FRACCION_INICIAL_REPEATERS : VALORES['P-06'].fraccionMaximaRepeaters
@@ -99,7 +99,9 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
   const { repeticionesPorSerie } = VALORES['P-03']
   // Descarga (P-48): un solo bloque con la mitad de series, misma carga y frecuencia.
   const seriesPorBloque = p.fase.descarga ? VALORES['P-03'].seriesPorBloque / 2 : VALORES['P-03'].seriesPorBloque
-  const deseados = p.fase.descarga ? 1 : previas < sesionesConUnBloque ? bloquesIniciales : bloquesDespues
+  // En descarga y en la fase de rendimiento (mantenimiento) basta un bloque.
+  const unBloque = p.fase.descarga || p.fase.id === 'rendimiento'
+  const deseados = unBloque ? 1 : previas < sesionesConUnBloque ? bloquesIniciales : bloquesDespues
   const bloqueMin = minutosBloqueMultipresa(seriesPorBloque)
   const total = (n: number): number => CALENTAMIENTO_MIN + n * bloqueMin + (n - 1) * PAUSA_ENTRE_BLOQUES_MIN
   let n = deseados
@@ -155,7 +157,8 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
 // Resistencia de fuerza en multipresa (P-36, A): 10 s : 5 s, 5 repeticiones, 4 series, 60 s entre series. En
 // descarga, la mitad de series. Misma progresión de carga que los repeaters.
 function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
-  const { kg, porcentaje } = progresionMultipresa(p)
+  // Protocolo nuevo, progresión propia (P-11): vuelve a empezar al 70 % aunque haya repeaters previos.
+  const { kg, porcentaje } = progresionMultipresa(p, ['multipresa-resistencia-fuerza'])
   const { trabajoS, descansoS, repeticiones, descansoSeriesS } = VALORES['P-36']
   const series = p.fase.descarga ? VALORES['P-36'].series / 2 : VALORES['P-36'].series
   const segundos = series * repeticiones * (trabajoS + descansoS) + (series - 1) * descansoSeriesS
@@ -183,7 +186,7 @@ function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
       explicacion: explicar(
         'plantilla.multipresa-resistencia-fuerza',
         p.fase.descarga ? ['P-36', 'P-06', 'P-09', 'P-10', 'P-48'] : ['P-36', 'P-06', 'P-09', 'P-10', 'P-11'],
-        `${p.fase.descarga ? 'Semana de descarga: la mitad de series. ' : ''}Resistencia de fuerza: ${trabajoS} s colgado : ${descansoS} s de descanso, ${repeticiones} repeticiones, ${series} series y 1 min entre series, en regleta de 20 mm semiarqueado.`,
+        `${p.fase.descarga ? 'Semana de descarga: la mitad de series. ' : ''}Resistencia de fuerza: ${trabajoS} s colgado : ${descansoS} s de descanso, ${repeticiones} repeticiones, ${series} series y 1 min entre series, en regleta de 20 mm semiarqueado. La carga (70 % y después 80 % del test) es la de los repeaters (P-06): P-36 no fija intensidad para este perfil.`,
       ),
     },
   ]
@@ -486,7 +489,7 @@ function construirHombro(p: Peticion): SesionPlan | null {
             explicacion: explicar(
               'plantilla.antagonistas',
               ['P-41'],
-              'Antagonistas (extensores de dedos opcionales) y movilidad para completar el día sin cargar los dedos.',
+              'Antagonistas (extensores de dedos opcionales, P-41). La movilidad y los 20 minutos son decisión de diseño para completar el día en casa sin cargar los dedos.',
             ),
           },
         ]
