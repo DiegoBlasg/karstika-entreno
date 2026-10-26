@@ -20,6 +20,7 @@ export function explicar(regla: string, parametros: ParametroId[], motivo: strin
   if (parametros.length === 0) throw new Error(`La regla ${regla} no cita ningún parámetro`)
   const tabla = METADATOS as Record<string, MetadatoParametro<ParametroId> | undefined>
   const metas = parametros.map((id) => {
+    if (!Object.hasOwn(tabla, id)) throw new Error(`Parámetro desconocido: ${id}`)
     const m = tabla[id]
     if (!m) throw new Error(`Parámetro desconocido: ${id}`)
     return m
@@ -36,6 +37,6 @@ export function explicar(regla: string, parametros: ParametroId[], motivo: strin
 
 export function explicarContexto(regla: string, motivo: string): Explicacion {
   comprobarTexto('El motivo', motivo)
-  if (!regla.startsWith('contexto.')) throw new Error(`La regla de contexto debe empezar por contexto.: ${regla}`)
+  if (!regla.startsWith('contexto.') || regla.length === 'contexto.'.length) throw new Error(`La regla de contexto debe empezar por contexto.: ${regla}`)
   return { regla, parametros: [], evidencias: [], nivelMinimo: 'sinEvidencia', origen: 'contexto', motivo }
 }
