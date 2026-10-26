@@ -77,8 +77,18 @@ describe('semanaEnFecha y faseEnFecha', () => {
     expect(f.prohibidos).not.toContain('evaluacion-dedos')
     expect(f.prioridad).not.toContain('via-cuerda-limite')
   })
-  it('la semana objetivo y la siguiente son de rendimiento, sin test ni descarga', () => {
-    for (const f of ['2027-10-04', '2027-10-09', '2027-10-17']) {
+  it('la semana objetivo solo deja pegues al proyecto y cosas suaves (nada intenso en sala)', () => {
+    for (const f of ['2027-10-04', '2027-10-09']) {
+      const fase = faseEnFecha(temporada, f)
+      expect(fase.nombre).toBe('Semana objetivo')
+      expect(fase.prioridad).toEqual(['pegues-proyecto', 'tecnica', 'arc', 'hombro'])
+      for (const t of ['via-cuerda-limite', 'bloque-limite', 'multipresa-resistencia', 'evaluacion-dedos'] as const) {
+        expect(fase.prohibidos).toContain(t)
+      }
+    }
+  })
+  it('la semana siguiente al objetivo es de rendimiento, sin test ni descarga', () => {
+    for (const f of ['2027-10-11', '2027-10-17']) {
       const fase = faseEnFecha(temporada, f)
       expect(fase.id).toBe('rendimiento')
       expect(fase.descarga).toBeUndefined()

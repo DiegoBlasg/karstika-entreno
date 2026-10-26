@@ -133,7 +133,10 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
 - Los cupos son tope para toda sesión de **carga alta** (no solo intensa de dedos): p. ej. el 4x4 una vez por semana.
 - `reevaluar`: no en la base (su test lo desbloquea P-32); sí a mitad de los rendimientos de más de 6 semanas, para
   no pasar de 10 semanas sin test (P-08).
-- La semana objetivo y la siguiente devuelven `FASE_RENDIMIENTO` (sin test ni descarga) en lugar de un error.
+- La **semana objetivo** devuelve `FASE_OBJETIVO`: solo pegues al proyecto en roca y cosas suaves (nada intenso en
+  sala), para llegar fresco a los días de roca; la semana siguiente, `FASE_RENDIMIENTO` sin test ni descarga.
+- Seguimientos aplazados: en semanas de descarga un hueco de rocódromo puede quedarse en solo hombro (sería mejor
+  técnica); el ciclo 2 de fuerza arranca al 80 % y 2 bloques tras la transición (se podría reiniciar la progresión).
 - La resistencia de fuerza en multipresa tiene progresión propia (vuelve a empezar al 70 %, P-11) y su
   explicación aclara que la carga viene de P-06.
 - El mínimo de 6 sesiones de base no cuenta los `descanso`. Las fases constantes están congeladas.

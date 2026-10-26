@@ -82,6 +82,19 @@ export const FASE_TRANSICION: Fase = {
   ],
 }
 
+// Semana objetivo (el viaje del 7a): solo pegues al proyecto en roca y cosas suaves; nada intenso en sala, para
+// llegar fresco a los días de roca (decisión de diseño tras la revisión).
+export const FASE_OBJETIVO: Fase = {
+  id: 'rendimiento',
+  nombre: 'Semana objetivo',
+  cupos: { 'pegues-proyecto': 2, tecnica: 1, arc: 1, hombro: 2 },
+  prioridad: ['pegues-proyecto', 'tecnica', 'arc', 'hombro'],
+  prohibidos: [
+    'multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'evaluacion-dedos', 'board',
+    'bloque-limite', 'via-cuerda-limite', 'via-autoasegurada', 'campus', 'dominadas', 'resistencia-4x4',
+  ],
+}
+
 // Las fases son constantes compartidas: se congelan para que nadie pueda cambiarlas por accidente desde fuera.
 function congelar(f: Fase): Fase {
   Object.freeze(f.cupos)
@@ -89,7 +102,7 @@ function congelar(f: Fase): Fase {
   Object.freeze(f.prohibidos)
   return Object.freeze(f)
 }
-for (const f of [FASE_BASE, FASE_FUERZA, FASE_RESISTENCIA, FASE_RENDIMIENTO, FASE_TRANSICION]) congelar(f)
+for (const f of [FASE_BASE, FASE_FUERZA, FASE_RESISTENCIA, FASE_RENDIMIENTO, FASE_TRANSICION, FASE_OBJETIVO]) congelar(f)
 
 export const FASES: Readonly<Record<FaseId, Fase>> = Object.freeze({
   base: FASE_BASE,

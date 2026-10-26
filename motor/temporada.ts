@@ -1,4 +1,4 @@
-import { descargar, FASES } from './fases'
+import { descargar, FASE_OBJETIVO, FASES } from './fases'
 import type { Fase, FaseId } from './propuesta-tipos'
 import { diaNumero, fechaDesdeDia } from './tiempo'
 
@@ -116,7 +116,9 @@ export function semanaEnFecha(t: Temporada, fecha: string): SemanaPlan | undefin
 export function faseEnFecha(t: Temporada, fecha: string): Fase {
   const s = semanaEnFecha(t, fecha)
   const desdeObjetivo = diaNumero(fecha) - diaNumero(t.objetivo)
-  if (!s && desdeObjetivo >= 0 && desdeObjetivo < 7 * SEMANAS_TRAS_OBJETIVO) return FASES.rendimiento
+  // Semana objetivo: solo pegues y cosas suaves; la siguiente, rendimiento normal sin test.
+  if (!s && desdeObjetivo >= 0 && desdeObjetivo < 7) return FASE_OBJETIVO
+  if (!s && desdeObjetivo >= 7 && desdeObjetivo < 7 * SEMANAS_TRAS_OBJETIVO) return FASES.rendimiento
   if (!s) throw new Error(`La fecha ${fecha} está fuera de la temporada (${t.inicio} a ${t.objetivo}).`)
   let fase = FASES[s.faseId]
   if (s.descarga) fase = descargar(fase)

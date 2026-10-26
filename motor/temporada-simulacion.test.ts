@@ -130,3 +130,20 @@ describe('simulación con disponibilidad diaria: la carga alta no pasa de los cu
     for (const d of cuatro) expect(cuatro.filter((x) => x > d && x <= d + 6)).toEqual([])
   })
 })
+
+describe('semana objetivo', () => {
+  it('con disponibilidad diaria, el sábado del viaje toca proyecto: nada intenso en sala los días anteriores', () => {
+    const h: Sesion[] = [...historial]
+    let sabado: string | undefined
+    for (let i = 0; i < 7; i++) {
+      const fecha = fechaDesdeDia(diaNumero('2027-10-04') + i)
+      const roca = i === 5 || i === 6
+      const ctx: Contexto = roca ? ROCA : { compania: i % 2 === 0 ? 'con-gente' : 'solo', lugar: 'rocodromo', minutosDisponibles: 120 }
+      const r = proponerSesion({ fecha, horaInicio: 10, contexto: ctx, perfil, historial: [...h], fase: faseEnFecha(temporada, fecha), ...(evaluacion ? { evaluacion } : {}) })
+      if (!roca && r.principal) expect(esIntensaDedos(r.principal.sesion), fecha).toBe(false)
+      if (i === 5) sabado = r.principal?.sesion.tipo
+      if (r.principal) h.push({ ...r.principal.sesion, id: `o${i}` })
+    }
+    expect(sabado).toBe('pegues-proyecto')
+  })
+})
