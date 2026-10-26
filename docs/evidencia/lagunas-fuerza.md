@@ -1,0 +1,7 @@
+# Lagunas del bloque fuerza
+
+- **Dominadas lastradas a largo plazo y relación con fuerza relativa (P1):** no se halló ningún ensayo de entrenamiento de dominadas lastradas en escaladores. Solo un efecto agudo (EV-FUERZA-003) y un estudio transversal de nivel (EV-FUERZA-007, fuerza absoluta). Sin dosis ni valores de fuerza relativa verificados.
+- **Entrenamiento en board (Moonboard, Kilter, Tension) (P2):** ninguna evidencia revisada por pares sobre su efecto en potencia o grado. Solo se halló el Kilter Board como herramienta de test (EV-FUERZA-005). Fuentes encontradas: guías comerciales y foros (descartadas).
+- **Prerrequisitos cuantitativos del campus board (P3):** no hay umbrales de fuerza ni años de experiencia verificados en adultos; solo una guía cualitativa (EV-FUERZA-010). El documento UIAA Medical Sport Climbing (cita 8–10 años de experiencia y edad mínima 16–17) no se pudo leer (PDF ilegible), por lo que no se cita. El riesgo de lesión por campus en adultos es contradictorio y solo hay un resumen (EV-FUERZA-011).
+- **Antagonistas, hombro y fuerza general (press) (P4):** no se halló ensayo controlado ni revisión; solo consejos de entrenadores (descartados). El tren superior general sin efecto en rendimiento aparece solo como nota en EV-FUERZA-001.
+- **Interferencia fuerza máxima–resistencia en escaladores (P5):** sin estudios directos; solo extrapolación de la literatura general (EV-FUERZA-012, nivel C) y un ensayo infradotado (EV-FUERZA-008).
