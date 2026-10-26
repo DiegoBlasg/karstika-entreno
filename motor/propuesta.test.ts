@@ -246,3 +246,34 @@ describe('proponerSesion: hallazgos de la revisión final', () => {
     expect(r.proximaVentanaIntensa).toEqual({ fecha: '2026-11-02' })
   })
 })
+
+describe('proponerSesion: hallazgos de la segunda revisión', () => {
+  it('la ventana intensa señala un día en el que de verdad se propone una sesión intensa (caso de la revisión)', () => {
+    const historial = [
+      ses('via', '2026-11-03', 19, { tipo: 'via-cuerda-limite', duracionMin: 100 }),
+      ses('blq', '2026-11-05', 19, { tipo: 'bloque-limite', duracionMin: 50 }),
+    ]
+    const p = peticion({ fecha: '2026-11-06', historial })
+    const r = proponerSesion(p)
+    const ventana = r.proximaVentanaIntensa
+    if (ventana) {
+      const ese = proponerSesion({ ...p, fecha: ventana.fecha })
+      expect([ese.principal, ...ese.alternativas].some((x) => x !== null && esIntensaDedos(x.sesion))).toBe(true)
+    }
+    expect(ventana?.fecha).not.toBe('2026-11-07')
+  })
+  it('un test de dedos en el historial cuenta como reciente aunque no se haya guardado la evaluación', () => {
+    const test = ses('t', '2026-10-20', 19, {
+      tipo: 'evaluacion-dedos', duracionMin: 30, detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: true },
+    })
+    const r = proponerSesion(peticion({ fase: FASE_FUERZA, historial: [antigua, test] }))
+    expect(tipos(r)).not.toContain('evaluacion-dedos')
+  })
+  it('una sesión de hombro no se rellena con escalada (no lleva calentamiento de escalada)', () => {
+    const r = proponerSesion(peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 120 } }))
+    const hombro = [r.principal!, ...r.alternativas].find((x) => x.sesion.tipo === 'hombro')
+    if (hombro) expect(hombro.sesion.incluye).toBeUndefined()
+    const soloHombro = proponerSesion(peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 25 } }))
+    expect(soloHombro.principal!.sesion.incluye).toBeUndefined()
+  })
+})

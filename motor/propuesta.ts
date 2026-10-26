@@ -66,7 +66,7 @@ function validarPeticion(p: Peticion): void {
     const relativa = fuerzaRelativa(p.evaluacion) // lanza si el test no es plausible
     if (p.perfil.anosEscalando < VALORES['P-12'].anosMaximosPerfilNovel && relativa > FUERZA_RELATIVA_MAX_NOVEL) {
       throw new Error(
-        `proponerSesion: un test del ${Math.round(relativa)} % del peso corporal es poco plausible con menos de 2 años escalando; revisa el dato antes de usarlo.`,
+        `proponerSesion: un test del ${relativa.toFixed(1)} % del peso corporal (máximo plausible ${FUERZA_RELATIVA_MAX_NOVEL} %) es poco plausible con menos de 2 años escalando; revisa el dato antes de usarlo.`,
       )
     }
   }
@@ -105,6 +105,8 @@ function ultimaSesion(p: Peticion): Sesion | undefined {
 
 // Rellena el tiempo libre con complementos suaves cuyo cupo de la fase sigue pendiente.
 function completar(plan: SesionPlan, p: Peticion, posibles: ReadonlySet<TipoSesion>): { plan: SesionPlan; anadidos: TipoComplemento[] } {
+  // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás.
+  if (plan.sesion.tipo === 'hombro') return { plan, anadidos: [] }
   const libresIniciales = p.contexto.minutosDisponibles - plan.sesion.duracionMin
   let libres = libresIniciales
   const elegidos = new Map<TipoComplemento, Bloque>()
@@ -154,24 +156,39 @@ function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComp
   return explicar('generador.eleccion', ['P-30'], partes.join(' '))
 }
 
-// Primer día a partir de mañana en que una sesión intensa de dedos genérica (bloque al límite) supera todas las
-// reglas de seguridad frente al historial, pasado o futuro (descanso entre días, tope semanal, días seguidos).
+// Primer día a partir de mañana en que el propio generador, con el mismo contexto, historial y fase, propondría
+// alguna sesión intensa de dedos. Correcto por construcción: tiene en cuenta seguridad, cupos y la regla del test.
 function ventanaIntensa(p: Peticion): { fecha: string } | undefined {
   const d = diaNumero(p.fecha)
   for (let x = d + 1; x <= d + DIAS_BUSQUEDA_VENTANA; x++) {
-    const prueba: Sesion = {
-      id: '__ventana__', tipo: 'bloque-limite', intensidad: 'alta',
-      fecha: fechaDesdeDia(x), horaInicio: p.horaInicio, duracionMin: 50,
+    const r = proponer({ ...p, fecha: fechaDesdeDia(x) }, false)
+    if ([r.principal, ...r.alternativas].some((plan) => plan !== null && esIntensaDedos(plan.sesion))) {
+      return { fecha: fechaDesdeDia(x) }
     }
-    if (validarSesion(prueba, p.historial, p.perfil).length === 0) return { fecha: prueba.fecha }
   }
   return undefined
 }
 
+// Un test de dedos hecho en los últimos 70 días cuenta como reciente aunque no se haya guardado su resultado
+// como evaluación: así no se vuelve a proponer cada semana.
+function testReciente(p: Peticion): boolean {
+  if (evaluacionVigente(p.evaluacion, p.fecha)) return true
+  const d = diaNumero(p.fecha)
+  const maximo = VALORES['P-08'].semanasMaximasSinReevaluar * 7
+  return p.historial.some((s) => {
+    const dias = d - diaNumero(s.fecha)
+    return s.tipo === 'evaluacion-dedos' && dias >= 0 && dias <= maximo
+  })
+}
+
 export function proponerSesion(p: Peticion): Propuesta {
   validarPeticion(p)
+  return proponer(p, true)
+}
+
+function proponer(p: Peticion, conVentana: boolean): Propuesta {
   const posibles = new Set(tiposPosibles(p.contexto))
-  const vigente = evaluacionVigente(p.evaluacion, p.fecha)
+  const vigente = testReciente(p)
   const tipos = p.fase.prioridad.filter(
     (t) =>
       t !== 'descanso' &&
@@ -189,7 +206,12 @@ export function proponerSesion(p: Peticion): Propuesta {
     // Los cupos son también un tope: una sesión intensa de dedos con el cupo semanal cubierto no se propone.
     if (esIntensaDedos(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
     if (c.violaciones.some((v) => v.regla === REGLA_DESCANSO_DEDOS)) huboDescansoDedos = true
-    if (esIntensaDedos(c.plan.sesion) && c.violaciones.some((v) => REGLAS_DE_CARGA.includes(v.regla))) huboBloqueoIntenso = true
+    // Solo cuenta como bloqueo por carga si las únicas reglas que lo impiden son de carga reciente
+    // (p. ej. un test de dedos prematuro no se resuelve esperando un día).
+    const deSeguridad = c.violaciones.filter((v) => v.regla.startsWith('seguridad.'))
+    if (esIntensaDedos(c.plan.sesion) && deSeguridad.length > 0 && deSeguridad.every((v) => REGLAS_DE_CARGA.includes(v.regla))) {
+      huboBloqueoIntenso = true
+    }
     const sustituto = SUSTITUTO_SUAVE[tipo]
     if (c.violaciones.length > 0 && sustituto && posibles.has(sustituto)) {
       const suave = evaluar(sustituto, p)
@@ -257,7 +279,7 @@ export function proponerSesion(p: Peticion): Propuesta {
 
   // Solo tiene sentido avisar si hoy no queda ninguna sesión intensa de dedos válida.
   const hayIntensaValida = validos.some((v) => esIntensaDedos(v.plan.sesion))
-  const ventana = huboBloqueoIntenso && !hayIntensaValida ? ventanaIntensa(p) : undefined
+  const ventana = conVentana && huboBloqueoIntenso && !hayIntensaValida ? ventanaIntensa(p) : undefined
   return {
     principal,
     alternativas,
