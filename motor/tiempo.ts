@@ -28,6 +28,7 @@ export function finHoras(s: Sesion): number {
 export function validarEntrada(sesiones: readonly Sesion[]): void {
   const vistos = new Set<string>()
   for (const s of sesiones) {
+    if (typeof s.id !== 'string' || s.id === '') throw new Error(`id de sesión debe ser un texto no vacío: ${String(s.id)}`)
     if (vistos.has(s.id)) throw new Error(`Id de sesión duplicado: ${s.id}`)
     vistos.add(s.id)
     try {
@@ -45,5 +46,24 @@ export function validarEntrada(sesiones: readonly Sesion[]): void {
     if (s.intensidad !== 'alta' && s.intensidad !== 'suave') {
       throw new Error(`intensidad desconocida en ${s.id}: ${s.intensidad}`)
     }
+    validarDetalle(s)
+  }
+}
+
+const AGARRES: readonly string[] = ['abierto', 'semiarqueado', 'arqueado']
+
+function validarDetalle(s: Sesion): void {
+  const d: unknown = s.detalle
+  if (d === undefined) return
+  if (d === null || typeof d !== 'object' || Array.isArray(d)) throw new Error(`detalle debe ser un objeto en ${s.id}`)
+  const { agarre, conCarga, regletaMm } = d as Record<string, unknown>
+  if (agarre !== undefined && !(typeof agarre === 'string' && AGARRES.includes(agarre))) {
+    throw new Error(`detalle.agarre desconocido en ${s.id}: ${String(agarre)}`)
+  }
+  if (conCarga !== undefined && typeof conCarga !== 'boolean') {
+    throw new Error(`detalle.conCarga debe ser booleano en ${s.id}: ${String(conCarga)}`)
+  }
+  if (regletaMm !== undefined && !(typeof regletaMm === 'number' && Number.isFinite(regletaMm) && regletaMm > 0)) {
+    throw new Error(`detalle.regletaMm debe ser un número finito mayor que 0 en ${s.id}: ${String(regletaMm)}`)
   }
 }

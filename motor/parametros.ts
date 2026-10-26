@@ -9,7 +9,7 @@ export const VALORES = {
   'P-15': {
     tiposIntensosDedos: [
       'multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite',
-      'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto',
+      'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto', 'campus',
     ],
   },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },

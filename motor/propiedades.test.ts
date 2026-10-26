@@ -4,14 +4,14 @@ import { validarContexto, validarSesion } from './index'
 
 const historial = [
   ses('a', '2026-10-26', 18),
-  ses('b', '2026-10-27', 18, { tipo: 'multipresa-resistencia' }),
+  ses('b', '2026-10-27', 18, { tipo: 'multipresa-resistencia', detalle: { regletaMm: 20 } }),
   ses('c', '2026-10-28', 8, { tipo: 'resistencia-4x4' }),
-  ses('d', '2026-10-30', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave' }),
+  ses('d', '2026-10-30', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } }),
 ]
 const propuestas = [
   ses('p1', '2026-10-29', 18, { tipo: 'campus' }),
   ses('p2', '2026-10-27', 20, { tipo: 'multipresa-maxima', detalle: { regletaMm: 15, agarre: 'arqueado', conCarga: true } }),
-  ses('p3', '2026-10-31', 18, { tipo: 'multipresa-resistencia' }),
+  ses('p3', '2026-10-31', 18, { tipo: 'multipresa-resistencia', detalle: { regletaMm: 20 } }),
 ]
 
 describe('propiedades de validarSesion', () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { perfilExperto, perfilNovel, ses } from './_fabrica'
 import { esIntensaDedos, validarSesion } from './seguridad'
+import type { Perfil, Sesion } from './tipos'
 
 const reglas = (v: { regla: string }[]) => v.map((x) => x.regla)
 
@@ -13,7 +14,34 @@ describe('esIntensaDedos', () => {
   })
 })
 
+describe('esIntensaDedos: tipos que cuentan siempre', () => {
+  it('multipresa y campus cuentan aunque la etiqueta sea suave', () => {
+    for (const tipo of ['multipresa-resistencia', 'multipresa-maxima', 'campus'] as const) {
+      expect(esIntensaDedos(ses('a', '2026-10-26', 18, { tipo, intensidad: 'suave' })), tipo).toBe(true)
+    }
+  })
+  it('board suave sigue sin contar', () => {
+    expect(esIntensaDedos(ses('a', '2026-10-26', 18, { tipo: 'board', intensidad: 'suave' }))).toBe(false)
+  })
+})
+
 describe('seguridad.dedos-48h', () => {
+  it('una multipresa de resistencia etiquetada suave tras un board alto viola', () => {
+    const board = ses('board', '2026-10-26', 18, { tipo: 'board' })
+    const mp = ses('mp', '2026-10-27', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
+    expect(reglas(validarSesion(mp, [board], perfilExperto))).toEqual(['seguridad.dedos-48h'])
+  })
+  it('multipresa máxima suave 24 h después de un board viola con 3 años', () => {
+    const board = ses('board', '2026-10-26', 18, { tipo: 'board' }) // termina 19:30
+    const mp = ses('mp', '2026-10-27', 19.5, { tipo: 'multipresa-maxima', intensidad: 'suave' })
+    const perfil3 = { ...perfilExperto, anosEscalando: 3 }
+    expect(reglas(validarSesion(mp, [board], perfil3))).toEqual(['seguridad.dedos-48h'])
+  })
+  it('el campus suave tras un board alto viola', () => {
+    const board = ses('board', '2026-10-26', 18, { tipo: 'board' })
+    const c = ses('c', '2026-10-27', 18, { tipo: 'campus', intensidad: 'suave' })
+    expect(reglas(validarSesion(c, [board], perfilExperto))).toEqual(['seguridad.dedos-48h'])
+  })
   // Lunes 18:00 + 90 min termina a las 19:30.
   const lunes = ses('lunes', '2026-10-26', 18)
 
@@ -97,6 +125,20 @@ describe('seguridad.carga-alta-seguida', () => {
     // La noche del 26 no cuenta como 27: con propuesta el 28 no hay racha.
     expect(validarSesion(alta('c', '2026-10-28'), [noche], perfilExperto)).toEqual([])
   })
+  it('tres días seguidos de multipresa etiquetada suave cuentan como carga alta', () => {
+    const mp = (id: string, fecha: string) =>
+      ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
+    const v = validarSesion(mp('c', '2026-10-28'), [mp('a', '2026-10-26'), mp('b', '2026-10-27')], perfilExperto)
+    expect(reglas(v)).toContain('seguridad.carga-alta-seguida')
+    expect(v.find((x) => x.regla === 'seguridad.carga-alta-seguida')!.sesionIds).toEqual(['a', 'b', 'c'])
+  })
+  it('el campus suave en el historial cuenta como carga alta; el board suave no', () => {
+    const alta = (id: string, fecha: string) => ses(id, fecha, 8, { tipo: 'resistencia-4x4' })
+    const campus = ses('k', '2026-10-27', 8, { tipo: 'campus', intensidad: 'suave' })
+    expect(reglas(validarSesion(alta('c', '2026-10-28'), [alta('a', '2026-10-26'), campus], perfilExperto))).toEqual(['seguridad.carga-alta-seguida'])
+    const board = ses('k', '2026-10-27', 8, { tipo: 'board', intensidad: 'suave' })
+    expect(validarSesion(alta('c', '2026-10-28'), [alta('a', '2026-10-26'), board], perfilExperto)).toEqual([])
+  })
   it('una propuesta suave nunca viola esta regla', () => {
     const suave = ses('c', '2026-10-28', 8, { intensidad: 'suave' })
     expect(validarSesion(suave, [alta('a', '2026-10-26'), alta('b', '2026-10-27')], perfilExperto)).toEqual([])
@@ -160,7 +202,7 @@ describe('seguridad.campus y seguridad.maxima-novel', () => {
     expect(validarSesion(c, [], { ...perfilNovel, anosEscalando: 2 })).toEqual([])
   })
   it('multipresa máxima viola en novel y pasa en experto', () => {
-    const m = ses('m', '2026-10-27', 18, { tipo: 'multipresa-maxima' })
+    const m = ses('m', '2026-10-27', 18, { tipo: 'multipresa-maxima', detalle: { regletaMm: 20 } })
     const v = validarSesion(m, [], perfilNovel)
     expect(reglas(v)).toEqual(['seguridad.maxima-novel'])
     expect(v[0]!.explicacion.parametros).toEqual(['P-01', 'P-12'])
@@ -169,38 +211,42 @@ describe('seguridad.campus y seguridad.maxima-novel', () => {
 })
 
 describe('seguridad.multipresa-7dias', () => {
+  // Las multipresas ahora cuentan siempre como intensas de dedos; aquí solo interesa la regla de 7 días,
+  // así que se filtra por ella (dedos-48h y regleta tienen sus propias pruebas).
   const mp = (id: string, fecha: string) =>
-    ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave' })
+    ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
+  const validar = (p: Sesion, h: Sesion[], perfil: Perfil) =>
+    validarSesion(p, h, perfil).filter((x) => x.regla === 'seguridad.multipresa-7dias')
 
   it('dos multipresas en 7 días pasan y tres violan', () => {
-    expect(validarSesion(mp('c', '2026-10-31'), [mp('a', '2026-10-26')], perfilNovel)).toEqual([])
-    const v = validarSesion(mp('c', '2026-10-31'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)
+    expect(validar(mp('c', '2026-10-31'), [mp('a', '2026-10-26')], perfilNovel)).toEqual([])
+    const v = validar(mp('c', '2026-10-31'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)
     expect(reglas(v)).toEqual(['seguridad.multipresa-7dias'])
     expect(v[0]!.sesionIds).toEqual(['a', 'b', 'c'])
     expect(v[0]!.explicacion.parametros).toEqual(['P-12'])
   })
   it('la tercera a 7 días de la primera no cae en la misma ventana', () => {
-    expect(validarSesion(mp('c', '2026-11-02'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)).toEqual([])
+    expect(validar(mp('c', '2026-11-02'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)).toEqual([])
   })
   it('cuenta también sesiones futuras ya confirmadas', () => {
-    const v = validarSesion(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-10-31')], perfilNovel)
+    const v = validar(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-10-31')], perfilNovel)
     expect(reglas(v)).toEqual(['seguridad.multipresa-7dias'])
   })
   it('límite de la ventana: 7 días naturales inclusive violan y 8 pasan', () => {
     // 26 y 1-nov son 7 días naturales inclusive (26..1).
-    const dentro = validarSesion(mp('c', '2026-11-01'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)
+    const dentro = validar(mp('c', '2026-11-01'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)
     expect(reglas(dentro)).toEqual(['seguridad.multipresa-7dias'])
-    expect(validarSesion(mp('c', '2026-11-02'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)).toEqual([])
+    expect(validar(mp('c', '2026-11-02'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)).toEqual([])
   })
   it('límite de la ventana con una sesión futura confirmada y la propuesta en medio', () => {
-    const dentro = validarSesion(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-11-01')], perfilNovel)
+    const dentro = validar(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-11-01')], perfilNovel)
     expect(reglas(dentro)).toEqual(['seguridad.multipresa-7dias'])
-    expect(validarSesion(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-11-02')], perfilNovel)).toEqual([])
+    expect(validar(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-11-02')], perfilNovel)).toEqual([])
   })
   it('no se aplica a perfiles con experiencia ni a otros tipos', () => {
-    expect(validarSesion(mp('c', '2026-10-31'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilExperto)).toEqual([])
+    expect(validar(mp('c', '2026-10-31'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilExperto)).toEqual([])
     const otro = (id: string, fecha: string) => ses(id, fecha, 8, { tipo: 'tecnica', intensidad: 'suave' })
-    expect(validarSesion(otro('c', '2026-10-31'), [otro('a', '2026-10-26'), otro('b', '2026-10-28')], perfilNovel)).toEqual([])
+    expect(validar(otro('c', '2026-10-31'), [otro('a', '2026-10-26'), otro('b', '2026-10-28')], perfilNovel)).toEqual([])
   })
 })
 
@@ -213,15 +259,25 @@ describe('seguridad.regleta', () => {
     expect(reglas(v)).toEqual(['seguridad.regleta'])
     expect(validarSesion(conRegleta(20), [], perfilNovel)).toEqual([])
   })
-  it('NaN, 0 y negativos violan en novel (NaN falla cerrado)', () => {
-    for (const mm of [Number.NaN, 0, -5]) {
-      expect(reglas(validarSesion(conRegleta(mm), [], perfilNovel))).toEqual(['seguridad.regleta'])
+  it('NaN, 0, negativos e Infinity ya no llegan a la regla: la entrada inválida lanza', () => {
+    for (const mm of [Number.NaN, 0, -5, Infinity]) {
+      expect(() => validarSesion(conRegleta(mm), [], perfilNovel)).toThrow(/regletaMm/)
     }
   })
-  it('sin regletaMm (detalle vacío) pasa y Infinity pasa', () => {
+  it('un novel en multipresa sin regletaMm (detalle vacío o ausente) viola: hay que indicar el canto', () => {
     const vacio = ses('r', '2026-10-27', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: {} })
-    expect(validarSesion(vacio, [], perfilNovel)).toEqual([])
-    expect(validarSesion(conRegleta(Infinity), [], perfilNovel)).toEqual([])
+    const sinDetalle = ses('r', '2026-10-27', 18, { tipo: 'multipresa-maxima', intensidad: 'suave' })
+    for (const s of [vacio, sinDetalle]) {
+      const v = validarSesion(s, [], perfilNovel).filter((x) => x.regla === 'seguridad.regleta')
+      expect(v.length).toBe(1)
+      expect(v[0]!.mensaje).toMatch(/canto|profundidad/)
+      expect(v[0]!.mensaje).toMatch(/indicar|especificar/)
+    }
+  })
+  it('sin regletaMm no viola con experiencia ni fuera de la multipresa', () => {
+    const vacio = ses('r', '2026-10-27', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: {} })
+    expect(validarSesion(vacio, [], perfilExperto)).toEqual([])
+    expect(validarSesion(ses('r', '2026-10-27', 18, { tipo: 'tecnica', intensidad: 'suave' }), [], perfilNovel)).toEqual([])
   })
   it('no se aplica a perfiles con experiencia ni fuera de la multipresa', () => {
     expect(validarSesion(conRegleta(10), [], perfilExperto)).toEqual([])
@@ -230,28 +286,38 @@ describe('seguridad.regleta', () => {
 })
 
 describe('seguridad.arqueado', () => {
-  const arq = (conCarga: boolean) =>
-    ses('q', '2026-10-27', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { agarre: 'arqueado', conCarga } })
+  const arq = (conCarga: boolean | undefined) =>
+    ses('q', '2026-10-27', 18, {
+      tipo: 'multipresa-resistencia',
+      intensidad: 'suave',
+      detalle: { agarre: 'arqueado', regletaMm: 20, ...(conCarga === undefined ? {} : { conCarga }) },
+    })
 
-  it('arqueado con carga viola siempre, también con experiencia', () => {
-    for (const perfil of [perfilNovel, perfilExperto]) {
-      const v = validarSesion(arq(true), [], perfil)
-      expect(reglas(v)).toEqual(['seguridad.arqueado'])
+  it('con experiencia, arqueado con carga viola y solo cita P-10', () => {
+    const v = validarSesion(arq(true), [], perfilExperto)
+    expect(reglas(v)).toEqual(['seguridad.arqueado'])
+    expect(v[0]!.explicacion.parametros).toEqual(['P-10'])
+  })
+  it('con experiencia, arqueado sin carga o con conCarga ausente pasa', () => {
+    expect(validarSesion(arq(false), [], perfilExperto)).toEqual([])
+    expect(validarSesion(arq(undefined), [], perfilExperto)).toEqual([])
+  })
+  it('un novel viola con cualquier arqueado, con o sin carga o sin el campo, y cita P-10 y P-12', () => {
+    for (const conCarga of [true, false, undefined]) {
+      const v = validarSesion(arq(conCarga), [], perfilNovel)
+      expect(reglas(v), String(conCarga)).toEqual(['seguridad.arqueado'])
       expect(v[0]!.explicacion.parametros).toEqual(['P-10', 'P-12'])
     }
-  })
-  it('arqueado con conCarga ausente pasa', () => {
-    const sinCampo = ses('q', '2026-10-27', 18, { intensidad: 'suave', detalle: { agarre: 'arqueado' } })
-    expect(validarSesion(sinCampo, [], perfilExperto)).toEqual([])
   })
   it('arqueado con carga viola en cualquier tipo (también tecnica)', () => {
     const t = ses('q', '2026-10-27', 18, { tipo: 'tecnica', intensidad: 'suave', detalle: { agarre: 'arqueado', conCarga: true } })
     expect(reglas(validarSesion(t, [], perfilExperto))).toEqual(['seguridad.arqueado'])
+    expect(reglas(validarSesion(t, [], perfilNovel))).toEqual(['seguridad.arqueado'])
   })
-  it('arqueado sin carga o semiarqueado con carga pasan', () => {
-    expect(validarSesion(arq(false), [], perfilExperto)).toEqual([])
+  it('semiarqueado con carga pasa', () => {
     const semi = ses('q', '2026-10-27', 18, { intensidad: 'suave', detalle: { agarre: 'semiarqueado', conCarga: true } })
     expect(validarSesion(semi, [], perfilExperto)).toEqual([])
+    expect(validarSesion(semi, [], perfilNovel)).toEqual([])
   })
 })
 
@@ -268,16 +334,20 @@ describe('validarSesion: varias reglas a la vez', () => {
   })
   it('arqueado, dedos-48h, maxima-novel, multipresa-7dias y regleta a la vez, en orden', () => {
     const mp = (id: string, fecha: string) =>
-      ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave' })
+      ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { regletaMm: 20 } })
     const propuesta = ses('p', '2026-10-27', 18, {
       tipo: 'multipresa-maxima',
       detalle: { regletaMm: 15, agarre: 'arqueado', conCarga: true },
     })
     const historial = [ses('lunes', '2026-10-26', 18), mp('m1', '2026-10-25'), mp('m2', '2026-10-28')]
     const v = validarSesion(propuesta, historial, perfilNovel)
+    // lunes y m2 (multipresa, intensa por tipo) están a menos de 48 h de la propuesta: dedos-48h sale dos veces.
+    // Los días 25-28 son además cuatro seguidos de carga alta (la multipresa suave cuenta).
     const nombres = reglas(v)
     expect(nombres).toEqual([
       'seguridad.arqueado',
+      'seguridad.carga-alta-seguida',
+      'seguridad.dedos-48h',
       'seguridad.dedos-48h',
       'seguridad.maxima-novel',
       'seguridad.multipresa-7dias',

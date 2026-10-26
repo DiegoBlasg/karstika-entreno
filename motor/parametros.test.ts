@@ -31,16 +31,25 @@ describe('VALORES', () => {
   })
   it('P-15 coincide con el documento', () => {
     const texto = columnas('P-15')[2]!.toLowerCase()
-    for (const palabra of ['multipresa', 'board', 'bloque', 'vías', 'pegues']) expect(texto).toContain(palabra)
+    const palabrasDoc = ['multipresa', 'board', 'bloque', 'vías', 'pegues', 'campus']
+    for (const palabra of palabrasDoc) expect(texto).toContain(palabra)
     // Cada tipo del código debe tener su palabra en el texto del documento.
     const palabraDe: Record<string, string> = {
       'multipresa-resistencia': 'multipresa', 'multipresa-maxima': 'multipresa', board: 'board',
       'bloque-limite': 'bloque', 'via-cuerda-limite': 'con cuerda', 'via-autoasegurada': 'autoasegurada',
-      'pegues-proyecto': 'pegues',
+      'pegues-proyecto': 'pegues', campus: 'campus',
     }
     for (const tipo of VALORES['P-15'].tiposIntensosDedos) expect(texto, tipo).toContain(palabraDe[tipo]!)
+    // Y al revés: cada palabra del documento está cubierta por al menos un tipo del código.
+    const prefijoDe: Record<string, string> = {
+      multipresa: 'multipresa', board: 'board', bloque: 'bloque', 'vías': 'via', pegues: 'pegues', campus: 'campus',
+    }
+    for (const palabra of palabrasDoc) {
+      const cubierta = VALORES['P-15'].tiposIntensosDedos.some((t) => t.startsWith(prefijoDe[palabra]!))
+      expect(cubierta, palabra).toBe(true)
+    }
     expect([...VALORES['P-15'].tiposIntensosDedos].sort()).toEqual([
-      'board', 'bloque-limite', 'multipresa-maxima', 'multipresa-resistencia',
+      'board', 'bloque-limite', 'campus', 'multipresa-maxima', 'multipresa-resistencia',
       'pegues-proyecto', 'via-autoasegurada', 'via-cuerda-limite',
     ].sort())
   })

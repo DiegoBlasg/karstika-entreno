@@ -72,6 +72,32 @@ describe('validarEntrada', () => {
     expect(() => validarEntrada([ses('a', '2026-10-26', 18, { duracionMin: Number.NaN })])).toThrow(/duracionMin/)
     expect(() => validarEntrada([ses('a', '2026-10-26', 18, { duracionMin: -5 })])).toThrow(/duracionMin/)
   })
+  it('lanza con un id vacío o no string', () => {
+    expect(() => validarEntrada([ses('', '2026-10-26', 18)])).toThrow(/id/)
+    expect(() => validarEntrada([ses(undefined as never, '2026-10-26', 18)])).toThrow(/id/)
+    expect(() => validarEntrada([ses(5 as never, '2026-10-26', 18)])).toThrow(/id/)
+  })
+  it('valida detalle.agarre, nombrando la sesión y el campo', () => {
+    expect(() => validarEntrada([ses('s1', '2026-10-26', 18, { detalle: { agarre: 'raro' as never } })])).toThrow(/s1.*agarre|agarre.*s1/)
+    for (const agarre of ['abierto', 'semiarqueado', 'arqueado'] as const) {
+      expect(() => validarEntrada([ses('s1', '2026-10-26', 18, { detalle: { agarre } })])).not.toThrow()
+    }
+  })
+  it('valida detalle.conCarga como booleano', () => {
+    expect(() => validarEntrada([ses('s2', '2026-10-26', 18, { detalle: { conCarga: 'si' as never } })])).toThrow(/s2.*conCarga|conCarga.*s2/)
+    expect(() => validarEntrada([ses('s2', '2026-10-26', 18, { detalle: { conCarga: 1 as never } })])).toThrow(/conCarga/)
+    expect(() => validarEntrada([ses('s2', '2026-10-26', 18, { detalle: { conCarga: false } })])).not.toThrow()
+  })
+  it('valida detalle.regletaMm como número finito positivo', () => {
+    for (const regletaMm of [0, -3, Number.NaN, Infinity, '20' as never]) {
+      expect(() => validarEntrada([ses('s3', '2026-10-26', 18, { detalle: { regletaMm } })])).toThrow(/s3.*regletaMm|regletaMm.*s3/)
+    }
+    expect(() => validarEntrada([ses('s3', '2026-10-26', 18, { detalle: { regletaMm: 20 } })])).not.toThrow()
+    expect(() => validarEntrada([ses('s3', '2026-10-26', 18, { detalle: {} })])).not.toThrow()
+  })
+  it('lanza si detalle no es un objeto', () => {
+    expect(() => validarEntrada([ses('s4', '2026-10-26', 18, { detalle: 3 as never })])).toThrow(/s4.*detalle|detalle.*s4/)
+  })
   it('acepta una lista vacía', () => {
     expect(() => validarEntrada([])).not.toThrow()
   })

@@ -6,7 +6,14 @@ import type { Perfil, Sesion, TipoSesion, Violacion } from './tipos'
 const EPS = 1e-9
 const TIPOS_DEDOS: readonly TipoSesion[] = VALORES['P-15'].tiposIntensosDedos
 
-export const esIntensaDedos = (s: Sesion): boolean => s.intensidad === 'alta' && TIPOS_DEDOS.includes(s.tipo)
+// Estos tipos cuentan siempre como sesión intensa de dedos, sea cual sea su etiqueta de intensidad (P-15 los cuenta por tipo).
+const SIEMPRE_INTENSOS: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima', 'campus']
+
+export const esIntensaDedos = (s: Sesion): boolean =>
+  SIEMPRE_INTENSOS.includes(s.tipo) || (s.intensidad === 'alta' && TIPOS_DEDOS.includes(s.tipo))
+
+// Carga alta: etiqueta alta o intensa de dedos por tipo.
+export const esCargaAlta = (s: Sesion): boolean => s.intensidad === 'alta' || esIntensaDedos(s)
 
 type Regla = (propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil) => Violacion[]
 
@@ -52,9 +59,9 @@ function reglaDedos48h(propuesta: Sesion, historial: readonly Sesion[]): Violaci
 // Decisión: una sesión cuenta solo en su día de INICIO (s.fecha), aunque cruce la medianoche
 // (p. ej. 23:30 durante 5 h cuenta para ese día y no para el siguiente).
 function reglaCargaAltaSeguida(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
-  if (propuesta.intensidad !== 'alta') return []
+  if (!esCargaAlta(propuesta)) return []
   const max = VALORES['P-16'].maxDiasSeguidosCargaAlta
-  const altas = [...historial, propuesta].filter((s) => s.intensidad === 'alta')
+  const altas = [...historial, propuesta].filter(esCargaAlta)
   const dias = new Set(altas.map((s) => diaNumero(s.fecha)))
   const d = diaNumero(propuesta.fecha)
   let inicio = d
@@ -151,11 +158,26 @@ function reglaMultipresa7Dias(propuesta: Sesion, historial: readonly Sesion[], p
   return []
 }
 
-// Nota: un regletaMm NaN falla cerrado por diseño: `NaN >= minimo` es false, así que se marca como violación.
+// Falla cerrado: sin regletaMm en una multipresa de un perfil novel también es violación.
 function reglaRegleta(propuesta: Sesion, _historial: readonly Sesion[], perfil: Perfil): Violacion[] {
   const mm = propuesta.detalle?.regletaMm
   const minimo = VALORES['P-12'].regletaMinimaMm
-  if (!esMultipresa(propuesta) || !esNovel(perfil) || mm === undefined || mm >= minimo) return []
+  if (!esMultipresa(propuesta) || !esNovel(perfil)) return []
+  if (mm === undefined) {
+    return [
+      {
+        regla: 'seguridad.regleta',
+        sesionIds: [propuesta.id],
+        mensaje: `Hay que especificar la profundidad del canto (regletaMm) en la multipresa; el mínimo es ${minimo} mm.`,
+        explicacion: explicar(
+          'seguridad.regleta',
+          ['P-12'],
+          `Con poca experiencia no se usan regletas de menos de ${minimo} mm, así que hay que indicar el canto para poder comprobarlo.`,
+        ),
+      },
+    ]
+  }
+  if (mm >= minimo) return []
   return [
     {
       regla: 'seguridad.regleta',
@@ -170,17 +192,22 @@ function reglaRegleta(propuesta: Sesion, _historial: readonly Sesion[], perfil: 
   ]
 }
 
-function reglaArqueado(propuesta: Sesion): Violacion[] {
-  if (propuesta.detalle?.agarre !== 'arqueado' || propuesta.detalle.conCarga !== true) return []
+function reglaArqueado(propuesta: Sesion, _historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  const novel = esNovel(perfil)
+  if (propuesta.detalle?.agarre !== 'arqueado' || (!novel && propuesta.detalle.conCarga !== true)) return []
   return [
     {
       regla: 'seguridad.arqueado',
       sesionIds: [propuesta.id],
-      mensaje: 'No se cuelga con carga en agarre arqueado completo.',
+      mensaje: novel
+        ? 'Con poca experiencia no se usa el agarre arqueado completo, ni con carga ni sin ella.'
+        : 'No se cuelga con carga en agarre arqueado completo.',
       explicacion: explicar(
         'seguridad.arqueado',
-        ['P-10', 'P-12'],
-        'El agarre arqueado completo con carga concentra tensión en las poleas; se usa semiarqueado estandarizado.',
+        novel ? ['P-10', 'P-12'] : ['P-10'],
+        novel
+          ? 'Con menos de 2 años de experiencia no se usa el arqueado completo; se usa semiarqueado estandarizado.'
+          : 'El agarre arqueado completo con carga concentra tensión en las poleas; se usa semiarqueado estandarizado.',
       ),
     },
   ]
