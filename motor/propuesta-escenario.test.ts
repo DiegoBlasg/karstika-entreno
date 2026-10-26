@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { perfilNovel, ses } from './_fabrica'
+import { BASE_OCTUBRE, perfilNovel, ses } from './_fabrica'
 import { FASE_BASE, FASE_FUERZA, proponerSesion } from './index'
 import type { Peticion } from './index'
 
@@ -29,9 +29,9 @@ describe('escenario real: primeras semanas', () => {
     const r = proponerSesion(base({ historial: [primera] }))
     expect([r.principal, ...r.alternativas].map((x) => x!.sesion.tipo)).not.toContain('evaluacion-dedos')
   })
-  it('a los 28 días de base el test de dedos pasa a ser la principal', () => {
+  it('a los 28 días de base, con al menos 6 sesiones, el test de dedos pasa a ser la principal', () => {
     const primera = ses('p', '2026-09-29', 19, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 })
-    const r = proponerSesion(base({ historial: [primera] }))
+    const r = proponerSesion(base({ historial: [primera, ...BASE_OCTUBRE] }))
     expect(r.principal!.sesion.tipo).toBe('evaluacion-dedos')
     expect(r.principal!.bloques[2]!.ejercicios[0]).toMatchObject({ series: 3, trabajoS: 10, descansoSeriesS: 180 })
   })

@@ -57,7 +57,7 @@ describe('propiedades de proponerSesion (todas las combinaciones)', () => {
       expect(new Set(t).size).toBe(t.length)
       expect(r.alternativas.length).toBeLessThanOrEqual(2)
       if (!r.principal) {
-        expect(r.alternativas).toEqual([])
+        if (r.descanso?.regla !== 'generador.descanso-recomendado') expect(r.alternativas).toEqual([])
         expect(r.descanso).toBeDefined()
       }
     }

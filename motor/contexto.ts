@@ -11,11 +11,12 @@ const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
   'bloque-limite': ['rocodromo'],
   'bloque-suave': ['rocodromo'],
   board: ['rocodromo'],   // el usuario solo tiene multipresa en casa
-  tecnica: ['rocodromo'],
+  tecnica: ['rocodromo', 'roca'],   // en roca: vías por debajo del nivel (segundo día de un viaje)
   arc: ['rocodromo'],
   'resistencia-4x4': ['rocodromo'],
   'multipresa-resistencia': CASA_O_ROCODROMO,
   'multipresa-maxima': CASA_O_ROCODROMO,
+  'multipresa-resistencia-fuerza': CASA_O_ROCODROMO,
   'evaluacion-dedos': CASA_O_ROCODROMO,
   dominadas: CASA_O_ROCODROMO,
   hombro: CASA_O_ROCODROMO,
@@ -29,10 +30,14 @@ function comprobarContexto(ctx: Contexto): void {
   }
 }
 
+// En roca toda la escalada es con cuerda: cualquier sesión salvo el descanso necesita compañero.
+const necesitaCompania = (t: TipoSesion, lugar: Lugar): boolean =>
+  NECESITA_COMPANIA.has(t) || (lugar === 'roca' && t !== 'descanso')
+
 export function tiposPosibles(ctx: Contexto): TipoSesion[] {
   comprobarContexto(ctx)
   return TIPOS_SESION.filter(
-    (t) => LUGARES[t].includes(ctx.lugar) && (!NECESITA_COMPANIA.has(t) || ctx.compania === 'con-gente'),
+    (t) => LUGARES[t].includes(ctx.lugar) && (!necesitaCompania(t, ctx.lugar) || ctx.compania === 'con-gente'),
   ).sort()
 }
 
@@ -48,7 +53,7 @@ export function validarContexto(sesion: Sesion, ctx: Contexto): Violacion[] {
       explicacion: explicarContexto('contexto.lugar', motivo),
     })
   }
-  if (NECESITA_COMPANIA.has(sesion.tipo) && ctx.compania === 'solo') {
+  if (necesitaCompania(sesion.tipo, ctx.lugar) && ctx.compania === 'solo') {
     const motivo = `Sin compañero no se puede hacer ${sesion.tipo}: hace falta alguien que asegure.`
     out.push({
       regla: 'contexto.sin-cuerda',

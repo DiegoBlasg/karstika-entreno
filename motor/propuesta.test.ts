@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { perfilExperto, peticion, ses } from './_fabrica'
+import { BASE_OCTUBRE, perfilExperto, peticion, ses } from './_fabrica'
 import { validarContexto } from './contexto'
 import { FASE_BASE, FASE_FUERZA } from './fases'
 import { proponerSesion } from './propuesta'
 import type { EvaluacionDedos, Propuesta } from './propuesta-tipos'
-import { esIntensaDedos, validarSesion } from './seguridad'
+import { esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 
 const tipos = (r: Propuesta) => [r.principal, ...r.alternativas].map((x) => x?.sesion.tipo)
 const evaluacionReciente: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 40 }
@@ -71,7 +71,7 @@ describe('proponerSesion: semana real (martes con gente, jueves solo)', () => {
 })
 
 describe('proponerSesion: fase de fuerza', () => {
-  const fuerza = (extra = {}) => peticion({ fase: FASE_FUERZA, historial: [antigua], ...extra })
+  const fuerza = (extra = {}) => peticion({ fase: FASE_FUERZA, historial: [antigua, ...BASE_OCTUBRE], ...extra })
 
   it('sin evaluación vigente propone el test de dedos, luego vía al límite y multipresa', () => {
     expect(tipos(proponerSesion(fuerza()))).toEqual(['evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia'])
@@ -147,7 +147,7 @@ describe('proponerSesion: tiempo y descanso', () => {
     expect(r.alternativas).toEqual([])
     expect(r.descanso!.origen).toBe('contexto')
   })
-  it('con todos los cupos cubiertos y mucha actividad reciente recomienda descansar, pero sigue ofreciendo sesión', () => {
+  it('con todos los cupos cubiertos y mucha actividad reciente la principal es descansar y las alternativas son suaves', () => {
     const historial = [
       ses('via1', '2026-10-21', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] }),
       ses('blq1', '2026-10-23', 19, { tipo: 'bloque-limite', duracionMin: 50, incluye: ['hombro'] }),
@@ -157,9 +157,13 @@ describe('proponerSesion: tiempo y descanso', () => {
     ]
     const r = proponerSesion(peticion({ historial }))
     expect(r.descanso!.regla).toBe('generador.descanso-recomendado')
-    expect(r.principal).not.toBeNull()
-    // Con los cupos cubiertos el hombro no entra; solo puede añadirse volumen suave de relleno (técnica o ARC).
-    expect(r.principal!.sesion.incluye ?? []).not.toContain('hombro')
+    expect(r.principal).toBeNull()
+    expect(r.alternativas.length).toBeGreaterThan(0)
+    for (const plan of r.alternativas) {
+      expect(esCargaAlta(plan.sesion)).toBe(false)
+      // Con los cupos cubiertos el hombro no entra; solo puede añadirse volumen suave de relleno (técnica o ARC).
+      expect(plan.sesion.incluye ?? []).not.toContain('hombro')
+    }
   })
   it('los complementos de sesiones pasadas cuentan para los cupos', () => {
     const conHombro = ses('v', '2026-10-25', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] })

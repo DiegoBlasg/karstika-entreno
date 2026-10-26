@@ -40,7 +40,7 @@ describe('VALORES', () => {
     const palabraDe: Record<string, string> = {
       'multipresa-resistencia': 'multipresa', 'multipresa-maxima': 'multipresa', board: 'board',
       'bloque-limite': 'bloque', 'via-cuerda-limite': 'con cuerda', 'via-autoasegurada': 'autoasegurada',
-      'pegues-proyecto': 'pegues', campus: 'campus', 'evaluacion-dedos': 'test de fuerza',
+      'pegues-proyecto': 'pegues', campus: 'campus', 'evaluacion-dedos': 'test de fuerza', 'multipresa-resistencia-fuerza': 'multipresa',
     }
     for (const tipo of VALORES['P-15'].tiposIntensosDedos) expect(texto, tipo).toContain(palabraDe[tipo]!)
     // Y al revés: cada palabra del documento está cubierta por al menos un tipo del código.
@@ -54,7 +54,7 @@ describe('VALORES', () => {
     }
     expect([...VALORES['P-15'].tiposIntensosDedos].sort()).toEqual([
       'board', 'bloque-limite', 'campus', 'evaluacion-dedos', 'multipresa-maxima', 'multipresa-resistencia',
-      'pegues-proyecto', 'via-autoasegurada', 'via-cuerda-limite',
+      'multipresa-resistencia-fuerza', 'pegues-proyecto', 'via-autoasegurada', 'via-cuerda-limite',
     ].sort())
   })
   it('P-16 coincide con el documento', () => {
@@ -63,7 +63,17 @@ describe('VALORES', () => {
   })
   it('P-32 coincide con el documento', () => {
     expect(columnas('P-32')[2]).toMatch(/^4 semanas como mínimo/)
-    expect(VALORES['P-32'].diasBaseMinimos).toBe(28)
+    expect(columnas('P-32')[2]).toMatch(/al menos 6 sesiones registradas en esas 4 semanas/)
+    expect(VALORES['P-32']).toEqual({ diasBaseMinimos: 28, sesionesMinimasBase: 6 })
+  })
+  it('P-36, P-37 y P-61 coinciden con el documento', () => {
+    // P-36 da rangos (4-5 repeticiones, 3-5 series): se toman 5 y 4, dentro del rango.
+    expect(columnas('P-36')[2]).toMatch(/^10 s colgado : 5 s descanso, 4-5 repeticiones, 3-5 series, 1 min entre series/)
+    expect(VALORES['P-36']).toEqual({ trabajoS: 10, descansoS: 5, repeticiones: 5, series: 4, descansoSeriesS: 60 })
+    expect(columnas('P-37')[2]).toMatch(/4 bloques fáciles para el nivel, 4 vueltas, con 4 min de descanso entre vueltas/)
+    expect(VALORES['P-37']).toEqual({ bloques: 4, vueltas: 4, descansoVueltaMin: 4 })
+    expect(columnas('P-61')[2]).toMatch(/^Como máximo 4 intentos al límite por sesión/)
+    expect(VALORES['P-61'].maxIntentos).toBe(4)
   })
   it('los valores de las plantillas coinciden con el documento', () => {
     expect(columnas('P-02')[2]).toMatch(/^7 s colgado : 3 s descanso/)

@@ -49,20 +49,25 @@ Plantilla de 48 semanas:
 
 - `inicio` debe ser lunes; `objetivo` se normaliza al lunes de su semana. N = semanas entre ambos.
 - Si N ≠ 48, la diferencia se absorbe por este orden y dentro de su rango: rendimiento final, transición,
-  rendimiento de primavera. Si no cabe (N < 40 o N > 56), `planificarTemporada` lanza un error claro.
+  rendimiento de primavera. Si no cabe (N < 42 o N > 53, que son los límites de los rangos), `planificarTemporada`
+  lanza un error claro.
 - **Descargas** (P-47: 1 de cada 4 semanas para < 2 años): se cuentan las semanas de `fuerza`, `resistencia` y
   `rendimiento` de cada ciclo, de forma continua; cada 4.ª es de descarga. `base` y `transicion` no cuentan (ya
   son suaves). La última semana del ciclo 2 es siempre de **afinado** (`descarga: true`).
-- `reevaluar`: última semana de cada fase salvo `transicion`.
+- `reevaluar`: última semana de cada fase salvo `transicion` y salvo la semana de afinado final (hay que llegar
+  fresco al objetivo). Si una semana de reevaluación es de descarga, el test se permite igual (poco volumen).
 
 ### 1.2 Fases (`motor/fases.ts`)
 
 `Fase` gana `id: FaseId`, `descarga?: boolean` y `reevaluar?: boolean`. Fases nuevas:
 
 - `FASE_RESISTENCIA` (resistencia de fuerza): cupos `via-cuerda-limite` 1, `multipresa-resistencia-fuerza` 1,
-  `resistencia-4x4` 1, `tecnica` 1, `arc` 1, `hombro` 2. Intensas de dedos: 2 por semana.
+  `resistencia-4x4` 1, `tecnica` 1, `arc` 1, `hombro` 2. Intensas de dedos: 2 por semana. El 4x4 va antes que la
+  multipresa en la prioridad: solo cabe en el rocódromo, y la multipresa también en casa.
 - `FASE_RENDIMIENTO`: cupos `pegues-proyecto` 2 (solo en roca), `via-cuerda-limite` 2, `multipresa-resistencia` 1
-  (mantenimiento), `tecnica` 1, `hombro` 2. Prioridad: pegues, vía, multipresa, técnica, ARC, hombro.
+  (mantenimiento), `tecnica` 1, `hombro` 2. Prioridad: pegues, vía, multipresa, técnica, ARC, hombro. En semana de
+  sala son 3 intensas (2 vías + 1 multipresa); en semana de viaje los pegues compiten con la vía y la regla
+  `seguridad.dedos-7dias` impide pasar de 3.
 - `FASE_TRANSICION`: cupos `tecnica` 2, `arc` 1, `hombro` 2; todo lo intenso prohibido.
 - `descargar(fase)`: prohíbe todo lo que es al límite (`via-cuerda-limite`, `bloque-limite`, `board`,
   `pegues-proyecto`, `campus`, `evaluacion-dedos`), conserva la multipresa con `descarga: true` y marca la fase.
@@ -104,7 +109,7 @@ Plantilla de 48 semanas:
 
 ## Pruebas (parte 1)
 
-- Temporada: 48 semanas con la plantilla exacta; ajuste a 44 y 52 semanas; errores fuera de 40-56; descargas cada
+- Temporada: 48 semanas con la plantilla exacta; ajuste a 44 y 52 semanas; errores fuera de 42-53; descargas cada
   4.ª semana de las fases que cuentan; afinado final; `reevaluar` en las últimas semanas; `faseEnFecha` devuelve la
   fase descargada en semanas de descarga.
 - Fases: coherencia de cupos, prioridad y prohibidos; tope de 3 intensas para novel; transición sin nada intenso.
@@ -112,3 +117,26 @@ Plantilla de 48 semanas:
 - Generador: descanso como principal; hombro de 40 min; test con menos de 6 sesiones bloqueado; reevaluación.
 - Simulación de la temporada completa (48 semanas) con el patrón real del usuario: nunca una propuesta inválida,
   ≤ 3 intensas por 7 días, descargas sin nada al límite, y progresión de cargas coherente.
+
+## Validación (parte 1)
+
+Simulación de las 48 semanas con la semana real del usuario (martes con gente, jueves solo, sábado en casa) y dos
+viajes de fin de semana, incluida como prueba (`motor/temporada-simulacion.test.ts`): ninguna propuesta inválida;
+2-3 sesiones intensas de dedos por semana y nunca en días seguidos; descargas sin nada al límite; test de dedos al
+final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en el afinado); multipresa siempre
+≤ 80 % del test; en los viajes, pegues el primer día y vías cómodas el segundo.
+
+## Revisión final de la parte 1 (2026-10-28)
+
+- `FASE_RENDIMIENTO`: vía al límite 1, **bloque al límite 1** (para el día sin compañero), multipresa de
+  mantenimiento 1 (**un solo bloque**) y pegues 2 en roca. Semana de sala del usuario: 3 sesiones al límite.
+- Los cupos son tope para toda sesión de **carga alta** (no solo intensa de dedos): p. ej. el 4x4 una vez por semana.
+- `reevaluar`: no en la base (su test lo desbloquea P-32); sí a mitad de los rendimientos de más de 6 semanas, para
+  no pasar de 10 semanas sin test (P-08).
+- La **semana objetivo** devuelve `FASE_OBJETIVO`: solo pegues al proyecto en roca y cosas suaves (nada intenso en
+  sala), para llegar fresco a los días de roca; la semana siguiente, `FASE_RENDIMIENTO` sin test ni descarga.
+- Seguimientos aplazados: en semanas de descarga un hueco de rocódromo puede quedarse en solo hombro (sería mejor
+  técnica); el ciclo 2 de fuerza arranca al 80 % y 2 bloques tras la transición (se podría reiniciar la progresión).
+- La resistencia de fuerza en multipresa tiene progresión propia (vuelve a empezar al 70 %, P-11) y su
+  explicación aclara que la carga viene de P-06.
+- El mínimo de 6 sesiones de base no cuenta los `descanso`. Las fases constantes están congeladas.

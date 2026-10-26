@@ -4,7 +4,7 @@ import { explicar, explicarContexto, type Explicacion } from './explicacion'
 import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
-import { esIntensaDedos, validarSesion } from './seguridad'
+import { esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
 
@@ -170,15 +170,30 @@ function ventanaIntensa(p: Peticion): { fecha: string } | undefined {
 }
 
 // Un test de dedos hecho en los últimos 70 días cuenta como reciente aunque no se haya guardado su resultado
-// como evaluación: así no se vuelve a proponer cada semana.
+// como evaluación: así no se vuelve a proponer cada semana. En la semana de reevaluación de una fase (P-26)
+// vuelve a tocar si el último tiene al menos DIAS_MIN_REEVALUAR días.
+const DIAS_MIN_REEVALUAR = 21 // decisión de diseño: no repetir el test máximo con menos de 3 semanas
+
 function testReciente(p: Peticion): boolean {
-  if (evaluacionVigente(p.evaluacion, p.fecha)) return true
   const d = diaNumero(p.fecha)
   const maximo = VALORES['P-08'].semanasMaximasSinReevaluar * 7
-  return p.historial.some((s) => {
-    const dias = d - diaNumero(s.fecha)
-    return s.tipo === 'evaluacion-dedos' && dias >= 0 && dias <= maximo
-  })
+  const hace = [
+    ...(p.evaluacion && evaluacionVigente(p.evaluacion, p.fecha) ? [d - diaNumero(p.evaluacion.fecha)] : []),
+    ...p.historial.filter((s) => s.tipo === 'evaluacion-dedos').map((s) => d - diaNumero(s.fecha)),
+  ].filter((x) => x >= 0 && x <= maximo)
+  if (hace.length === 0) return false
+  return !(p.fase.reevaluar && Math.min(...hace) >= DIAS_MIN_REEVALUAR)
+}
+
+// Los mejores `n` de tipos distintos, en el orden ya calculado.
+function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
+  const out: Valido[] = []
+  for (const v of validos) {
+    if (out.length === n) break
+    if (out.some((e) => e.plan.sesion.tipo === v.plan.sesion.tipo)) continue
+    out.push(v)
+  }
+  return out
 }
 
 export function proponerSesion(p: Peticion): Propuesta {
@@ -203,8 +218,9 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
   for (const tipo of tipos) {
     let c = evaluar(tipo, p)
     if (!c) continue
-    // Los cupos son también un tope: una sesión intensa de dedos con el cupo semanal cubierto no se propone.
-    if (esIntensaDedos(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
+    // Los cupos son también un tope: una sesión de carga alta (intensa de dedos, 4x4…) con el cupo semanal
+    // cubierto no se propone.
+    if (esCargaAlta(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
     if (c.violaciones.some((v) => v.regla === REGLA_DESCANSO_DEDOS)) huboDescansoDedos = true
     // Solo cuenta como bloqueo por carga si las únicas reglas que lo impiden son de carga reciente
     // (p. ej. un test de dedos prematuro no se resuelve esperando un día).
@@ -238,19 +254,12 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
     })
     .sort((a, b) => b.puntuacion - a.puntuacion || comparar(a.plan.sesion.tipo, b.plan.sesion.tipo))
 
-  const elegidos: Valido[] = []
-  for (const v of validos) {
-    if (elegidos.length === 3) break
-    if (elegidos.some((e) => e.plan.sesion.tipo === v.plan.sesion.tipo)) continue
-    elegidos.push(v)
-  }
+  const elegidos = elegidosDe(validos, 3)
 
   const terminar = (v: Valido): SesionPlan => {
     const { plan, anadidos } = completar(v.plan, p, posibles)
     return { ...plan, explicaciones: [explicacionEleccion(v, p, anadidos), ...plan.explicaciones] }
   }
-  const principal = elegidos[0] ? terminar(elegidos[0]) : null
-  const alternativas = elegidos.slice(1).map(terminar)
 
   let descanso: Explicacion | undefined
   if (validos.length === 0) {
@@ -280,6 +289,18 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
   // Solo tiene sentido avisar si hoy no queda ninguna sesión intensa de dedos válida.
   const hayIntensaValida = validos.some((v) => esIntensaDedos(v.plan.sesion))
   const ventana = conVentana && huboBloqueoIntenso && !hayIntensaValida ? ventanaIntensa(p) : undefined
+
+  // Cuando se recomienda descansar, el descanso es la principal (decisión del usuario) y las alternativas son
+  // las dos mejores sesiones suaves, por si apetece moverse.
+  let principal: SesionPlan | null
+  let alternativas: SesionPlan[]
+  if (descanso?.regla === 'generador.descanso-recomendado') {
+    principal = null
+    alternativas = elegidosDe(validos.filter((v) => !esCargaAlta(v.plan.sesion)), 2).map(terminar)
+  } else {
+    principal = elegidos[0] ? terminar(elegidos[0]) : null
+    alternativas = elegidos.slice(1).map(terminar)
+  }
   return {
     principal,
     alternativas,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { FASE_BASE, FASE_FUERZA } from './fases'
+import { descargar, FASE_BASE, FASE_FUERZA, FASE_RENDIMIENTO, FASE_TRANSICION, FASES } from './fases'
+import { VALORES } from './parametros'
 import { TIPOS_CON_PLANTILLA } from './plantillas'
 
 describe.each([FASE_BASE, FASE_FUERZA])('fase $id: plantillas', (fase) => {
@@ -52,5 +53,42 @@ describe('escalar al límite desde la base (decisión del usuario)', () => {
   it('la fase de fuerza mantiene la vía al límite junto a la multipresa', () => {
     expect(FASE_FUERZA.prioridad).toContain('via-cuerda-limite')
     expect(FASE_FUERZA.cupos['multipresa-resistencia']).toBe(2)
+  })
+})
+
+describe('todas las fases de la temporada', () => {
+  const todas = Object.values(FASES)
+  const intensasDedos: readonly string[] = VALORES['P-15'].tiposIntensosDedos
+
+  it.each(todas)('$id: coherencia de prioridad, cupos y prohibidos, y plantilla para cada tipo', (fase) => {
+    for (const t of fase.prioridad) {
+      expect(fase.prohibidos, t).not.toContain(t)
+      expect(TIPOS_CON_PLANTILLA, t).toContain(t)
+    }
+    for (const t of Object.keys(fase.cupos)) expect(fase.prioridad, t).toContain(t)
+  })
+  it.each(todas)('$id: los cupos de sesiones intensas de dedos no pasan del tope de 3 por semana (P-12)', (fase) => {
+    // El test de dedos es puntual (una vez por fase), no semanal: no cuenta para el tope habitual. Los pegues
+    // solo existen en viajes a roca y compiten con la vía al límite: en semanas de sala no cuentan, y en semanas
+    // de viaje la regla seguridad.dedos-7dias impide pasar de 3.
+    const total = Object.entries(fase.cupos)
+      .filter(([t]) => intensasDedos.includes(t) && t !== 'evaluacion-dedos' && t !== 'pegues-proyecto')
+      .reduce((a, [, n]) => a + (n ?? 0), 0)
+    expect(total).toBeLessThanOrEqual(VALORES['P-12'].maxSesionesIntensasDedos7Dias)
+  })
+  it('la transición no tiene nada intenso', () => {
+    for (const t of FASE_TRANSICION.prioridad) expect(intensasDedos).not.toContain(t)
+  })
+  it('descargar quita todo lo que es al límite, marca la fase y no muta la original', () => {
+    const antes = structuredClone(FASE_RENDIMIENTO)
+    const d = descargar(FASE_RENDIMIENTO)
+    expect(FASE_RENDIMIENTO).toEqual(antes)
+    expect(d.descarga).toBe(true)
+    for (const t of ['via-cuerda-limite', 'pegues-proyecto', 'bloque-limite', 'board', 'campus', 'evaluacion-dedos'] as const) {
+      expect(d.prioridad).not.toContain(t)
+      expect(d.cupos[t]).toBeUndefined()
+      expect(d.prohibidos).toContain(t)
+    }
+    expect(d.prioridad).toContain('multipresa-resistencia')
   })
 })
