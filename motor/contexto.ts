@@ -16,6 +16,7 @@ const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
   'resistencia-4x4': ['rocodromo'],
   'multipresa-resistencia': CASA_O_ROCODROMO,
   'multipresa-maxima': CASA_O_ROCODROMO,
+  'evaluacion-dedos': CASA_O_ROCODROMO,
   dominadas: CASA_O_ROCODROMO,
   hombro: CASA_O_ROCODROMO,
   campus: CASA_O_ROCODROMO,

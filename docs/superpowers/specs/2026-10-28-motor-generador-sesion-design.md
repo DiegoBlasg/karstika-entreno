@@ -141,7 +141,7 @@ incluyen calentamiento de 10 min (P-49) y fijan los campos de `detalle` que exig
 | `board` | calentamiento 10 min; 5 bloques por debajo del máximo, 3 intentos cada uno, 3 min de descanso | 45 min | P-38 (diseño) |
 | `tecnica` | calentamiento 10 min; 3 bloques variando vías y tipos de presa; previsualización hasta 3 min; grabar en vídeo al menos una vía | 45 min | P-53, P-54, P-55 |
 | `bloque-suave` | calentamiento 10 min; 4 bloques cómodos para el nivel, variando presas (solo como sustituto de `board`; no está en las prioridades de las fases) | 45 min | P-54 |
-| `arc` | calentamiento 10 min; 2 series de 15 min de escalada continua sin bombeo marcado, 10 min de descanso | 45 min | P-35 (diseño) |
+| `arc` | calentamiento 10 min; 2 series de 15 min (10 min si hay poco tiempo) de escalada continua sin bombeo marcado, 10 min de descanso | 50 min (40 con series de 10) | P-35 (diseño) |
 | `hombro` | 15 min de ejercicios de hombro en cadena cerrada y excéntricos | 20 min | P-41 |
 
 - Duración: el generador elige la versión que cabe; si no cabe ni la mínima, el tipo no es candidato.

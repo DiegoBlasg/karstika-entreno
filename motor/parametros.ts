@@ -9,8 +9,9 @@ export const VALORES = {
   'P-15': {
     tiposIntensosDedos: [
       'multipresa-resistencia', 'multipresa-maxima', 'board', 'bloque-limite',
-      'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto', 'campus',
+      'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto', 'campus', 'evaluacion-dedos',
     ],
   },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },
+  'P-32': { diasBaseMinimos: 28 },
 } as const satisfies Partial<Record<ParametroId, object>>

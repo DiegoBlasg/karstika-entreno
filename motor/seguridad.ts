@@ -7,7 +7,7 @@ const EPS = 1e-9
 const TIPOS_DEDOS: readonly TipoSesion[] = VALORES['P-15'].tiposIntensosDedos
 
 // Estos tipos cuentan siempre como sesión intensa de dedos, sea cual sea su etiqueta de intensidad (P-15 los cuenta por tipo).
-const SIEMPRE_INTENSOS: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima', 'campus']
+const SIEMPRE_INTENSOS: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima', 'campus', 'evaluacion-dedos']
 
 export const esIntensaDedos = (s: Sesion): boolean =>
   SIEMPRE_INTENSOS.includes(s.tipo) || (s.intensidad === 'alta' && TIPOS_DEDOS.includes(s.tipo))
@@ -213,9 +213,28 @@ function reglaArqueado(propuesta: Sesion, _historial: readonly Sesion[], perfil:
   ]
 }
 
+function reglaEvaluacionPrematura(propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  if (propuesta.tipo !== 'evaluacion-dedos' || !esNovel(perfil)) return []
+  const minimo = VALORES['P-32'].diasBaseMinimos
+  const dias = historial.map((s) => diaNumero(s.fecha))
+  if (dias.length > 0 && diaNumero(propuesta.fecha) - Math.min(...dias) >= minimo) return []
+  return [
+    {
+      regla: 'seguridad.evaluacion-prematura',
+      sesionIds: [propuesta.id],
+      mensaje: `El test máximo de dedos exige al menos ${minimo} días de base desde tu primera sesión registrada.`,
+      explicacion: explicar(
+        'seguridad.evaluacion-prematura',
+        ['P-32', 'P-12'],
+        `Con poca experiencia el único esfuerzo máximo de dedos es el test, y solo tras ${minimo} días (4 semanas) de base técnica y adaptación.`,
+      ),
+    },
+  ]
+}
+
 const REGLAS: Regla[] = [
   reglaDedos48h, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
-  reglaMultipresa7Dias, reglaRegleta, reglaArqueado,
+  reglaMultipresa7Dias, reglaRegleta, reglaArqueado, reglaEvaluacionPrematura,
 ]
 
 const comparar = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)

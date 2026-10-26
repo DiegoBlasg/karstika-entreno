@@ -31,30 +31,35 @@ describe('VALORES', () => {
   })
   it('P-15 coincide con el documento', () => {
     const texto = columnas('P-15')[2]!.toLowerCase()
-    const palabrasDoc = ['multipresa', 'board', 'bloque', 'vías', 'pegues', 'campus']
+    const palabrasDoc = ['multipresa', 'board', 'bloque', 'vías', 'pegues', 'campus', 'test de fuerza']
     for (const palabra of palabrasDoc) expect(texto).toContain(palabra)
     // Cada tipo del código debe tener su palabra en el texto del documento.
     const palabraDe: Record<string, string> = {
       'multipresa-resistencia': 'multipresa', 'multipresa-maxima': 'multipresa', board: 'board',
       'bloque-limite': 'bloque', 'via-cuerda-limite': 'con cuerda', 'via-autoasegurada': 'autoasegurada',
-      'pegues-proyecto': 'pegues', campus: 'campus',
+      'pegues-proyecto': 'pegues', campus: 'campus', 'evaluacion-dedos': 'test de fuerza',
     }
     for (const tipo of VALORES['P-15'].tiposIntensosDedos) expect(texto, tipo).toContain(palabraDe[tipo]!)
     // Y al revés: cada palabra del documento está cubierta por al menos un tipo del código.
     const prefijoDe: Record<string, string> = {
       multipresa: 'multipresa', board: 'board', bloque: 'bloque', 'vías': 'via', pegues: 'pegues', campus: 'campus',
+      'test de fuerza': 'evaluacion',
     }
     for (const palabra of palabrasDoc) {
       const cubierta = VALORES['P-15'].tiposIntensosDedos.some((t) => t.startsWith(prefijoDe[palabra]!))
       expect(cubierta, palabra).toBe(true)
     }
     expect([...VALORES['P-15'].tiposIntensosDedos].sort()).toEqual([
-      'board', 'bloque-limite', 'campus', 'multipresa-maxima', 'multipresa-resistencia',
+      'board', 'bloque-limite', 'campus', 'evaluacion-dedos', 'multipresa-maxima', 'multipresa-resistencia',
       'pegues-proyecto', 'via-autoasegurada', 'via-cuerda-limite',
     ].sort())
   })
   it('P-16 coincide con el documento', () => {
     expect(columnas('P-16')[2]).toMatch(/^2 días/)
     expect(VALORES['P-16'].maxDiasSeguidosCargaAlta).toBe(2)
+  })
+  it('P-32 coincide con el documento', () => {
+    expect(columnas('P-32')[2]).toMatch(/^4 semanas como mínimo/)
+    expect(VALORES['P-32'].diasBaseMinimos).toBe(28)
   })
 })

@@ -363,3 +363,35 @@ describe('validarSesion: varias reglas a la vez', () => {
     expect(reglas(v)).toEqual(['seguridad.campus', 'seguridad.carga-alta-seguida'])
   })
 })
+
+describe('seguridad.evaluacion-prematura', () => {
+  const evaluacion = (fecha: string) => ses('e', fecha, 18, { tipo: 'evaluacion-dedos', duracionMin: 30 })
+  const primera = (fecha: string) => ses('p', fecha, 18, { tipo: 'tecnica', intensidad: 'suave' })
+
+  it('28 días desde la primera sesión pasa y 27 viola, en perfil novel', () => {
+    expect(validarSesion(evaluacion('2026-10-27'), [primera('2026-09-29')], perfilNovel)).toEqual([])
+    const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-30')], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.evaluacion-prematura'])
+    expect(v[0]!.explicacion.parametros).toEqual(['P-12', 'P-32'])
+    expect(v[0]!.sesionIds).toEqual(['e'])
+  })
+  it('sin historial viola en perfil novel', () => {
+    expect(reglas(validarSesion(evaluacion('2026-10-27'), [], perfilNovel))).toEqual(['seguridad.evaluacion-prematura'])
+  })
+  it('la primera sesión es la más antigua, no la última del historial', () => {
+    const historial = [primera('2026-10-20'), ses('q', '2026-09-01', 18, { tipo: 'tecnica', intensidad: 'suave' })]
+    expect(validarSesion(evaluacion('2026-10-27'), historial, perfilNovel)).toEqual([])
+  })
+  it('no se aplica a perfiles con experiencia', () => {
+    expect(validarSesion(evaluacion('2026-10-27'), [], perfilExperto)).toEqual([])
+  })
+  it('la evaluación cuenta como sesión intensa de dedos aunque se etiquete suave', () => {
+    const ayer = ses('ayer', '2026-10-26', 18, { tipo: 'evaluacion-dedos', intensidad: 'suave' })
+    const v = validarSesion(ses('hoy', '2026-10-27', 18, { tipo: 'board' }), [ayer], perfilExperto)
+    expect(reglas(v)).toContain('seguridad.dedos-48h')
+  })
+  it('no dispara maxima-novel: es el tipo de excepción', () => {
+    const v = validarSesion(evaluacion('2026-10-27'), [primera('2026-09-01')], perfilNovel)
+    expect(reglas(v)).not.toContain('seguridad.maxima-novel')
+  })
+})
