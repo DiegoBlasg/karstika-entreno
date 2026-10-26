@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ses } from './_fabrica'
-import { diaNumero, finHoras, inicioHoras, validarEntrada } from './tiempo'
+import { diaNumero, fechaDesdeDia, finHoras, inicioHoras, validarEntrada } from './tiempo'
 
 describe('diaNumero', () => {
   it('cuenta días desde 1970-01-01', () => {
@@ -100,5 +100,35 @@ describe('validarEntrada', () => {
   })
   it('acepta una lista vacía', () => {
     expect(() => validarEntrada([])).not.toThrow()
+  })
+})
+
+describe('fechaDesdeDia', () => {
+  it('es la inversa de diaNumero', () => {
+    for (const f of ['1970-01-01', '2024-02-29', '2026-10-27', '2026-12-31', '1969-12-31']) {
+      expect(fechaDesdeDia(diaNumero(f))).toBe(f)
+    }
+  })
+  it('suma un día al cambiar de mes', () => {
+    expect(fechaDesdeDia(diaNumero('2026-10-31') + 1)).toBe('2026-11-01')
+  })
+})
+
+describe('fechaDesdeDia: entrada', () => {
+  it('rechaza días no enteros o no finitos', () => {
+    expect(() => fechaDesdeDia(1.5)).toThrow(/entero/)
+    expect(() => fechaDesdeDia(Number.NaN)).toThrow(/entero/)
+  })
+})
+
+describe('validarEntrada: complementos (incluye)', () => {
+  it('acepta complementos suaves distintos del tipo principal', () => {
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['arc', 'hombro'] })])).not.toThrow()
+  })
+  it('rechaza complementos que no son suaves, repetidos o iguales al principal', () => {
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['multipresa-resistencia' as never] })])).toThrow(/complementos suaves/)
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['hombro', 'hombro'] })])).toThrow(/repetido/)
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { tipo: 'tecnica', incluye: ['tecnica'] })])).toThrow(/principal/)
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: 'arc' as never })])).toThrow(/lista/)
   })
 })

@@ -1,8 +1,47 @@
 # Motor, tramo 2b: generador de sesión a demanda
 
-Fecha: 2026-10-28 · Estado: diseño aprobado en brainstorming, pendiente de revisión escrita
+Fecha: 2026-10-28 · Estado: implementado en la rama `motor-generador` (revisado el mismo día)
 Depende de: `docs/superpowers/specs/2026-10-27-motor-nucleo-design.md` (tramo 2a, ya en `master`),
 `docs/evidencia/parametros.md` y el spec global (§4).
+
+> **Revisión del 2026-10-28 (decisiones del usuario; prevalece sobre el texto de abajo):**
+> 1. **Escalar al límite desde la base.** Nuevas plantillas `via-cuerda-limite` (con compañero: calentamiento
+>    10 min, vías progresivas 15 min y hasta 3 intentos de 25 min con 20 min de recuperación activa, P-51, P-52,
+>    P-53, P-61; 50/75/100 min) y `bloque-limite` (solo: 10 + 10 + 30 min, o 20 si hay poco tiempo).
+>    `FASE_BASE` les da cupo 1 cada una; `FASE_FUERZA` mantiene la vía al límite con cupo 1.
+> 2. **Sesiones compuestas.** Tras elegir cada sesión, se rellena el tiempo libre con complementos suaves
+>    (`tecnica` 30 min, `arc` 15 o 10 min, `hombro` 15 min) cuyo cupo sigue pendiente y que son posibles en el
+>    contexto; el hombro se elige primero y va siempre al final. Se guardan en `Sesion.incluye` y cuentan para
+>    los cupos. La sesión compuesta se revalida entera; si fallara, se devuelve sin complementos.
+> 3. **Descanso entre días intensos de dedos por días naturales** (P-14 revisado). `proximaVentanaIntensa` pasa
+>    a ser `{ fecha }`: el primer día sin conflicto con ninguna sesión intensa de dedos del historial.
+> 4. **Carga inicial de multipresa al 70 %** del test las 2 primeras semanas (decisión de diseño, dirección
+>    segura); después, el tope del 80 % de P-06. `lastreRepeaters(e, fraccion)` nunca acepta más de 0,8.
+> 5. `bloque-limite` también se sustituye por `bloque-suave` cuando no es seguro, igual que el `board`.
+> 6. El test de dedos rechaza pesos y lastres implausibles (protección contra errores al teclear) y, para un
+>    perfil novel, cualquier test por encima del 160 % del peso corporal.
+> 7. **Los cupos son también un tope**: una sesión intensa de dedos con su cupo semanal cubierto no se propone.
+>    Además, regla nueva `seguridad.dedos-7dias` (P-12 ampliado): como mucho 3 sesiones intensas de dedos en
+>    cualquier ventana de 7 días para perfiles novel.
+> 8. **Una sola subida cada vez (P-11)**: 0-3 multipresas previas, 1 bloque al 70 %; 4-7, 2 bloques al 70 %;
+>    8 o más, 2 bloques al 80 %. Solo cuentan las anteriores al día de la petición.
+> 9. Sin test vigente, la multipresa dice que va por esfuerzo percibido (no «al 70 % de tu test»).
+> 10. El historial no puede contener ids reservados (`propuesta-…`, `__peticion__`): error claro que pide
+>     asignar un id propio al guardar la sesión.
+> 11. El board ya no es posible en casa (el usuario solo tiene multipresa allí).
+> 12. `proximaVentanaIntensa` prueba una sesión intensa genérica contra todas las reglas de seguridad y solo se
+>     devuelve si hoy no queda ninguna sesión intensa válida.
+> 13. **`FASE_FUERZA` coherente con el tope semanal**: 1 vía al límite + 2 multipresas = 3 sesiones intensas; la
+>     vía va antes en la prioridad (el día con compañero es de cuerda); board y bloque al límite pasan al tramo 2c.
+> 14. **Puntuación**: primero los tipos con cupo pendiente (+1000); entre ellos manda la prioridad de la fase
+>     (10 por puesto); la fracción pendiente solo desempata (hasta 5). Repetir el tipo de la última sesión resta
+>     30 solo si fue ayer u hoy.
+> 15. **Relleno suave**: tras los complementos con cupo pendiente, el tiempo que sobre se rellena con técnica y
+>     ARC aunque su cupo esté cubierto (más práctica técnica es lo que más margen tiene con menos de 2 años); el
+>     hombro solo entra por cupo.
+> 16. Validado con una simulación de 8 semanas del patrón real del usuario (martes con gente 120 min, jueves solo
+>     120 min, sábado en casa 45 min): 2 sesiones intensas por semana en base y 3 en fuerza (vía + 2 multipresas),
+>     carga al 70 % durante 8 sesiones, volumen de 1 a 2 bloques tras 4.
 
 ## Objetivo
 
@@ -92,7 +131,7 @@ export interface Propuesta {
   principal: SesionPlan | null
   alternativas: SesionPlan[]                      // 0 a 2, tipos distintos entre sí y de la principal
   descanso?: Explicacion                          // presente cuando se recomienda descansar
-  proximaVentanaIntensa?: { fecha: string; hora: number }  // fin de la última sesión intensa + 48 h
+  proximaVentanaIntensa?: { fecha: string }  // primer día en que vuelve a caber una sesión intensa de dedos
 }
 ```
 
@@ -141,7 +180,7 @@ incluyen calentamiento de 10 min (P-49) y fijan los campos de `detalle` que exig
 | `board` | calentamiento 10 min; 5 bloques por debajo del máximo, 3 intentos cada uno, 3 min de descanso | 45 min | P-38 (diseño) |
 | `tecnica` | calentamiento 10 min; 3 bloques variando vías y tipos de presa; previsualización hasta 3 min; grabar en vídeo al menos una vía | 45 min | P-53, P-54, P-55 |
 | `bloque-suave` | calentamiento 10 min; 4 bloques cómodos para el nivel, variando presas (solo como sustituto de `board`; no está en las prioridades de las fases) | 45 min | P-54 |
-| `arc` | calentamiento 10 min; 2 series de 15 min de escalada continua sin bombeo marcado, 10 min de descanso | 45 min | P-35 (diseño) |
+| `arc` | calentamiento 10 min; 2 series de 15 min (10 min si hay poco tiempo) de escalada continua sin bombeo marcado, 10 min de descanso | 50 min (40 con series de 10) | P-35 (diseño) |
 | `hombro` | 15 min de ejercicios de hombro en cadena cerrada y excéntricos | 20 min | P-41 |
 
 - Duración: el generador elige la versión que cabe; si no cabe ni la mínima, el tipo no es candidato.
@@ -171,8 +210,9 @@ incluyen calentamiento de 10 min (P-49) y fijan los campos de `detalle` que exig
 7. `descanso`: se rellena cuando no hay ningún candidato válido, o cuando hay 3 o más sesiones en los 4
    días anteriores a la petición y todos los cupos están cubiertos; en el primer caso, `principal` es
    `null`.
-8. `proximaVentanaIntensa`: si algún candidato intenso se descartó por `seguridad.dedos-48h`, el fin de
-   la última sesión intensa del historial + 48 h.
+8. `proximaVentanaIntensa`: si algún candidato intenso se descartó por `seguridad.dedos-dia-descanso`, el
+   primer día a partir de mañana sin conflicto con ninguna sesión intensa de dedos del historial (`{ fecha }`).
+9. Cada elegida se completa con complementos suaves (ver la revisión del principio).
 
 ## 7. Pruebas
 
@@ -184,9 +224,9 @@ incluyen calentamiento de 10 min (P-49) y fijan los campos de `detalle` que exig
   perfiles con experiencia) y los cambios de P-15/P-32 sincronizados con el documento.
 - **Selección**: cupos pendientes ganan a cupos cubiertos; penalización por repetir tipo; desempate
   estable; alternativas de tipos distintos; `board` degradado a `bloque-suave`.
-- **Escenario del usuario**: martes con gente en rocódromo 19:00 y jueves solo; jueves a las 18:00 tras una
-  sesión intensa el martes no ofrece multipresa ni board y devuelve `proximaVentanaIntensa`; a las 20:30
-  sí. Primera semana (historial vacío): propone técnica, nunca evaluación.
+- **Escenario del usuario**: martes con gente en rocódromo (vía al límite con hombro al final) y jueves solo
+  (bloque al límite, sin cuerda); el miércoles tras una sesión intensa el martes no ofrece nada intenso de
+  dedos y devuelve `proximaVentanaIntensa = jueves`. Primera semana: nunca evaluación.
 - **Propiedades**: determinismo, no muta entradas, ninguna sesión propuesta tiene violaciones al
   revalidarla, cada `SesionPlan` tiene explicaciones con parámetros, `principal` nunca está en
   `alternativas`.

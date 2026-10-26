@@ -9,11 +9,11 @@ const ctx = (c: Partial<Contexto> = {}): Contexto => ({
 
 describe('tiposPosibles: tabla completa de las 6 combinaciones', () => {
   const sinCuerda = [
-    'arc', 'bloque-limite', 'bloque-suave', 'board', 'campus', 'descanso', 'dominadas', 'hombro',
+    'arc', 'bloque-limite', 'bloque-suave', 'board', 'campus', 'descanso', 'dominadas', 'evaluacion-dedos', 'hombro',
     'multipresa-maxima', 'multipresa-resistencia', 'resistencia-4x4', 'tecnica', 'via-autoasegurada',
   ]
   const enCasa = [
-    'board', 'campus', 'descanso', 'dominadas', 'hombro', 'multipresa-maxima', 'multipresa-resistencia',
+    'campus', 'descanso', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-maxima', 'multipresa-resistencia',
   ]
   const tabla = [
     ['solo', 'rocodromo', sinCuerda],
@@ -55,9 +55,9 @@ describe('tiposPosibles', () => {
   it('solo en roca: únicamente descanso', () => {
     expect(tiposPosibles(ctx({ lugar: 'roca' }))).toEqual(['descanso'])
   })
-  it('en casa: multipresa, board, dominadas, hombro, campus y descanso', () => {
+  it('en casa: multipresa, dominadas, hombro, campus y descanso (sin board)', () => {
     expect(tiposPosibles(ctx({ lugar: 'casa' }))).toEqual(
-      ['board', 'campus', 'descanso', 'dominadas', 'hombro', 'multipresa-maxima', 'multipresa-resistencia'],
+      ['campus', 'descanso', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-maxima', 'multipresa-resistencia'],
     )
   })
   it('siempre incluye descanso y está ordenada', () => {

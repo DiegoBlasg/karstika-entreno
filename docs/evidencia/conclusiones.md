@@ -180,7 +180,7 @@ Advertencias generales:
 - Periodización por fases con variación ondulante semanal (P-28) y fases según el spec (P-30). Duración de
   las fases dentro de los rangos en los que los ensayos midieron efecto (P-31). Descarga cada 4 semanas,
   el extremo prudente de la práctica descrita (P-47, P-48).
-- El descanso mínimo entre sesiones intensas de dedos (P-14: 48 h) y el máximo de días seguidos de carga
+- El descanso mínimo entre sesiones intensas de dedos (P-14: un día natural completo de por medio; antes 48 h) y el máximo de días seguidos de carga
   alta (P-16: 2) son restricciones duras de diseño, marcadas como `sinEvidencia`. El único dato es
   indirecto: la disposición para escalar tardó 60 h tras un campeonato de élite (EV-PERIOD-013).
 
