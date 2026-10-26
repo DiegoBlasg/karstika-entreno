@@ -121,3 +121,96 @@ describe('validarSesion: perfil', () => {
     }
   })
 })
+
+describe('seguridad.campus y seguridad.maxima-novel', () => {
+  it('campus viola en perfil novel y pasa en experto', () => {
+    const c = ses('c', '2026-10-27', 18, { tipo: 'campus' })
+    const v = validarSesion(c, [], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.campus'])
+    expect(v[0]!.explicacion.parametros).toEqual(['P-12', 'P-13'])
+    expect(validarSesion(c, [], perfilExperto)).toEqual([])
+  })
+  it('el límite de años: 2 años ya no es novel, 1,99 sí', () => {
+    const c = ses('c', '2026-10-27', 18, { tipo: 'campus' })
+    expect(reglas(validarSesion(c, [], { ...perfilNovel, anosEscalando: 1.99 }))).toEqual(['seguridad.campus'])
+    expect(validarSesion(c, [], { ...perfilNovel, anosEscalando: 2 })).toEqual([])
+  })
+  it('multipresa máxima viola en novel y pasa en experto', () => {
+    const m = ses('m', '2026-10-27', 18, { tipo: 'multipresa-maxima' })
+    const v = validarSesion(m, [], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.maxima-novel'])
+    expect(v[0]!.explicacion.parametros).toEqual(['P-01', 'P-12'])
+    expect(validarSesion(m, [], perfilExperto)).toEqual([])
+  })
+})
+
+describe('seguridad.multipresa-7dias', () => {
+  const mp = (id: string, fecha: string) =>
+    ses(id, fecha, 8, { tipo: 'multipresa-resistencia', intensidad: 'suave' })
+
+  it('dos multipresas en 7 días pasan y tres violan', () => {
+    expect(validarSesion(mp('c', '2026-10-31'), [mp('a', '2026-10-26')], perfilNovel)).toEqual([])
+    const v = validarSesion(mp('c', '2026-10-31'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.multipresa-7dias'])
+    expect(v[0]!.sesionIds).toEqual(['a', 'b', 'c'])
+    expect(v[0]!.explicacion.parametros).toEqual(['P-12'])
+  })
+  it('la tercera a 7 días de la primera no cae en la misma ventana', () => {
+    expect(validarSesion(mp('c', '2026-11-02'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilNovel)).toEqual([])
+  })
+  it('cuenta también sesiones futuras ya confirmadas', () => {
+    const v = validarSesion(mp('b', '2026-10-28'), [mp('a', '2026-10-26'), mp('c', '2026-10-31')], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.multipresa-7dias'])
+  })
+  it('no se aplica a perfiles con experiencia ni a otros tipos', () => {
+    expect(validarSesion(mp('c', '2026-10-31'), [mp('a', '2026-10-26'), mp('b', '2026-10-28')], perfilExperto)).toEqual([])
+    const otro = (id: string, fecha: string) => ses(id, fecha, 8, { tipo: 'tecnica', intensidad: 'suave' })
+    expect(validarSesion(otro('c', '2026-10-31'), [otro('a', '2026-10-26'), otro('b', '2026-10-28')], perfilNovel)).toEqual([])
+  })
+})
+
+describe('seguridad.regleta', () => {
+  const conRegleta = (mm: number, tipo: 'multipresa-resistencia' | 'tecnica' = 'multipresa-resistencia') =>
+    ses('r', '2026-10-27', 18, { tipo, intensidad: 'suave', detalle: { regletaMm: mm } })
+
+  it('19 mm viola y 20 mm pasa en novel', () => {
+    const v = validarSesion(conRegleta(19), [], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.regleta'])
+    expect(validarSesion(conRegleta(20), [], perfilNovel)).toEqual([])
+  })
+  it('no se aplica a perfiles con experiencia ni fuera de la multipresa', () => {
+    expect(validarSesion(conRegleta(10), [], perfilExperto)).toEqual([])
+    expect(validarSesion(conRegleta(10, 'tecnica'), [], perfilNovel)).toEqual([])
+  })
+})
+
+describe('seguridad.arqueado', () => {
+  const arq = (conCarga: boolean) =>
+    ses('q', '2026-10-27', 18, { tipo: 'multipresa-resistencia', intensidad: 'suave', detalle: { agarre: 'arqueado', conCarga } })
+
+  it('arqueado con carga viola siempre, también con experiencia', () => {
+    for (const perfil of [perfilNovel, perfilExperto]) {
+      const v = validarSesion(arq(true), [], perfil)
+      expect(reglas(v)).toEqual(['seguridad.arqueado'])
+      expect(v[0]!.explicacion.parametros).toEqual(['P-10', 'P-12'])
+    }
+  })
+  it('arqueado sin carga o semiarqueado con carga pasan', () => {
+    expect(validarSesion(arq(false), [], perfilExperto)).toEqual([])
+    const semi = ses('q', '2026-10-27', 18, { intensidad: 'suave', detalle: { agarre: 'semiarqueado', conCarga: true } })
+    expect(validarSesion(semi, [], perfilExperto)).toEqual([])
+  })
+})
+
+describe('validarSesion: varias reglas a la vez', () => {
+  it('las violaciones salen ordenadas por regla', () => {
+    // Bloque intenso el lunes 18:00 (termina 19:30); la propuesta es el martes 18:00: 22,5 h de hueco.
+    const lunes = ses('lunes', '2026-10-26', 18)
+    const peligrosa = ses('p', '2026-10-27', 18, {
+      tipo: 'multipresa-maxima',
+      detalle: { regletaMm: 15 },
+    })
+    const v = validarSesion(peligrosa, [lunes], perfilNovel)
+    expect(reglas(v)).toEqual(['seguridad.dedos-48h', 'seguridad.maxima-novel', 'seguridad.regleta'])
+  })
+})

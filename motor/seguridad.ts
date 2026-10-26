@@ -80,7 +80,111 @@ function reglaCargaAltaSeguida(propuesta: Sesion, historial: readonly Sesion[]):
   ]
 }
 
-const REGLAS: Regla[] = [reglaDedos48h, reglaCargaAltaSeguida]
+const MULTIPRESA: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-maxima']
+const esMultipresa = (s: Sesion): boolean => MULTIPRESA.includes(s.tipo)
+const esNovel = (p: Perfil): boolean => p.anosEscalando < VALORES['P-12'].anosMaximosPerfilNovel
+
+function reglaCampus(propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  if (propuesta.tipo !== 'campus' || !esNovel(perfil)) return []
+  const max = VALORES['P-13'].maxSesionesCampus
+  const hechas = historial.filter((s) => s.tipo === 'campus').length
+  if (hechas + 1 <= max) return []
+  return [
+    {
+      regla: 'seguridad.campus',
+      sesionIds: [propuesta.id],
+      mensaje: `El campus no entra en el plan con menos de ${VALORES['P-12'].anosMaximosPerfilNovel} años de experiencia (máximo ${max} sesiones).`,
+      explicacion: explicar(
+        'seguridad.campus',
+        ['P-13', 'P-12'],
+        'El campus board no se prescribe a escaladores con poca experiencia: la guía lo reserva a adultos experimentados y se asocia a más lesión.',
+      ),
+    },
+  ]
+}
+
+function reglaMaximaNovel(propuesta: Sesion, _historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  if (propuesta.tipo !== 'multipresa-maxima' || !esNovel(perfil)) return []
+  return [
+    {
+      regla: 'seguridad.maxima-novel',
+      sesionIds: [propuesta.id],
+      mensaje: 'Las suspensiones máximas quedan excluidas con poca experiencia; usa repeaters submáximos.',
+      explicacion: explicar(
+        'seguridad.maxima-novel',
+        ['P-01', 'P-12'],
+        'Con menos de 2 años de experiencia no hay evidencia de que las suspensiones máximas sean seguras; se usan repeaters submáximos.',
+      ),
+    },
+  ]
+}
+
+function reglaMultipresa7Dias(propuesta: Sesion, historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  if (!esMultipresa(propuesta) || !esNovel(perfil)) return []
+  const max = VALORES['P-12'].maxSesionesMultipresa7Dias
+  const todas = [...historial, propuesta].filter(esMultipresa)
+  const d = diaNumero(propuesta.fecha)
+  for (let inicio = d - 6; inicio <= d; inicio++) {
+    const ventana = todas.filter((s) => {
+      const x = diaNumero(s.fecha)
+      return x >= inicio && x <= inicio + 6
+    })
+    if (ventana.length > max) {
+      return [
+        {
+          regla: 'seguridad.multipresa-7dias',
+          sesionIds: ventana.map((s) => s.id).sort(),
+          mensaje: `Habría ${ventana.length} sesiones de multipresa en 7 días; el máximo es ${max}.`,
+          explicacion: explicar(
+            'seguridad.multipresa-7dias',
+            ['P-12'],
+            `Con poca experiencia no se superan ${max} sesiones de multipresa en cualquier ventana de 7 días.`,
+          ),
+        },
+      ]
+    }
+  }
+  return []
+}
+
+function reglaRegleta(propuesta: Sesion, _historial: readonly Sesion[], perfil: Perfil): Violacion[] {
+  const mm = propuesta.detalle?.regletaMm
+  const minimo = VALORES['P-12'].regletaMinimaMm
+  if (!esMultipresa(propuesta) || !esNovel(perfil) || mm === undefined || mm >= minimo) return []
+  return [
+    {
+      regla: 'seguridad.regleta',
+      sesionIds: [propuesta.id],
+      mensaje: `Una regleta de ${mm} mm es demasiado pequeña; el mínimo es ${minimo} mm.`,
+      explicacion: explicar(
+        'seguridad.regleta',
+        ['P-12'],
+        `Con poca experiencia no se usan regletas de menos de ${minimo} mm.`,
+      ),
+    },
+  ]
+}
+
+function reglaArqueado(propuesta: Sesion): Violacion[] {
+  if (propuesta.detalle?.agarre !== 'arqueado' || propuesta.detalle.conCarga !== true) return []
+  return [
+    {
+      regla: 'seguridad.arqueado',
+      sesionIds: [propuesta.id],
+      mensaje: 'No se cuelga con carga en agarre arqueado completo.',
+      explicacion: explicar(
+        'seguridad.arqueado',
+        ['P-10', 'P-12'],
+        'El agarre arqueado completo con carga concentra tensión en las poleas; se usa semiarqueado estandarizado.',
+      ),
+    },
+  ]
+}
+
+const REGLAS: Regla[] = [
+  reglaDedos48h, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
+  reglaMultipresa7Dias, reglaRegleta, reglaArqueado,
+]
 
 const comparar = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
 
