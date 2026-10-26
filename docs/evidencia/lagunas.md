@@ -39,7 +39,7 @@ valor no viene de un estudio.
 | L-14 | Magnitud, frecuencia y eficacia de las descargas | Solo práctica descrita y consenso (EV-PERIOD-007, EV-PERIOD-008) | C declarado y conservador: cada 4 semanas, −50 % de volumen | P-47, P-48 |
 | L-15 | Señales fiables de sobrecarga en escaladores y reglas para ajustar la carga | Ningún marcador validado (EV-PERIOD-009); el autoinforme es sensible a la carga, pero sin umbrales (EV-RECUP-012) | Conservador: umbrales de diseño para adelantar la descarga o cambiar una sesión intensa por una suave | P-50 |
 | L-16 | Dosis de ARC o capacidad | Ningún estudio de intervención. Solo asociaciones (EV-RESIST-011, EV-RENDIM-011) | Conservador (volumen bajo), etiquetado `sinEvidencia` | P-35 |
-| L-17 | 4x4, bloques enlazados e intervalos en vía | Solo bouldering por intervalos con protocolo desconocido (EV-RESIST-001, C) | Conservador, etiquetado `sinEvidencia`; solo en la fase de resistencia de fuerza | P-37 |
+| L-17 | 4x4, bloques enlazados e intervalos en vía | Solo bouldering por intervalos con protocolo desconocido (EV-RESIST-001, A, solo resumen) | Conservador, etiquetado `sinEvidencia`; solo en la fase de resistencia de fuerza | P-37 |
 | L-18 | CF como umbral exacto de prescripción | Validez cuestionada (EV-RENDIM-010, EV-RESIST-008) | No se implementa como umbral; solo seguimiento | P-25 |
 | L-19 | Entrenamiento en board | Sin evidencia revisada por pares; solo se usó como test (EV-FUERZA-005) | Conservador: 1 sesión por semana, cuenta como sesión intensa de dedos | P-38 |
 | L-20 | Dominadas lastradas a largo plazo y fuerza relativa | Solo efecto agudo (EV-FUERZA-003) y datos transversales (EV-FUERZA-007) | Opcional y no prioritario | P-22, P-39 |
@@ -63,14 +63,9 @@ valor no viene de un estudio.
 
 ## Lagunas de la propia base de datos (para revisar antes del motor)
 
-- Los niveles de un mismo estudio difieren entre bloques. Por ejemplo, Hermans 2022 es A o B, y
-  López-Rivera 2019 también es A o B (ver conclusiones, contradicción 11).
-- Algunos hallazgos se rebajaron a C por haberse leído solo el resumen (EV-RESIST-001, EV-RESIST-005,
-  EV-RESIST-008, EV-RENDIM-012), en contra de la política de que el nivel describe el diseño.
-- Los bloques de periodización y recuperación marcan `fuente-primaria` hallazgos que solo se leyeron en
-  resumen.
-- Probable error de traducción en EV-RESIST-002 ("resistance training" traducido como entrenamiento de
-  resistencia).
+- Resueltas (ver conclusiones, contradicciones 11-15): niveles unificados por diseño entre bloques,
+  niveles restaurados en EV-RESIST-001, EV-RESIST-005, EV-RESIST-008 y EV-RENDIM-012, método `resumen` en
+  periodización y recuperación, y traducción corregida en EV-RESIST-002.
 - Fuentes que conviene abrir enteras porque pueden cerrar lagunas:
   - Berta 2025: normas de fuerza de dedos (L-05).
   - Kozin 2021: dosis del programa de hombro (L-22).

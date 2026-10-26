@@ -25,11 +25,11 @@ export const hallazgos: Hallazgo[] = [
     fuentes: [
       { autores: 'Stien, N.; Pedersen, H.; Vereide, V. A.; Saeterbakken, A. H.; Hermans, E.; Kalland, J.; Schoenfeld, B. J.; Andersen, V.', anio: 2021, titulo: 'Effects of Two vs. Four Weekly Campus Board Training Sessions on Bouldering Performance and Climbing-Specific Tests in Advanced and Elite Climbers', publicacion: 'Journal of Sports Science and Medicine, 20, 438–447', doi: '10.52082/jssm.2021.438' },
     ],
-    nivel: 'B',
+    nivel: 'A',
     aplicaA: { nivel: 'avanzado–élite (IRCRA alto)', experiencia: 'avanzados con experiencia previa', objetivo: 'boulder / potencia' },
     limitaciones:
-      'n = 16 en tres grupos, sin tamaños por grupo en el resumen; muchos contrastes (riesgo de azar); tamaños de efecto muy grandes en grupos diminutos son imprecisos; solo 5 semanas y sin seguimiento; no valora lesiones. No generalizable a escaladores intermedios ni a menores.',
-    verificada: V,
+      'n = 16 en tres grupos, sin tamaños por grupo en el resumen; muchos contrastes (riesgo de azar); tamaños de efecto muy grandes en grupos diminutos son imprecisos; solo 5 semanas y sin seguimiento; no valora lesiones. No generalizable a escaladores intermedios ni a menores. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-FUERZA-003',
@@ -67,7 +67,7 @@ export const hallazgos: Hallazgo[] = [
     fuentes: [
       { autores: 'Saeterbakken, A. H.; Bratland, E.; Andersen, V.; Stien, N.', anio: 2024, titulo: 'Five weeks of dynamic finger flexor strength training on bouldering performance and climbing-specific strength tests. A randomized controlled trial', publicacion: 'Frontiers in Physiology, 15', doi: '10.3389/fphys.2024.1461820' },
     ],
-    nivel: 'B',
+    nivel: 'A',
     aplicaA: { nivel: 'avanzado–élite (encadene IRCRA ~19–21)', experiencia: 'boulderistas regulares', objetivo: 'boulder' },
     limitaciones:
       'Baja potencia (31 completos; 3 mujeres); post-test 48–96 h tras la última sesión sin seguimiento; el test de boulder incluía pasos de coordinación que pueden no ser sensibles a la fuerza; estadísticos inconsistentes en el texto. El Kilter Board se usó como herramienta de test, no como intervención: no es evidencia sobre entrenar en board.',
@@ -81,7 +81,7 @@ export const hallazgos: Hallazgo[] = [
     fuentes: [
       { autores: 'Hermans, E.; Saeterbakken, A. H.; Vereide, V.; Nord, I. S. O.; Stien, N.; Andersen, V.', anio: 2022, titulo: 'The Effects of 10 Weeks Hangboard Training on Climbing Specific Maximal Strength, Explosive Strength, and Finger Endurance', publicacion: 'Frontiers in Sports and Active Living, 4, 888158', doi: '10.3389/fspor.2022.888158' },
     ],
-    nivel: 'B',
+    nivel: 'A',
     aplicaA: { nivel: 'intermedio–avanzado recreativo (6a o más)', experiencia: 'escaladores recreativos', objetivo: 'general' },
     limitaciones:
       'Sin test de boulder o vía: no prueba transferencia al grado; el grupo control escaló bastante más (aprox. 21,6 frente a 8,8 sesiones), lo que sesga la comparación; registros autodeclarados; solo el grupo de hangboard tuvo seguimiento del investigador; test a 90° de codo frente a entrenamiento con brazos extendidos; n = 35. Tema de dedos; se incluye porque cuantifica la fuerza de tracción en regleta.',
@@ -109,7 +109,7 @@ export const hallazgos: Hallazgo[] = [
     fuentes: [
       { autores: 'Stien, N.; Frøysaker, T. F.; Hermans, E.; Vereide, V. A.; Andersen, V.; Saeterbakken, A. H.', anio: 2021, titulo: 'The Effects of Prioritizing Lead or Boulder Climbing Among Intermediate Climbers', publicacion: 'Frontiers in Sports and Active Living, 3, 661167', doi: '10.3389/fspor.2021.661167' },
     ],
-    nivel: 'B',
+    nivel: 'A',
     aplicaA: { nivel: 'intermedio–avanzado amateur', experiencia: 'amateur', objetivo: 'boulder y deportiva' },
     limitaciones:
       'n = 7 por grupo (6 en vía): muy infradotado; diferencias entre grupos no significativas, solo sugerentes; 5 semanas de baja intensidad; volumen no monitorizado; test de vía influido por miedo o enlaces. Es la única evidencia directa en escaladores sobre compatibilidad fuerza–resistencia hallada y no es concluyente sobre interferencia.',

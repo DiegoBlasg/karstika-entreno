@@ -25,7 +25,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Ningún estudio incluido es en escaladores: es extrapolación desde fuerza general (1RM en ejercicios convencionales). Resultado discutido en una carta de Nunes et al. (Sports Med 2018, doi 10.1007/s40279-017-0824-x) cuyo contenido no se leyó. Estudios de 1988–2015, calidad y duración heterogéneas. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-002',
@@ -49,7 +49,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Extrapolación desde deportes cíclicos de resistencia; no hay estudios en escalada. Estudios pequeños y de baja calidad metodológica (PEDro medio 3,7/10); los autores piden cautela. Los intervalos de confianza rozan el cero. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-003',
@@ -73,7 +73,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Un solo ensayo en ciclismo, n = 30, 12 semanas; no generalizable a escalada ni a principiantes. Contrasta con la ligera ventaja de bloques del metaanálisis EV-PERIOD-002, lo que sugiere que esa ventaja puede deberse a diferencias de carga entre programas. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-004',
@@ -97,7 +97,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Solo 3 estudios agrupados, calidad PEDro 4–5/10; búsqueda de 2016. No hay estudios de distribución de intensidad en escaladores localizados. La revisión de Stöggl y Sperlich (2015, doi 10.3389/fphys.2015.00295) indica que en la práctica de atletas de élite predomina la distribución piramidal. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-005',
@@ -121,7 +121,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Mide RPE de una vía única de 19,5 m a 4 m/min (no RPE de sesión x duración), una sola vía. En general la relación RPE–fisiología fue moderada. Estudio transversal, n = 42. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-006',
@@ -151,8 +151,8 @@ export const hallazgos: Hallazgo[] = [
       objetivo: 'cuantificar carga interna de sesión',
     },
     limitaciones:
-      'Ningún estudio de validación citado es en escalada; extrapolación desde ciclismo, baloncesto y otros deportes. Haddad es revisión narrativa (búsqueda 2001–2016, 36 estudios de validez), no metaanálisis, de ahí el nivel B (evidencia observacional/de validación). No se localizó validación de TRIMP ni de tonelaje en multipresa en escaladores. Solo se leyeron los resúmenes.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'Ningún estudio de validación citado es en escalada; extrapolación desde ciclismo, baloncesto y otros deportes. Haddad es revisión narrativa (búsqueda 2001–2016, 36 estudios de validez), no metaanálisis, de ahí el nivel B (evidencia observacional/de validación). No se localizó validación de TRIMP ni de tonelaje en multipresa en escaladores. Solo se leyeron los resúmenes. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-007',
@@ -176,7 +176,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Consenso de opinión de entrenadores, no evidencia de eficacia. No hay ensayos que comparen deload con no deload localizados. Los detalles de los principios de diseño (frecuencia, magnitud) no se extrajeron del resumen. Nada específico de escalada.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-008',
@@ -200,7 +200,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Describe lo que hacen los atletas, no lo que funciona; encuesta autorreportada y anónima, sesgo de selección. Sin comparación con no deload. Población muy distinta de un escalador de 6b con < 2 años de experiencia. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-009',
@@ -224,7 +224,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Consenso de expertos; no hay señales de sobrecarga validadas en escaladores. Aquí se reflejan solo las conclusiones del resumen; los detalles de síntomas y marcadores del texto completo no se leyeron. La utilidad práctica para un escalador recreativo (qué señales vigilar) debe tratarse como no resuelta.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-010',
@@ -248,7 +248,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Extrapolación desde entrenamiento de fuerza general; la mayoría de estudios en no entrenados. El resumen (que se leyó vía resumen de registro bibliográfico) no da el número mínimo de sesiones por semana, así que no sostiene una frecuencia mínima eficaz concreta para escalada. No cubre resistencia.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-011',
@@ -272,7 +272,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Solo se evaluó una frecuencia (2 sesiones/semana): no compara frecuencias ni da el descanso mínimo entre sesiones. n = 35, 10 semanas. No informa de lesiones en el resumen. Participantes más avanzados que el perfil objetivo. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-012',
@@ -296,7 +296,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Revisión narrativa: recomendaciones de expertos basadas en la literatura, no una estimación de dosis-respuesta. Resumen sin datos numéricos. Los límites concretos de "grado bajo" no se leyeron. Un escalador de 6b con < 2 años podría caer en la categoría de cautela.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-013',
@@ -320,7 +320,7 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Informe breve; el resumen no indica el tamaño de muestra. Carga de competición (varias subidas máximas), no una sesión de entrenamiento de dedos; mide fuerza de agarre global, no integridad de poleas ni tendones. Estudio observacional sin grupo de comparación. Es evidencia indirecta para el descanso entre sesiones intensas de dedos y no basta para fijar un mínimo en horas para un escalador de 6b. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-PERIOD-014',
@@ -344,6 +344,6 @@ export const hallazgos: Hallazgo[] = [
     },
     limitaciones:
       'Revisión de estudios mayoritariamente observacionales: asociación, no causalidad. El resumen no da umbrales de carga, frecuencia ni descanso, de modo que no permite fijar parámetros de carga semanal ni de descanso. Solo se leyó el resumen.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
 ]

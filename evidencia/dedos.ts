@@ -115,10 +115,10 @@ export const hallazgos: Hallazgo[] = [
         doi: '10.2478/hukin-2018-0057',
       },
     ],
-    nivel: 'B',
+    nivel: 'A',
     aplicaA: { nivel: 'avanzado 7c+/8a', experiencia: 'al menos 2 años; media de 10–14 años', objetivo: 'deportiva' },
     limitaciones:
-      'Mide resistencia de agarre, no fuerza máxima. n final 26 de 38 (12 abandonos desiguales entre grupos); grupos de 7–11; sin diferencias significativas entre grupos; posible efecto techo en el grupo combinado; todos siguieron su entrenamiento normal de escalada. No se ha verificado que la asignación fuese aleatoria en el texto leído, por eso se clasifica como B.',
+      'Mide resistencia de agarre, no fuerza máxima. n final 26 de 38 (12 abandonos desiguales entre grupos); grupos de 7–11; sin diferencias significativas entre grupos; posible efecto techo en el grupo combinado; todos siguieron su entrenamiento normal de escalada. Ensayo aleatorizado (mismo estudio que EV-RESIST-003), por eso nivel A.',
     verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
   },
   {

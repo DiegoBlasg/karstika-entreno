@@ -165,10 +165,10 @@ export const hallazgos: Hallazgo[] = [
     fuentes: [
       { autores: 'Baláš, J., Pecha, O., Martin, A. J., Cochrane, D.', anio: 2012, titulo: 'Hand-arm strength and endurance as predictors of climbing performance', publicacion: 'European Journal of Sport Science, 12(1), 16–25', doi: '10.1080/17461391.2010.546431' },
     ],
-    nivel: 'C',
+    nivel: 'B',
     aplicaA: { nivel: 'UIAA 4–11, rango muy amplio', objetivo: 'deportiva' },
     limitaciones:
-      'Solo se leyó el resumen reproducido por una base de datos bibliográfica (lida.sport-iat.de), no la editorial ni el texto; por eso se degrada a C. El 97 % es ajuste del modelo en su propia muestra, no precisión predictiva, y el rango de nivel es enorme.',
+      'Solo se leyó el resumen reproducido por una base de datos bibliográfica (lida.sport-iat.de), no la editorial ni el texto; el nivel B describe el diseño (estudio transversal con modelo estructural en escaladores). El 97 % es ajuste del modelo en su propia muestra, no precisión predictiva, y el rango de nivel es enorme.',
     verificada: { fecha: FECHA, metodo: 'resumen' },
   },
 ]

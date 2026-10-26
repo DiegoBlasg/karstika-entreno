@@ -17,10 +17,10 @@ export const hallazgos: Hallazgo[] = [
         doi: '10.1080/19346182.2015.1063643',
       },
     ],
-    nivel: 'C',
+    nivel: 'A',
     aplicaA: { nivel: 'boulderistas varones muy avanzados (~7b Font.)', experiencia: '6,8 ± 3,1 años escalando', objetivo: 'bloque (extrapolación a deportiva no probada)' },
     limitaciones:
-      'Solo se leyó el resumen en una base bibliográfica (lida.sport-iat.de); la página de la editorial devolvió 403. Por la regla del protocolo se rebaja a nivel C aunque el diseño es un ensayo aleatorizado (n=12 por grupo). El resumen NO da el protocolo (duración de trabajo/descanso, series, frecuencia), así que no sirve para fijar dosis. Solo varones, muy avanzados, 4 semanas; el desenlace es tiempo hasta el agotamiento subjetivo, no grado encadenado en vía. Verificar el texto completo antes de usarlo en el motor.',
+      'Solo se leyó el resumen en una base bibliográfica (lida.sport-iat.de); la página de la editorial devolvió 403. El nivel A describe el diseño (ensayo aleatorizado, n=12 por grupo); la verificación fue solo con el resumen. El resumen NO da el protocolo (duración de trabajo/descanso, series, frecuencia), así que no sirve para fijar dosis. Solo varones, muy avanzados, 4 semanas; el desenlace es tiempo hasta el agotamiento subjetivo, no grado encadenado en vía. Verificar el texto completo antes de usarlo en el motor.',
     verificada: { fecha: FECHA, metodo: 'resumen' },
   },
   {
@@ -41,7 +41,7 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'A',
     aplicaA: { nivel: 'escaladores activos, nivel intermedio a élite', objetivo: 'general' },
     limitaciones:
-      'Evidencia escasa: 225 escaladores en total, cuatro de los cinco estudios metaanalizados con poca potencia, PEDro 5-7/10 y sin cegamiento ni análisis por intención de tratar; no se reporta GRADE. El "entrenamiento de resistencia" analizado es sobre todo colgadas/hangboard de flexores, no formatos de resistencia en vía; la revisión no trata ARC ni escalada continua. El texto contiene inconsistencias internas menores (umbral de calidad, referencia duplicada). Se leyó vía PMC (texto abierto) y las cifras provienen de la página abierta.',
+      'Evidencia escasa: 225 escaladores en total, cuatro de los cinco estudios metaanalizados con poca potencia, PEDro 5-7/10 y sin cegamiento ni análisis por intención de tratar; no se reporta GRADE. El "entrenamiento de fuerza" analizado es sobre todo colgadas/hangboard de flexores, no formatos de resistencia en vía; la revisión no trata ARC ni escalada continua. El texto contiene inconsistencias internas menores (umbral de calidad, referencia duplicada). Se leyó vía PMC (texto abierto) y las cifras provienen de la página abierta.',
     verificada: { fecha: FECHA, metodo: 'fuente-primaria' },
   },
   {
@@ -99,10 +99,10 @@ export const hallazgos: Hallazgo[] = [
         doi: '10.23736/S0022-4707.18.08399-8',
       },
     ],
-    nivel: 'C',
+    nivel: 'B',
     aplicaA: { nivel: 'élite (IRCRA 20,8 ± 2,0)', objetivo: 'deportiva (a vista)' },
     limitaciones:
-      'Solo se leyó el resumen en una base bibliográfica (lida.sport-iat.de), no la editorial: por protocolo queda en nivel C pese a ser un estudio con dos grupos. No hay grupo control y no se conocen ejercicios, series, cargas ni frecuencia. n=11 y 12. Población de élite, no extrapolable a 6b.',
+      'Solo se leyó el resumen en una base bibliográfica (lida.sport-iat.de), no la editorial. El nivel B describe el diseño (comparación de dos programas en escaladores sin grupo control; el resumen no indica aleatorización). No hay grupo control y no se conocen ejercicios, series, cargas ni frecuencia. n=11 y 12. Población de élite, no extrapolable a 6b.',
     verificada: { fecha: FECHA, metodo: 'resumen' },
   },
   {
@@ -159,10 +159,10 @@ export const hallazgos: Hallazgo[] = [
         doi: '10.1007/s00421-024-05490-7',
       },
     ],
-    nivel: 'C',
+    nivel: 'B',
     aplicaA: { nivel: 'escaladores deportivos (nivel no verificado)', objetivo: 'deportiva' },
     limitaciones:
-      'Solo se leyó el resumen en una base bibliográfica (lida.sport-iat.de); la editorial y el repositorio redirigieron sin dar texto. Nivel C por protocolo, aunque es un estudio experimental de laboratorio. n=12. Cuestiona la validez del test de CF de 4 min tal como se calcula habitualmente y contradice el tono optimista de Giles 2021: la CF no debe usarse todavía como umbral exacto de prescripción. La oxigenación muscular del antebrazo no distinguió ensayos exhaustivos de no exhaustivos.',
+      'Solo se leyó el resumen en una base bibliográfica (lida.sport-iat.de); la editorial y el repositorio redirigieron sin dar texto. Nivel B por el diseño (estudio fisiológico de laboratorio en escaladores). n=12. Cuestiona la validez del test de CF de 4 min tal como se calcula habitualmente y contradice el tono optimista de Giles 2021: la CF no debe usarse todavía como umbral exacto de prescripción. La oxigenación muscular del antebrazo no distinguió ensayos exhaustivos de no exhaustivos.',
     verificada: { fecha: FECHA, metodo: 'resumen' },
   },
   {

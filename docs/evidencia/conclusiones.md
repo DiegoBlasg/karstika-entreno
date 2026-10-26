@@ -111,7 +111,7 @@ Advertencias generales:
   EV-RESIST-008).
 - Priorizar la vía mejoró la resistencia de antebrazo, pero sin diferencia entre grupos y sin cambio en el
   rendimiento (EV-RESIST-004).
-- Resistencia frente a hipertrofia en élite: mejoraron por igual (EV-RESIST-005, C, solo resumen).
+- Resistencia frente a hipertrofia en élite: mejoraron por igual (EV-RESIST-005, B, solo resumen).
 
 **Decidido para el perfil y por qué**
 - La resistencia de fuerza se trabaja con el protocolo intermitente con texto completo (P-36; EV-RESIST-003,
@@ -285,18 +285,27 @@ Advertencias generales:
     - Saeterbakken 2024: A en EV-DEDOS-007, B en EV-FUERZA-005.
     - Stien 2021 (vía frente a bloque): B en EV-FUERZA-008, A en EV-RESIST-004.
     - Baláš 2024: B en EV-RENDIM-010, C en EV-RESIST-008.
+    - **Resuelto:** nivel unificado según el diseño. Hermans 2022 pasa a A en EV-FUERZA-006; López-Rivera 2019
+      a A en EV-DEDOS-006 (ensayo aleatorizado); Saeterbakken 2024 a A en EV-FUERZA-005; Stien 2021 a A en
+      EV-FUERZA-008; Baláš 2024 a B en EV-RESIST-008 (estudio fisiológico de laboratorio). Además, EV-FUERZA-002
+      (ensayo aleatorizado de campus) pasa de B a A y queda como solo resumen.
 12. **Nivel rebajado a C por haber leído solo el resumen.** Pasa en EV-RESIST-001, EV-RESIST-005,
     EV-RESIST-008 y EV-RENDIM-012, aunque la política vigente es que el nivel describe el diseño. Otros
     hallazgos leídos solo en resumen conservan la A (EV-DEDOS-002, EV-DEDOS-003, EV-TECNIC-007,
     EV-LESION-007, EV-RESIST-004). En parametros.md se usa el nivel registrado.
+    **Resuelto:** EV-RESIST-001 pasa de C a A (ensayo aleatorizado), EV-RESIST-005 de C a B,
+    EV-RESIST-008 de C a B y EV-RENDIM-012 de C a B; todos conservan `metodo: 'resumen'` y lo declaran en
+    limitaciones. En parametros.md cambian P-03 (B a A), P-25 (C a B), P-31 (C a B) y P-36 (B a A).
 13. **Método de verificación incoherente.** Los hallazgos de periodización (EV-PERIOD-001 a EV-PERIOD-014) y
     casi todos los de recuperación están marcados `metodo: 'fuente-primaria'`, pero sus limitaciones (y los
     informes de las tareas 8 y 10) dicen que solo se leyó el resumen. En parametros.md se tratan como solo
-    resumen.
+    resumen. **Resuelto:** todos los hallazgos EV-PERIOD-001 a 014 y EV-RECUP-001 a 012 pasan a
+    `metodo: 'resumen'` y lo declaran en limitaciones (niveles sin cambios). EV-FUERZA-002 también.
 14. **Traducción probable en EV-RESIST-002.** Atribuye el SDM 0,57 del metaanálisis de Stien 2023 a
     "entrenamiento de resistencia". EV-FUERZA-001 atribuye la misma cifra a "entrenamiento de fuerza".
     Parece un falso amigo ("resistance training" = entrenamiento de fuerza). Las propias limitaciones de
     EV-RESIST-002 dicen que es sobre todo hangboard de flexores.
+    **Resuelto:** corregido a "entrenamiento de fuerza" en la afirmación y en las limitaciones de EV-RESIST-002.
 15. **Fryer 2015 con cifras distintas.** Medio tiempo de recuperación de los intermedios: 83 s en
     contracción intermitente (EV-RESIST-009) y 47 s en sostenida (EV-TACTIC-002). EV-RENDIM-009 declara que
     la asignación de cifras a grupos no está clara. Solo se usa la dirección del efecto.

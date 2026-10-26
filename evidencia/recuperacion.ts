@@ -19,7 +19,7 @@ export const hallazgos: Hallazgo[] = [
     aplicaA: { nivel: 'deportistas adultos (no específico de escalada)', objetivo: 'general (extrapolación a escalada deportiva)' },
     limitaciones:
       'Revisión de estudios observacionales (cohortes), sin metaanálisis; heterogeneidad metodológica. Ausencia de evidencia no equivale a ausencia de efecto. Texto completo de pago: solo se leyó el resumen. Una revisión sistemática en futbolistas (Clemente 2021, Healthcare, doi 10.3390/healthcare9070808; 32 estudios, mayoritariamente observacionales) sugiere que la restricción de sueño se asocia a peor rendimiento y más lesiones musculoesqueléticas, con resultados inconsistentes. Ningún estudio incluido es de escaladores.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-002',
@@ -39,7 +39,7 @@ export const hallazgos: Hallazgo[] = [
     aplicaA: { nivel: 'deportistas jóvenes adultos de otros deportes', objetivo: 'general (extrapolación a escalada deportiva)' },
     limitaciones:
       'Pocos estudios y muestras pequeñas, edades 18-24 años, ningún escalador. Calidad metodológica modesta. Solo se leyó el resumen (texto completo de pago). No fija una cantidad de horas aplicable a escaladores, por lo que no se cuantifica aquí.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-003',
@@ -59,7 +59,7 @@ export const hallazgos: Hallazgo[] = [
     aplicaA: { nivel: 'adultos sanos con entrenamiento de fuerza (no escaladores)', objetivo: 'masa magra y fuerza; extrapolación a escalada deportiva' },
     limitaciones:
       'Extrapolación: no hay escaladores y el resultado es sobre masa magra y fuerza en entrenamiento de fuerza, no sobre rendimiento en escalada. El punto de ruptura (~1,62 g/kg/día) es una estimación con incertidumbre, no un umbral exacto; el efecto en masa libre de grasa fue pequeño y menor con la edad. Resumen leído vía registro bibliográfico (Europe PMC); texto completo no revisado. No cubre hidratos de carbono ni energía total.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-004',
@@ -78,8 +78,8 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'B',
     aplicaA: { nivel: 'escaladores experimentados y de élite', experiencia: 'media 8,8 años (muy superior al perfil objetivo de <2 años)', objetivo: 'general' },
     limitaciones:
-      'Estudio transversal, n=40, muestra de conveniencia del Reino Unido; diario de 3 días (subregistro frecuente); requerimiento estimado con ecuaciones (RMR de Cunningham x 1,443), no medido. Describe lo que comen, no lo que deberían comer ni su efecto sobre el rendimiento. Hierro medido en una muestra aleatoria no en ayunas. Sin diferencias entre escaladores intermedios/avanzados y de élite.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'Estudio transversal, n=40, muestra de conveniencia del Reino Unido; diario de 3 días (subregistro frecuente); requerimiento estimado con ecuaciones (RMR de Cunningham x 1,443), no medido. Describe lo que comen, no lo que deberían comer ni su efecto sobre el rendimiento. Hierro medido en una muestra aleatoria no en ayunas. Sin diferencias entre escaladores intermedios/avanzados y de élite. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-005',
@@ -98,8 +98,8 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'B',
     aplicaA: { nivel: 'escaladores adolescentes de competición (13-18 años)', experiencia: 'equipo juvenil nacional', objetivo: 'competición' },
     limitaciones:
-      'n=27, transversal, 3 días de registro (error en ingesta y gasto); adolescentes de competición, no adultos recreativos; la página no indica DOI (se cita la URL). No demuestra causalidad entre baja disponibilidad energética y disfunción menstrual. El umbral de 30 kcal/kg MLG/día es un punto de corte orientativo, no un diagnóstico.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'n=27, transversal, 3 días de registro (error en ingesta y gasto); adolescentes de competición, no adultos recreativos; la página no indica DOI (se cita la URL). No demuestra causalidad entre baja disponibilidad energética y disfunción menstrual. El umbral de 30 kcal/kg MLG/día es un punto de corte orientativo, no un diagnóstico. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-006',
@@ -125,8 +125,8 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'C',
     aplicaA: { nivel: 'deportistas en general y escaladores de roca (jóvenes, adultos, paraclimbers)', objetivo: 'general' },
     limitaciones:
-      'Consenso de expertos y revisión narrativa, no estudios primarios; solo se leyeron los resúmenes (PubMed no accesible; consenso consultado vía Europe PMC, 17 autores, se cita solo al primero). La prevalencia real de RED-S en escaladores recreativos no está establecida. La herramienta CAT2 es para cribado clínico por profesionales, no para autodiagnóstico en una app; la app no debe diagnosticar.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'Consenso de expertos y revisión narrativa, no estudios primarios; solo se leyeron los resúmenes (PubMed no accesible; consenso consultado vía Europe PMC, 17 autores, se cita solo al primero). La prevalencia real de RED-S en escaladores recreativos no está establecida. La herramienta CAT2 es para cribado clínico por profesionales, no para autodiagnóstico en una app; la app no debe diagnosticar. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-007',
@@ -146,7 +146,7 @@ export const hallazgos: Hallazgo[] = [
     aplicaA: { nivel: 'escaladores deportivos: élite vs menos avanzados vs controles', objetivo: 'deportiva' },
     limitaciones:
       'Revisión de estudios transversales: describe diferencias entre grupos, no demuestra que reducir peso o grasa mejore el rendimiento (sesgo de selección y causalidad inversa). Solo se leyó el resumen, que no da valores numéricos. Perder peso en quien ya tiene IMC normal puede reducir fuerza y salud (ver EV-RECUP-004 a 006). No usar para fijar objetivos de peso o grasa: la app no debe proponerlos.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-008',
@@ -166,7 +166,7 @@ export const hallazgos: Hallazgo[] = [
     aplicaA: { nivel: 'adultos en general, fuerza de miembro superior (press), no escaladores', objetivo: 'fuerza; extrapolación a escalada deportiva' },
     limitaciones:
       'Extrapolación: no se encontraron resultados publicados de creatina en escaladores (solo un ensayo registrado en boulderistas sin resultados). Las pruebas fueron de press/pectoral, no dominadas ni suspensión de dedos; efecto pequeño-moderado. Solo resumen (texto completo de pago). No evalúa efectos adversos ni el posible aumento de peso corporal por retención de agua, relevante en un deporte de peso corporal.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-009',
@@ -192,8 +192,8 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'A',
     aplicaA: { nivel: 'escaladores varones intermedio-avanzados (ensayo); varones jóvenes en general (revisión)', objetivo: 'deportiva' },
     limitaciones:
-      'Ensayo en escaladores: n=13, solo varones, una única dosis; un resultado no significativo en muestra pequeña no demuestra ausencia de efecto; tests de laboratorio, no en vía. Revisión paraguas: extrapolación (mayoría de estudios en hombres jóvenes no escaladores; algunos metaanálisis sin dirección clara con el intervalo de predicción). Evidencia de cafeína en escalada contradictoria/insuficiente; no se evaluaron efectos sobre el sueño. Solo se leyeron resúmenes.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'Ensayo en escaladores: n=13, solo varones, una única dosis; un resultado no significativo en muestra pequeña no demuestra ausencia de efecto; tests de laboratorio, no en vía. Revisión paraguas: extrapolación (mayoría de estudios en hombres jóvenes no escaladores; algunos metaanálisis sin dirección clara con el intervalo de predicción). Evidencia de cafeína en escalada contradictoria/insuficiente; no se evaluaron efectos sobre el sueño. Solo se leyeron resúmenes. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-010',
@@ -219,8 +219,8 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'A',
     aplicaA: { nivel: 'escaladoras bien entrenadas (vía 6b) y escaladores expertos (5.12b)', objetivo: 'recuperación entre intentos dentro de una misma sesión' },
     limitaciones:
-      'Heyman: n=13, solo mujeres, una vía; Watts: n=15 con grupos desiguales (8 y 7), asignación no cruzada, mide lactato y no rendimiento posterior (los propios autores señalan que falta saber si mejora el rendimiento). Ambos miden recuperación en minutos entre intentos, no entre sesiones ni adaptaciones al entrenamiento. Solo se leyeron los resúmenes. Los resultados de recuperación activa/frío entre intentos no se pueden extender a recuperación entre días.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'Heyman: n=13, solo mujeres, una vía; Watts: n=15 con grupos desiguales (8 y 7), asignación no cruzada, mide lactato y no rendimiento posterior (los propios autores señalan que falta saber si mejora el rendimiento). Ambos miden recuperación en minutos entre intentos, no entre sesiones ni adaptaciones al entrenamiento. Solo se leyeron los resúmenes. Los resultados de recuperación activa/frío entre intentos no se pueden extender a recuperación entre días. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-011',
@@ -246,8 +246,8 @@ export const hallazgos: Hallazgo[] = [
     nivel: 'A',
     aplicaA: { nivel: 'personas físicamente activas y deportistas de otros deportes; sin estudios de escalada entre sesiones', objetivo: 'recuperación percibida (dolor, fatiga) tras ejercicio agudo' },
     limitaciones:
-      'Extrapolación desde otros deportes y otros músculos; los efectos son sobre dolor y fatiga percibidos y marcadores, no sobre rendimiento en escalada ni sobre las adaptaciones. No se verificó si el frío repetido tras entrenamiento de fuerza atenúa las adaptaciones (hay literatura que lo sugiere; no evaluada aquí). Heterogeneidad de protocolos; solo resúmenes leídos vía Europe PMC.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+      'Extrapolación desde otros deportes y otros músculos; los efectos son sobre dolor y fatiga percibidos y marcadores, no sobre rendimiento en escalada ni sobre las adaptaciones. No se verificó si el frío repetido tras entrenamiento de fuerza atenúa las adaptaciones (hay literatura que lo sugiere; no evaluada aquí). Heterogeneidad de protocolos; solo resúmenes leídos vía Europe PMC. Verificado solo con el resumen (abstract), no con el texto completo.',
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
   {
     id: 'EV-RECUP-012',
@@ -267,6 +267,6 @@ export const hallazgos: Hallazgo[] = [
     aplicaA: { nivel: 'deportistas de distintos deportes (no escalada)', objetivo: 'monitorización de la carga' },
     limitaciones:
       'Revisión de estudios mayoritariamente observacionales y heterogéneos; ningún estudio en escalada. No establece umbrales cuantitativos para ajustar la carga (cuánto reducir con cierto bienestar, sueño o dolor): sin evidencia de reglas de ajuste concretas. Se leyó el resumen en PMC; el texto completo no se revisó.',
-    verificada: { fecha: '2026-10-26', metodo: 'fuente-primaria' },
+    verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
 ]
