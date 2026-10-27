@@ -9,7 +9,7 @@ import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 import { NOMBRE_TIPO } from './nombres'
-import { explicacionSemana, planificarSemana, validarHuecos } from './semana'
+import { explicacionAlternativaSemana, explicacionSemana, planificarSemana, PREFIJO_SEMANA, validarHuecos } from './semana'
 import { desdeLunes } from './temporada'
 import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
@@ -71,7 +71,9 @@ function validarPeticion(p: Peticion): void {
   if (p.contexto == null) throw new Error('proponerSesion: el contexto es obligatorio')
   if (p.perfil == null) throw new Error('proponerSesion: el perfil es obligatorio')
   if (!Array.isArray(p.historial)) throw new Error('proponerSesion: el historial debe ser un array')
-  const reservado = p.historial.find((s) => s.id === ID_PETICION || String(s.id).startsWith(PREFIJO_PROPUESTA))
+  const reservado = p.historial.find(
+    (s) => s.id === ID_PETICION || String(s.id).startsWith(PREFIJO_PROPUESTA) || String(s.id).startsWith(PREFIJO_SEMANA),
+  )
   if (reservado) {
     throw new Error(
       `proponerSesion: el historial contiene el id reservado «${reservado.id}». Al guardar una sesión propuesta, asígnale un id propio.`,
@@ -271,18 +273,26 @@ export function proponerSesion(p: Peticion): Propuesta {
   const r0 = proponer(sinHuecos, true)
   const semana = ranuras.slice(1).map((hueco, i) => {
     const o = elegidas[i + 1]
-    return { hueco, sesion: o ? { ...o.sesion, id: `semana-${i + 1}` } : null }
+    return { hueco, sesion: o ? { ...o.sesion, id: `${PREFIJO_SEMANA}${i + 1}` } : null }
   })
-  const hoy = elegidas[0] ?? null
-  if (!hoy) return { ...r0, semana }
+  const elegidaHoy = elegidas[0] ?? null
+  if (!elegidaHoy) return { ...r0, semana }
+  // El plan se buscó con un historial recortado: la sesión de hoy se toma de la propuesta con el historial completo
+  // (mismo tipo y complementos; cargas exactas).
+  const conDom = (elegidaHoy.sesion.incluye ?? []).includes('dominadas')
+  const completa = conDom ? r0 : proponer(sinHuecos, false, true)
+  const iguales = (o: SesionPlan | null): o is SesionPlan =>
+    o !== null && o.sesion.tipo === elegidaHoy.sesion.tipo && (o.sesion.incluye ?? []).join() === (elegidaHoy.sesion.incluye ?? []).join()
+  const hoy = [completa.principal, ...completa.alternativas, r0.principal, ...r0.alternativas].find(iguales) ?? elegidaHoy
   const explicacion = explicacionSemana(ranuras, elegidas, r0.principal)
-  const otras = [r0.principal, ...r0.alternativas].filter(
-    (o): o is SesionPlan => o !== null && o.sesion.tipo !== hoy.sesion.tipo,
-  )
+  const otras = [r0.principal, ...r0.alternativas]
+    .filter((o): o is SesionPlan => o !== null && o.sesion.tipo !== hoy.sesion.tipo)
+    .slice(0, 2)
+    .map((o) => ({ ...o, explicaciones: [explicacionAlternativaSemana(), ...o.explicaciones] }))
   return {
     ...r0,
     principal: { ...hoy, explicaciones: [explicacion, ...hoy.explicaciones] },
-    alternativas: otras.slice(0, 2),
+    alternativas: otras,
     semana,
   }
 }

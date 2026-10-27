@@ -6,6 +6,7 @@ import { tiposPosibles } from './contexto'
 import { explicar, type Explicacion } from './explicacion'
 import { VALORES } from './parametros'
 import type { Hueco, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
+import { NOMBRE_TIPO } from './nombres'
 import { esCargaAlta } from './seguridad'
 import { desdeLunes } from './temporada'
 import { diaNumero, fechaDesdeDia } from './tiempo'
@@ -59,13 +60,19 @@ interface Candidata {
   tipos: string
 }
 
-function puntuar(p: Peticion, ranuras: readonly Hueco[], elegidas: (SesionPlan | null)[]): Candidata {
-  const ultima = diaNumero(ranuras[ranuras.length - 1]!.fecha)
-  const plan = elegidas.flatMap((o) => (o ? [o.sesion] : []))
-  const ventana = [...p.historial, ...plan].filter((s) => {
+// Sesiones de la semana natural de la petición (los cupos son por semana, de lunes a domingo).
+function enLaSemana(p: Peticion, sesiones: readonly Sesion[]): Sesion[] {
+  const d = diaNumero(p.fecha)
+  const lunes = d - desdeLunes(d)
+  return sesiones.filter((s) => {
     const x = diaNumero(s.fecha)
-    return x >= ultima - 6 && x <= ultima
+    return x >= lunes && x <= lunes + 6
   })
+}
+
+function puntuar(p: Peticion, elegidas: (SesionPlan | null)[]): Candidata {
+  const plan = elegidas.flatMap((o) => (o ? [o.sesion] : []))
+  const ventana = enLaSemana(p, [...p.historial, ...plan])
   const n = p.fase.prioridad.length
   const puesto = (o: SesionPlan | null): number => {
     if (!o) return n + 1
@@ -95,8 +102,20 @@ function esMejor(a: Candidata, b: Candidata): boolean {
   return a.tipos < b.tipos
 }
 
-// Búsqueda en profundidad: en cada hueco, dos ramas (la mejor opción de carga alta y la mejor suave que el generador
-// propone ahí). Si el generador recomienda descanso (principal nula), el hueco queda vacío.
+// Las llamadas internas del plan solo deciden el tipo de cada hueco; las reglas que lo deciden miran como mucho 70 días
+// atrás (P-08, en testReciente), así que se usa un historial recortado para que el coste no crezca con la temporada.
+// La sesión de hoy se recalcula después con el historial completo (cargas exactas).
+const DIAS_HISTORIAL_PLAN = 75
+
+const nombreSesion = (s: Sesion): string =>
+  [NOMBRE_TIPO[s.tipo], ...(s.incluye ?? []).map((t) => NOMBRE_TIPO[t])].map((x) => x.toLowerCase()).join(' + ')
+const mismaSesion = (a: SesionPlan, b: SesionPlan): boolean =>
+  a.sesion.tipo === b.sesion.tipo && (a.sesion.incluye ?? []).join() === (b.sesion.incluye ?? []).join()
+
+// Búsqueda en profundidad. En cada hueco se abre una rama por cada opción de carga alta que el generador propone ahí,
+// otra por la mejor suave y, si esa suave lleva dominadas (que no pueden ir el día de una sesión intensa de dedos,
+// P-39), otra con la misma sin dominadas. Si el generador recomienda descanso (principal nula), el hueco queda vacío.
+// Se poda una rama cuando ni sumando un hueco por tipo a todos los restantes podría superar al mejor reparto.
 export function planificarSemana(
   p: Peticion,
   proponerEn: (q: Peticion, sinDominadas: boolean) => Propuesta,
@@ -106,52 +125,69 @@ export function planificarSemana(
     { fecha: p.fecha, horaInicio: p.horaInicio, contexto: p.contexto },
     ...[...huecos].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio - b.horaInicio),
   ]
+  const hoy = diaNumero(p.fecha)
+  const corto = p.historial.filter((s) => diaNumero(s.fecha) >= hoy - DIAS_HISTORIAL_PLAN)
+  const ids = new Set(corto.map((s) => s.id))
+  const baseCorta: Peticion = {
+    ...base,
+    historial: corto,
+    ...(p.seguimiento ? { seguimiento: { ...p.seguimiento, registros: p.seguimiento.registros.filter((r) => ids.has(r.sesionId)) } } : {}),
+  }
   let mejor: Candidata | undefined
+  const cota = (i: number, elegidas: (SesionPlan | null)[]): number[] => {
+    const restantes = ranuras.length - i
+    const ventana = enLaSemana(p, [...p.historial, ...elegidas.flatMap((o) => (o ? [o.sesion] : []))])
+    return p.fase.prioridad.map((t) => Math.min(ventana.filter((s) => cuentaPara(s, t)).length + restantes, p.fase.cupos[t] ?? 0))
+  }
   const visitar = (i: number, elegidas: (SesionPlan | null)[], historial: Sesion[]): void => {
     if (i === ranuras.length) {
-      const c = puntuar(p, ranuras, elegidas)
+      const c = puntuar(p, elegidas)
       if (!mejor || esMejor(c, mejor)) mejor = c
       return
     }
+    if (mejor && lex(cota(i, elegidas), mejor.vector) < 0) return
     const h = ranuras[i]!
-    const q: Peticion = { ...base, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial }
+    const q: Peticion = { ...baseCorta, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial }
     const r = proponerEn(q, false)
     const opciones = r.principal ? [r.principal, ...r.alternativas] : []
-    const alta = opciones.find((o) => esCargaAlta(o.sesion))
-    const suave = opciones.find((o) => !esCargaAlta(o.sesion))
-    // Las dominadas son un complemento opcional que no puede ir el día de una sesión intensa de dedos (P-39): si la
-    // opción suave las lleva, se prueba también sin ellas, por si estorban a otro hueco del mismo día.
-    const sinDominadas =
-      suave && (suave.sesion.incluye ?? []).includes('dominadas')
-        ? [r.principal ? proponerEn(q, true) : r].flatMap((x) => [x.principal, ...x.alternativas]).find((o) => o !== null && !esCargaAlta(o.sesion))
-        : undefined
-    const ramas: (SesionPlan | null)[] =
-      opciones.length === 0 ? [null] : [alta, suave, sinDominadas ?? undefined].filter((o): o is SesionPlan => o !== undefined && o !== null)
-    for (const o of ramas) {
-      visitar(i + 1, [...elegidas, o], o ? [...historial, { ...o.sesion, id: `semana-${i}` }] : historial)
+    const ramas: SesionPlan[] = []
+    const anadir = (o: SesionPlan | null | undefined): void => {
+      if (o && !ramas.some((x) => mismaSesion(x, o))) ramas.push(o)
     }
+    const suave = opciones.find((o) => !esCargaAlta(o.sesion))
+    for (const o of opciones) if (esCargaAlta(o.sesion) || o === suave) anadir(o)
+    if (suave && (suave.sesion.incluye ?? []).includes('dominadas')) {
+      const r2 = proponerEn(q, true)
+      anadir([r2.principal, ...r2.alternativas].find((o) => o !== null && !esCargaAlta(o.sesion)))
+    }
+    if (ramas.length === 0) visitar(i + 1, [...elegidas, null], historial)
+    for (const o of ramas) visitar(i + 1, [...elegidas, o], [...historial, { ...o.sesion, id: `${PREFIJO_SEMANA}${i}` }])
   }
-  visitar(0, [], [...p.historial])
+  visitar(0, [], [...corto])
   return { ranuras, elegidas: mejor!.elegidas }
 }
 
-export function explicacionSemana(
-  ranuras: readonly Hueco[],
-  elegidas: readonly (SesionPlan | null)[],
-  hoySinPlan: SesionPlan | null,
-): Explicacion {
+export const PREFIJO_SEMANA = 'semana-'
+
+export function explicacionSemana(ranuras: readonly Hueco[], elegidas: readonly (SesionPlan | null)[], hoySinPlan: SesionPlan | null): Explicacion {
   const lista = ranuras.slice(1).map((h, i) => {
     const o = elegidas[i + 1]
-    return `${franja(h)}, ${o ? `${o.sesion.tipo} (${o.sesion.duracionMin} min)` : 'libre'}`
+    return `${franja(h)}, ${o ? `${nombreSesion(o.sesion)} (${o.sesion.duracionMin} min)` : 'libre'}`
   })
   const partes = [`Plan del resto de la semana con tus huecos: ${lista.join('; ')}.`]
   const hoy = elegidas[0]
   if (hoySinPlan && hoy && esCargaAlta(hoySinPlan.sesion) && !esCargaAlta(hoy.sesion)) {
     const i = elegidas.findIndex((o, k) => k > 0 && o !== null && esCargaAlta(o.sesion))
-    if (i > 0) {
-      partes.push(`Hoy va suave para dejar sitio a ${elegidas[i]!.sesion.tipo} ${franja(ranuras[i]!)}: así se cubren mejor los cupos de la fase.`)
-    }
+    if (i > 0) partes.push(`Hoy va suave: el plan reserva la carga alta para ${franja(ranuras[i]!)} (${nombreSesion(elegidas[i]!.sesion)}).`)
   }
   partes.push('El plan se recalcula cada vez que pides una sesión.')
   return explicar('plan.semana', ['P-67'], partes.join(' '))
+}
+
+export function explicacionAlternativaSemana(): Explicacion {
+  return explicar(
+    'plan.semana-alternativa',
+    ['P-67'],
+    'Si eliges esta en lugar de la propuesta, el resto de la semana puede cambiar: el plan se recalcula en tu próxima petición.',
+  )
 }

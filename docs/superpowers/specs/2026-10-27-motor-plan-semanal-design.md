@@ -115,3 +115,26 @@ es suave.
   - Con un solo hueco, el resultado es el del generador actual.
   - Con todas las sesiones del plan en el historial a la vez, ninguna viola una regla de seguridad.
 - **Regla P-68:** prueba propia en `seguridad.test.ts`.
+
+## 9. Tras las revisiones (2026-10-27)
+
+Una revisión de código y otra de producto (44 semanas simuladas con variantes) llevaron a estos cambios:
+
+- **Decisiones de Diego:**
+  - Los cupos de la fase se cuentan por **semana natural**, de lunes a domingo, en el generador y en el plan (P-30). Las reglas de seguridad siguen en ventanas móviles.
+  - El **hombro** tiene tope: como mucho 2 por semana y una vez al día, como sesión o como complemento (P-41).
+  - El **ámbar** con dos sesiones al día:
+    - P-45 pide ámbar en 2 días distintos.
+    - Una zona que no aparece en un registro toma el valor del chequeo de ese día.
+    - La app precargará en el registro las molestias del chequeo, en el tramo de «Mi semana».
+- **Búsqueda:**
+  - Se abre una rama por cada opción de carga alta de un hueco, otra por la mejor suave y, si esa suave lleva dominadas, otra con la misma sin dominadas (P-39).
+  - Se poda una rama cuando ni en el mejor caso puede superar al reparto actual.
+  - Las llamadas internas usan los últimos 75 días de historial, que es lo que miran las reglas, como mucho 70 días (P-08). La sesión de hoy se recalcula con el historial completo.
+  - Medido: unos 300 ms con 8 huecos y un año de historial, y prácticamente no crece con el historial.
+- **Ids `semana-*`:** reservados en el historial, como `propuesta-*`.
+- **Textos:**
+  - Las explicaciones usan nombres en español (`motor/nombres.ts`, que la app reexporta) y dicen «pide N por semana y esta semana llevas M».
+  - Las alternativas avisan de que elegirlas puede cambiar el resto de la semana (`plan.semana-alternativa`).
+- **Desviación del §4.1:** no se ofrece «nada» como opción de un hueco que tiene sesiones posibles. Con las reglas actuales no mejora ningún reparto, porque descansar a propósito no desbloquea nada que no desbloquee una sesión suave. Por eso tampoco existe el caso «hoy descansas para…» del §6.
+
