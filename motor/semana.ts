@@ -102,9 +102,11 @@ function esMejor(a: Candidata, b: Candidata): boolean {
   return a.tipos < b.tipos
 }
 
-// Las llamadas internas del plan solo deciden el tipo de cada hueco; las reglas que lo deciden miran como mucho 70 días
+// Las llamadas internas del plan solo deciden el tipo de cada hueco; las reglas de seguridad miran como mucho 70 días
 // atrás (P-08, en testReciente), así que se usa un historial recortado para que el coste no crezca con la temporada.
-// La sesión de hoy se recalcula después con el historial completo (cargas exactas).
+// La autorregulación mira sin límite (un rojo sin alta, P-46), así que se conservan siempre, con su registro, las
+// sesiones con alguna molestia apuntada, además de los tests de dedos y la primera sesión (P-32). La sesión de hoy se
+// recalcula después con el historial completo; si no coincide, se descarta el plan (falla cerrado).
 const DIAS_HISTORIAL_PLAN = 75
 
 const nombreSesion = (s: Sesion): string =>
@@ -126,7 +128,11 @@ export function planificarSemana(
     ...[...huecos].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio - b.horaInicio),
   ]
   const hoy = diaNumero(p.fecha)
-  const corto = p.historial.filter((s) => diaNumero(s.fecha) >= hoy - DIAS_HISTORIAL_PLAN)
+  const conMolestia = new Set((p.seguimiento?.registros ?? []).filter((r) => r.molestias.length > 0).map((r) => r.sesionId))
+  const primera = p.historial.reduce<Sesion | undefined>((a, s) => (!a || s.fecha < a.fecha ? s : a), undefined)
+  const corto = p.historial.filter(
+    (s) => diaNumero(s.fecha) >= hoy - DIAS_HISTORIAL_PLAN || conMolestia.has(s.id) || s.tipo === 'evaluacion-dedos' || s === primera,
+  )
   const ids = new Set(corto.map((s) => s.id))
   const baseCorta: Peticion = {
     ...base,

@@ -141,8 +141,6 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
         ambarDesde = ultimo === 'ambar' ? e.dia : undefined
         ambarRegistros = 0
       diaRegistroAmbar = undefined
-        diaRegistroAmbar = undefined
-    diaRegistroAmbar = undefined
       }
       continue
     }
@@ -162,7 +160,6 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
       ambarDesde = undefined
       ambarRegistros = 0
       diaRegistroAmbar = undefined
-    diaRegistroAmbar = undefined
       if (ultimoRojo !== undefined && porPersistencia) {
         verdeDesde ??= e.dia
         levantarSiSinDolor(e.dia)

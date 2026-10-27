@@ -132,3 +132,26 @@ describe('cupos por semana natural y hombro', () => {
     expect(tope.flat()).not.toContain('hombro')
   })
 })
+
+describe('plan semanal con un rojo antiguo sin alta (falla cerrado)', () => {
+  const vieja: Sesion = { id: 'v', tipo: 'tecnica', intensidad: 'suave', fecha: '2026-07-20', horaInicio: 19, duracionMin: 60 }
+  const seguimiento = { registros: [{ sesionId: 'v', fecha: '2026-07-20', rpe: 4, duracionMin: 60, molestias: [{ zona: 'dedos' as const, dolor: 6 }] }], chequeos: [], altas: [] }
+  it('sin huecos el rojo de hace más de 75 días sigue mandando: descanso', () => {
+    const r = proponerSesion(lunes({ historial: [vieja], seguimiento }))
+    expect(r.principal).toBeNull()
+    expect(r.descanso?.regla).toBe('autorregulacion.rojo')
+  })
+  it('con huecos también: ni hoy ni en el plan hay carga alta con los dedos en rojo', () => {
+    const r = proponerSesion(lunes({ historial: [vieja], seguimiento, huecos: SEMANA }))
+    expect(r.principal).toBeNull()
+    expect(r.descanso?.regla).toBe('autorregulacion.rojo')
+    for (const e of r.semana ?? []) if (e.sesion) expect(esCargaAlta(e.sesion)).toBe(false)
+  })
+  it('la principal con huecos es siempre de un tipo que el generador propone hoy sin huecos', () => {
+    for (const extra of [{}, { historial: [vieja], seguimiento }, { fase: FASE_RESISTENCIA }] as Partial<Peticion>[]) {
+      const sin = proponerSesion(lunes(extra))
+      const con = proponerSesion(lunes({ ...extra, huecos: SEMANA }))
+      if (con.principal) expect([sin.principal, ...sin.alternativas].map((o) => o?.sesion.tipo)).toContain(con.principal.sesion.tipo)
+    }
+  })
+})

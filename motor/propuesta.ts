@@ -199,7 +199,7 @@ function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComp
   const cupo = p.fase.cupos[c.tipoPlan] ?? 0
   const partes = [
     cupo > 0
-      ? `La fase «${p.fase.nombre}» pide ${cupo} ${cupo === 1 ? 'sesión' : 'sesiones'} de ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()} por semana y esta semana llevas ${c.hechas7d}.`
+      ? `La fase «${p.fase.nombre}» pide ${cupo} ${cupo === 1 ? 'sesión' : 'sesiones'} de ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()} por semana y esta semana llevas ${c.hechas7d} (contando las ya planificadas).`
       : `Opción válida según la prioridad de la fase «${p.fase.nombre}».`,
   ]
   if (c.plan.sesion.tipo !== c.tipoPlan) {
@@ -283,7 +283,10 @@ export function proponerSesion(p: Peticion): Propuesta {
   const completa = conDom ? r0 : proponer(sinHuecos, false, true)
   const iguales = (o: SesionPlan | null): o is SesionPlan =>
     o !== null && o.sesion.tipo === elegidaHoy.sesion.tipo && (o.sesion.incluye ?? []).join() === (elegidaHoy.sesion.incluye ?? []).join()
-  const hoy = [completa.principal, ...completa.alternativas, r0.principal, ...r0.alternativas].find(iguales) ?? elegidaHoy
+  const hoy = [completa.principal, ...completa.alternativas, r0.principal, ...r0.alternativas].find(iguales)
+  // Falla cerrado: si la sesión del plan no es una de las que el generador propone hoy con el historial completo, el
+  // plan no es fiable y se devuelve la propuesta de siempre, sin plan.
+  if (!hoy) return r0
   const explicacion = explicacionSemana(ranuras, elegidas, r0.principal)
   const otras = [r0.principal, ...r0.alternativas]
     .filter((o): o is SesionPlan => o !== null && o.sesion.tipo !== hoy.sesion.tipo)
