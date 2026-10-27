@@ -1,4 +1,4 @@
-import type { MotivoCaida, TipoSesion, Zona } from '../motor'
+import type { Agarre, MotivoCaida, TipoSesion, Zona } from '../motor'
 
 export const NOMBRE_TIPO: Record<TipoSesion, string> = {
   'multipresa-resistencia': 'Multipresa: repeaters',
@@ -44,3 +44,17 @@ export const ETIQUETA_RPE: readonly string[] = [
 
 // Sesiones en las que se apuntan los intentos al límite (alimentan el diagnóstico).
 export const TIPOS_CON_INTENTOS: readonly TipoSesion[] = ['via-cuerda-limite', 'pegues-proyecto', 'bloque-limite']
+
+// Sesiones colgado de la regleta: en «Hice otra cosa» se pregunta el canto y el agarre (el motor exige el canto a
+// los noveles, P-12).
+export const TIPOS_CON_REGLETA: readonly TipoSesion[] = [
+  'multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'evaluacion-dedos',
+]
+
+export const AGARRES = ['abierto', 'semiarqueado', 'arqueado'] as const satisfies readonly Agarre[]
+
+export const NOMBRE_AGARRE: Record<Agarre, string> = {
+  abierto: 'Abierto',
+  semiarqueado: 'Semiarqueado',
+  arqueado: 'Arqueado',
+}

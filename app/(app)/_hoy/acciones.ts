@@ -2,52 +2,87 @@
 
 import { revalidatePath } from 'next/cache'
 import { TIPOS_SESION, validarSesion, ZONAS, type TipoSesion, type Zona } from '@/motor'
-import { conAlta, conRegistro, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
-import type { FilaIntento, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
-import { vistaHoy } from '@/lib/datos/hoy'
+import { conAlta, conRegistro, conRegistroCorregido, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
+import type { DatosAtleta, FilaIntento, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
+import { corregible, vistaHoy } from '@/lib/datos/hoy'
 import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
-import { entero, hora, intentos, mensajeDe, molestias, opcion, texto } from '@/lib/formulario'
-import { TIPOS_CON_INTENTOS } from '@/lib/nombres'
-import { borrarSesionBd, insertarAlta, insertarRegistro, requerirDatos, sustituirSesion } from '@/lib/servidor/consultas'
+import { detalleRegleta, entero, hora, intentos, mensajeDe, molestias, opcion, texto } from '@/lib/formulario'
+import { TIPOS_CON_INTENTOS, TIPOS_CON_REGLETA } from '@/lib/nombres'
+import {
+  borrarSesionBd, corregirRegistroBd, insertarAlta, insertarRegistro, requerirDatos, sustituirSesion,
+} from '@/lib/servidor/consultas'
 
 const TIPOS_LIBRES = TIPOS_SESION.filter((t): t is Exclude<TipoSesion, 'descanso'> => t !== 'descanso')
+
+// RPE, minutos, molestias e intentos del formulario de registro (el mismo para registrar y para corregir).
+function leerRegistro(fd: FormData, fila: FilaSesion): { registro: FilaRegistro; filasIntentos: FilaIntento[] } {
+  const registro: FilaRegistro = {
+    sesion_id: fila.id,
+    rpe: entero(fd, 'rpe', 'El esfuerzo', 0, 10),
+    duracion_min: entero(fd, 'minutos', 'Los minutos', 1, 1440),
+    molestias: molestias(fd),
+    registrado_en: new Date().toISOString(),
+  }
+  const filasIntentos = TIPOS_CON_INTENTOS.includes(fila.sesion.tipo)
+    ? intentos(fd).map((i) => ({
+        id: crypto.randomUUID(), sesion_id: fila.id, fecha: fila.fecha, encadenado: i.encadenado, motivo_caida: i.motivoCaida ?? null,
+      }))
+    : []
+  return { registro, filasIntentos }
+}
+
+function sesionDe(fd: FormData, datos: DatosAtleta): FilaSesion | null {
+  const id = texto(fd, 'sesion_id', 'La sesión')
+  return datos.sesiones.find((s) => s.id === id) ?? null
+}
 
 export async function registrar(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const hoy = ahoraMadrid(new Date()).fecha
   const { sql, datos } = await requerirDatos()
-  let registro: FilaRegistro
-  let filasIntentos: FilaIntento[]
+  let leido: ReturnType<typeof leerRegistro>
   try {
-    const sesionId = texto(fd, 'sesion_id', 'La sesión')
-    const fila = datos.sesiones.find((s) => s.id === sesionId)
+    const fila = sesionDe(fd, datos)
     if (!fila) return { error: 'Esa sesión ya no existe.' }
     if (fila.fecha > hoy) return { error: 'No puedes registrar una sesión de un día futuro.' }
-    registro = {
-      sesion_id: sesionId,
-      rpe: entero(fd, 'rpe', 'El esfuerzo', 0, 10),
-      duracion_min: entero(fd, 'minutos', 'Los minutos', 1, 1440),
-      molestias: molestias(fd),
-      registrado_en: new Date().toISOString(),
-    }
-    filasIntentos = TIPOS_CON_INTENTOS.includes(fila.sesion.tipo)
-      ? intentos(fd).map((i) => ({
-          id: crypto.randomUUID(), sesion_id: sesionId, fecha: fila.fecha, encadenado: i.encadenado, motivo_caida: i.motivoCaida ?? null,
-        }))
-      : []
-    validarDatos(conRegistro(datos, registro, filasIntentos))
+    leido = leerRegistro(fd, fila)
+    validarDatos(conRegistro(datos, leido.registro, leido.filasIntentos))
   } catch (e) {
     return { error: mensajeDe(e) }
   }
   try {
-    await insertarRegistro(sql, registro, filasIntentos)
+    await insertarRegistro(sql, leido.registro, leido.filasIntentos)
   } catch (e) {
     return { error: `No se ha podido guardar el registro: ${mensajeDe(e)}` }
   }
   revalidatePath('/')
   return { ok: 'Sesión registrada.' }
+}
+
+// Corrige el RPE, los minutos, las molestias y los intentos de una sesión registrada en los últimos 7 días.
+export async function corregirRegistro(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const hoy = ahoraMadrid(new Date()).fecha
+  const { sql, datos } = await requerirDatos()
+  let leido: ReturnType<typeof leerRegistro>
+  try {
+    const fila = sesionDe(fd, datos)
+    if (!fila) return { error: 'Esa sesión ya no existe.' }
+    if (!datos.registros.some((r) => r.sesion_id === fila.id)) return { error: 'Esa sesión todavía no está registrada.' }
+    if (!corregible(fila.fecha, hoy)) return { error: 'Solo puedes corregir registros de los últimos 7 días.' }
+    leido = leerRegistro(fd, fila)
+    validarDatos(conRegistroCorregido(datos, leido.registro, leido.filasIntentos))
+  } catch (e) {
+    return { error: mensajeDe(e) }
+  }
+  try {
+    await corregirRegistroBd(sql, leido.registro, leido.filasIntentos)
+  } catch (e) {
+    return { error: `No se ha podido corregir el registro: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/')
+  return { ok: 'Registro corregido.' }
 }
 
 const YA_REGISTRADA = 'Esa sesión ya está registrada: no se puede cambiar ni borrar.'
@@ -62,7 +97,8 @@ export async function noLaHice(_previo: EstadoAccion, fd: FormData): Promise<Est
   }
   if (datos.registros.some((r) => r.sesion_id === id)) return { error: YA_REGISTRADA }
   try {
-    await borrarSesionBd(sql, id)
+    // La consulta solo borra si sigue sin registro (por si se ha registrado en otra pestaña).
+    if (!(await borrarSesionBd(sql, id))) return { error: YA_REGISTRADA }
   } catch (e) {
     return { error: `No se ha podido borrar: ${mensajeDe(e)}` }
   }
@@ -83,13 +119,15 @@ export async function otraCosa(_previo: EstadoAccion, fd: FormData): Promise<Est
     if (!vieja) return { error: 'Esa sesión ya no existe.' }
     if (datos.registros.some((r) => r.sesion_id === idViejo)) return { error: YA_REGISTRADA }
     if (vieja.fecha > hoy) return { error: 'Solo puedes cambiar sesiones de hoy o de días pasados.' }
+    const tipo = opcion(fd, 'tipo', 'Lo que hiciste', TIPOS_LIBRES)
     libre = filaSesionLibre({
       id: crypto.randomUUID(),
-      tipo: opcion(fd, 'tipo', 'Lo que hiciste', TIPOS_LIBRES),
+      tipo,
       intensidad: opcion(fd, 'intensidad', 'La intensidad', ['alta', 'suave']),
       fecha: vieja.fecha,
       horaInicio: hora(fd, 'hora', 'La hora'),
       duracionMin: entero(fd, 'minutos', 'Los minutos', 1, 1440),
+      ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
     })
     const sinVieja = sinSesion(datos, idViejo)
     validarDatos(conSesion(sinVieja, libre))
@@ -101,7 +139,8 @@ export async function otraCosa(_previo: EstadoAccion, fd: FormData): Promise<Est
     return { error: mensajeDe(e) }
   }
   try {
-    await sustituirSesion(sql, idViejo, libre)
+    // La consulta solo sustituye si la vieja sigue sin registro (por si se ha registrado en otra pestaña).
+    if (!(await sustituirSesion(sql, idViejo, libre))) return { error: YA_REGISTRADA }
   } catch (e) {
     return { error: `No se ha podido guardar: ${mensajeDe(e)}` }
   }

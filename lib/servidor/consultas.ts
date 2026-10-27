@@ -75,17 +75,43 @@ export async function insertarSesion(sql: Sql, f: FilaSesion, consejos: FilaCons
   ])
 }
 
-export async function borrarSesionBd(sql: Sql, id: string): Promise<void> {
-  await sql`delete from sesiones where id = ${id}`
+// Las guardas contra tocar una sesión registrada van en la propia sentencia (no solo en la foto leída antes), para que
+// un registro hecho entre medias en otra pestaña no se borre en cascada. Devuelven si se ha hecho el cambio.
+export async function borrarSesionBd(sql: Sql, id: string): Promise<boolean> {
+  const filas = await sql`delete from sesiones
+    where id = ${id} and not exists (select 1 from registros where sesion_id = ${id})
+    returning id`
+  return filas.length > 0
 }
 
-export async function sustituirSesion(sql: Sql, idViejo: string, nueva: FilaSesion): Promise<void> {
-  await sql.transaction([consultaSesion(sql, nueva), sql`delete from sesiones where id = ${idViejo}`])
+// Una sola sentencia: la nueva solo se inserta si la vieja se ha borrado (y solo se borra si no está registrada).
+export async function sustituirSesion(sql: Sql, idViejo: string, nueva: FilaSesion): Promise<boolean> {
+  const filas = await sql`with borrada as (
+      delete from sesiones where id = ${idViejo} and not exists (select 1 from registros where sesion_id = ${idViejo}) returning id
+    )
+    insert into sesiones (id, fecha, sesion, propuesta, origen)
+    select ${nueva.id}::uuid, ${nueva.fecha}::date, ${JSON.stringify(nueva.sesion)}::jsonb,
+      ${nueva.propuesta === null ? null : JSON.stringify(nueva.propuesta)}::jsonb, ${nueva.origen}::text
+    where exists (select 1 from borrada)
+    returning id`
+  return filas.length > 0
 }
 
 export async function insertarRegistro(sql: Sql, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
   await sql.transaction([
     sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb)`,
+    ...intentos.map(
+      (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
+    ),
+  ])
+}
+
+// Corrige un registro: actualiza el registro y sustituye todos los intentos de la sesión, en una transacción.
+export async function corregirRegistroBd(sql: Sql, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
+  await sql.transaction([
+    sql`update registros set rpe = ${r.rpe}, duracion_min = ${r.duracion_min}, molestias = ${JSON.stringify(r.molestias)}::jsonb
+      where sesion_id = ${r.sesion_id}`,
+    sql`delete from intentos_limite where sesion_id = ${r.sesion_id}`,
     ...intentos.map(
       (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
     ),

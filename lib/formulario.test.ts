@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { contexto, entero, ErrorFormulario, fecha, hora, intentos, molestias, numero, numeroOpcional } from './formulario'
+import {
+  contexto, detalleRegleta, entero, ErrorFormulario, fecha, hora, intentos, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
+} from './formulario'
 
 const fd = (campos: Record<string, string>): FormData => {
   const f = new FormData()
@@ -42,5 +44,51 @@ describe('formulario', () => {
       { encadenado: false, motivoCaida: 'bombeo' },
     ])
     expect(() => intentos(fd({ intento_0: 'lluvia' }))).toThrow('Intento 1: opción no válida.')
+  })
+  it('opción opcional', () => {
+    expect(opcionOpcional(fd({ a: '' }), 'a', 'El agarre', ['abierto'])).toBeNull()
+    expect(opcionOpcional(fd({}), 'a', 'El agarre', ['abierto'])).toBeNull()
+    expect(opcionOpcional(fd({ a: 'abierto' }), 'a', 'El agarre', ['abierto'])).toBe('abierto')
+    expect(() => opcionOpcional(fd({ a: 'pinza' }), 'a', 'El agarre', ['abierto'])).toThrow('El agarre: opción no válida.')
+  })
+  it('detalle de regleta: canto y agarre opcionales', () => {
+    expect(detalleRegleta(fd({}))).toEqual({})
+    expect(detalleRegleta(fd({ regleta_mm: '', agarre: '' }))).toEqual({})
+    expect(detalleRegleta(fd({ regleta_mm: '20' }))).toEqual({ regletaMm: 20 })
+    expect(detalleRegleta(fd({ regleta_mm: '18,5', agarre: 'semiarqueado' }))).toEqual({ regletaMm: 18.5, agarre: 'semiarqueado' })
+    expect(() => detalleRegleta(fd({ regleta_mm: '0' }))).toThrow('La regleta: debe ser un número entre 1 y 100.')
+    expect(() => detalleRegleta(fd({ agarre: 'pinza' }))).toThrow('El agarre: opción no válida.')
+  })
+  describe('leerEntradaPeticion', () => {
+    const buena = { fecha: '2026-11-03', horaInicio: 19.5, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 } }
+    const con = (cambios: Record<string, unknown>, ctx: Record<string, unknown> = {}) => ({ ...buena, ...cambios, contexto: { ...buena.contexto, ...ctx } })
+    it('acepta una petición bien formada y devuelve solo los campos conocidos', () => {
+      expect(leerEntradaPeticion({ ...buena, sobra: 1 })).toEqual(buena)
+      expect(leerEntradaPeticion(con({ horaInicio: 0 }, { minutosDisponibles: 10 }))).toMatchObject({ horaInicio: 0 })
+      expect(leerEntradaPeticion(con({}, { minutosDisponibles: 600, compania: 'con-gente', lugar: 'roca' }))).toMatchObject({
+        contexto: { minutosDisponibles: 600, compania: 'con-gente', lugar: 'roca' },
+      })
+    })
+    it('rechaza lo que no es un objeto', () => {
+      for (const v of [null, 'x', 3, [], undefined]) expect(() => leerEntradaPeticion(v)).toThrow(ErrorFormulario)
+      expect(() => leerEntradaPeticion({ ...buena, contexto: null })).toThrow('El contexto: no es válido.')
+    })
+    it('fecha', () => {
+      expect(() => leerEntradaPeticion(con({ fecha: '2026-02-30' }))).toThrow('El día: fecha no válida.')
+      expect(() => leerEntradaPeticion(con({ fecha: '3/11/2026' }))).toThrow('El día: fecha no válida.')
+      expect(() => leerEntradaPeticion(con({ fecha: 20261103 }))).toThrow('El día: fecha no válida.')
+    })
+    it('hora en [0, 24)', () => {
+      for (const h of [24, -0.5, Number.NaN, Number.POSITIVE_INFINITY, '19']) {
+        expect(() => leerEntradaPeticion(con({ horaInicio: h }))).toThrow('La hora: hora no válida.')
+      }
+    })
+    it('contexto con las mismas opciones y rangos que el formulario', () => {
+      expect(() => leerEntradaPeticion(con({}, { compania: 'perro' }))).toThrow('Compañía: opción no válida.')
+      expect(() => leerEntradaPeticion(con({}, { lugar: 'playa' }))).toThrow('Lugar: opción no válida.')
+      for (const m of [9, 601, 5000, 60.5, '60']) {
+        expect(() => leerEntradaPeticion(con({}, { minutosDisponibles: m }))).toThrow('Minutos disponibles')
+      }
+    })
   })
 })
