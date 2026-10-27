@@ -1,0 +1,146 @@
+import { describe, expect, it } from 'vitest'
+import { peticion, ses } from './_fabrica'
+import type { Chequeo, Molestia, RegistroSesion, Seguimiento } from './autorregulacion-tipos'
+import { FASE_FUERZA } from './fases'
+import { proponerSesion } from './propuesta'
+import type { Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
+import { esCargaAlta } from './seguridad'
+import type { Contexto, Sesion } from './tipos'
+
+const MARTES: Contexto = { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: 120 }
+const JUEVES: Contexto = { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 90 }
+const CASA: Contexto = { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 }
+const EVALUACION = { fecha: '2026-11-03', pesoCorporalKg: 70, lastreKg: 10 }
+const AL_LIMITE = ['bloque-limite', 'via-cuerda-limite', 'pegues-proyecto', 'board']
+
+const seg = (extra: Partial<Seguimiento> = {}): Seguimiento => ({ registros: [], chequeos: [], altas: [], ...extra })
+const chq = (fecha: string, valor: number, molestias: Molestia[] = []): Chequeo => ({ fecha, sueno: valor, fatiga: valor, ganas: valor, molestias })
+const reg = (s: Sesion, rpe: number, molestias: Molestia[] = []): RegistroSesion => ({
+  sesionId: s.id, fecha: s.fecha, rpe, duracionMin: s.duracionMin, molestias,
+})
+const pet = (fecha: string, contexto: Contexto, extra: Partial<Peticion> = {}): Peticion =>
+  peticion({ fecha, contexto, fase: FASE_FUERZA, evaluacion: EVALUACION, ...extra })
+const planes = (r: Propuesta): SesionPlan[] => [r.principal, ...r.alternativas].filter((x): x is SesionPlan => x !== null)
+const tipos = (r: Propuesta): string[] => planes(r).map((x) => x.sesion.tipo)
+
+const multipresa = (id: string, fecha: string): Sesion =>
+  ses(id, fecha, 18, { tipo: 'multipresa-resistencia', intensidad: 'alta', duracionMin: 55, detalle: { regletaMm: 20, agarre: 'semiarqueado' } })
+const OCHO_FECHAS = ['2026-11-09', '2026-11-12', '2026-11-16', '2026-11-19', '2026-11-23', '2026-11-26', '2026-11-30', '2026-12-03']
+const ocho = OCHO_FECHAS.map((f, i) => multipresa(`m${i}`, f))
+const repeaters = (r: Propuesta) => {
+  const plan = planes(r).find((x) => x.sesion.tipo === 'multipresa-resistencia')!
+  const bloques = plan.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters'))
+  return { bloques: bloques.length, notas: bloques[0]!.ejercicios[0]!.notas!, parametros: bloques[0]!.explicacion.parametros }
+}
+
+describe('sin seguimiento, el generador no cambia', () => {
+  it('un seguimiento vacío sobre un historial sin multipresa da la misma propuesta, más el estado', () => {
+    const historial = [ses('t', '2026-11-08', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 })]
+    const sin = proponerSesion(pet('2026-11-10', MARTES, { historial }))
+    const con = proponerSesion(pet('2026-11-10', MARTES, { historial, seguimiento: seg() }))
+    const { estado, ...resto } = con
+    expect(resto).toEqual(sin)
+    expect(estado?.zonas.dedos).toBe('verde')
+  })
+  it('rechaza un estado pasado a mano', () => {
+    const estado = proponerSesion(pet('2026-11-10', MARTES, { seguimiento: seg() })).estado!
+    expect(() => proponerSesion(pet('2026-11-10', MARTES, { estado }))).toThrow(/no pases `estado`/)
+  })
+})
+
+describe('semáforo de dolor en el generador (P-64)', () => {
+  it('ámbar en dedos: nada de carga alta (ni multipresa, ni vía al límite, ni test); sí técnica o volumen suave', () => {
+    for (const contexto of [MARTES, JUEVES, CASA]) {
+      const r = proponerSesion(pet('2026-11-10', contexto, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'dedos', dolor: 2 }])] }) }))
+      expect(planes(r).length, contexto.lugar).toBeGreaterThan(0)
+      for (const x of planes(r)) expect(esCargaAlta(x.sesion), `${contexto.compania}:${x.sesion.tipo}`).toBe(false)
+      expect(r.principal!.explicaciones.map((e) => e.regla)).toContain('autorregulacion.semaforo')
+    }
+  })
+  it('ámbar en hombro: el hombro va sin carga', () => {
+    const r = proponerSesion(pet('2026-11-10', { ...CASA, minutosDisponibles: 40 }, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'hombro', dolor: 3 }])] }) }))
+    const hombro = planes(r).find((x) => x.sesion.tipo === 'hombro')!
+    expect(hombro.sesion.detalle?.conCarga).toBe(false)
+    expect(hombro.bloques.every((b) => b.explicacion.parametros.includes('P-43'))).toBe(true)
+  })
+  it('ámbar en otra zona: fuera lo que es al límite, pero la multipresa sigue', () => {
+    const r = proponerSesion(pet('2026-11-10', MARTES, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'otra', dolor: 2 }])] }) }))
+    expect(tipos(r).some((t) => AL_LIMITE.includes(t))).toBe(false)
+    expect(tipos(r)).toContain('multipresa-resistencia')
+  })
+  it('rojo en dedos: descanso como principal y, como alternativa, hombro sin carga', () => {
+    const r = proponerSesion(pet('2026-11-10', MARTES, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'dedos', dolor: 5 }])] }) }))
+    expect(r.principal).toBeNull()
+    expect(r.descanso?.regla).toBe('autorregulacion.rojo')
+    expect(r.descanso?.motivo).toMatch(/fisioterapeuta/)
+    expect(tipos(r)).toEqual(['hombro'])
+    expect(r.alternativas[0]!.sesion.detalle?.conCarga).toBe(false)
+  })
+  it('rojo en hombro o en otra zona: solo descanso', () => {
+    for (const zona of ['hombro', 'otra'] as const) {
+      const r = proponerSesion(pet('2026-11-10', MARTES, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona, dolor: 6 }])] }) }))
+      expect(r.principal, zona).toBeNull()
+      expect(r.alternativas, zona).toEqual([])
+      expect(r.descanso?.regla).toBe('autorregulacion.rojo')
+    }
+  })
+  it('una señal de alarma bloquea igual que un rojo', () => {
+    const r = proponerSesion(pet('2026-11-10', MARTES, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'dedos', dolor: 1, alarma: true }])] }) }))
+    expect(r.descanso?.regla).toBe('autorregulacion.rojo')
+  })
+})
+
+describe('chequeo y descarga adelantada (P-50, P-65)', () => {
+  it('chequeo de hoy bajo: sin carga alta hoy; mañana, sin chequeo bajo, vuelve la carga', () => {
+    const seguimiento = seg({ chequeos: [chq('2026-11-10', 1)] })
+    const hoy = proponerSesion(pet('2026-11-10', MARTES, { seguimiento }))
+    for (const x of planes(hoy)) expect(esCargaAlta(x.sesion), x.sesion.tipo).toBe(false)
+    expect(hoy.principal!.explicaciones.map((e) => e.regla)).toContain('autorregulacion.chequeo-bajo')
+    const manana = proponerSesion(pet('2026-11-11', MARTES, { seguimiento }))
+    expect(esCargaAlta(manana.principal!.sesion)).toBe(true)
+  })
+  it('2 sesiones seguidas por encima del RPE: 7 días de descarga, sin nada al límite y la multipresa con 1 bloque', () => {
+    const a = ses('a', '2026-11-05', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 })
+    const b = ses('b', '2026-11-07', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 })
+    const seguimiento = seg({ registros: [reg(a, 7), reg(b, 7)] })
+    const r = proponerSesion(pet('2026-11-10', MARTES, { historial: [a, b], seguimiento }))
+    expect(r.estado?.descargaAdelantada).toEqual({ desde: '2026-11-08', hasta: '2026-11-14', motivo: 'rpe' })
+    expect(tipos(r).some((t) => AL_LIMITE.includes(t))).toBe(false)
+    expect(r.principal!.explicaciones[0]!.motivo).toMatch(/\(descarga\)/)
+    expect(repeaters(r).bloques).toBe(1)
+    const despues = proponerSesion(pet('2026-11-15', MARTES, { historial: [a, b], seguimiento }))
+    expect(despues.estado?.descargaAdelantada).toBeUndefined()
+    expect(despues.principal!.sesion.tipo).toBe('via-cuerda-limite')
+  })
+})
+
+describe('progresión de la multipresa con seguimiento (P-11, P-46)', () => {
+  const dentro = ocho.map((s) => reg(s, 7))
+  it('8 sesiones válidas: 2 bloques al 80 %', () => {
+    const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento: seg({ registros: dentro }) }))
+    expect(repeaters(r)).toMatchObject({ bloques: 2 })
+    expect(repeaters(r).notas).toMatch(/80 %/)
+  })
+  it('sin registros, las sesiones no cuentan para subir: 1 bloque al 70 %', () => {
+    const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento: seg() }))
+    expect(repeaters(r).bloques).toBe(1)
+    expect(repeaters(r).notas).toMatch(/70 %/)
+  })
+  it('las sesiones por encima del objetivo no cuentan (4 de 8): 2 bloques pero al 70 %', () => {
+    const registros = ocho.map((s, i) => reg(s, i % 2 === 0 ? 9 : 7))
+    const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento: seg({ registros }) }))
+    expect(repeaters(r).bloques).toBe(2)
+    expect(repeaters(r).notas).toMatch(/70 %/)
+  })
+  it('tras un ámbar resuelto en dedos, un escalón atrás (de 80 % a 2 bloques al 70 %) y lo explica con P-46', () => {
+    const seguimiento = seg({
+      registros: dentro,
+      chequeos: [chq('2026-12-05', 4, [{ zona: 'dedos', dolor: 2 }]), chq('2026-12-10', 4)],
+    })
+    const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento }))
+    expect(r.estado?.zonas.dedos).toBe('verde')
+    expect(repeaters(r).bloques).toBe(2)
+    expect(repeaters(r).notas).toMatch(/70 %/)
+    expect(repeaters(r).parametros).toContain('P-46')
+  })
+})

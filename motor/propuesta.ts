@@ -1,6 +1,9 @@
+import { estadoAtleta, restriccionesDe } from './autorregulacion'
+import type { Restricciones } from './autorregulacion-tipos'
 import { tiposPosibles, validarContexto } from './contexto'
 import { evaluacionVigente, fuerzaRelativa } from './evaluacion'
 import { explicar, explicarContexto, type Explicacion } from './explicacion'
+import { descargar } from './fases'
 import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
@@ -36,6 +39,19 @@ interface Candidato {
   plan: SesionPlan
   violaciones: Violacion[]
   sustitucionPor?: Violacion[]
+  sustitucionPorEstado?: boolean
+}
+
+// Sesiones al límite que quita un ámbar en «otra» zona (P-64): caídas, talones y esfuerzos máximos.
+const AL_LIMITE: readonly TipoSesion[] = ['bloque-limite', 'via-cuerda-limite', 'pegues-proyecto', 'board']
+
+// P-64 y P-65: lo que el estado del escalador impide hoy.
+function bloqueadaPorEstado(s: Sesion, r: Restricciones | undefined): boolean {
+  if (!r) return false
+  if (r.soloDescanso) return true
+  if (r.soloHombro) return s.tipo !== 'hombro'
+  if (r.sinCargaAlta && esCargaAlta(s)) return true
+  return r.sinLimite && AL_LIMITE.includes(s.tipo)
 }
 
 interface Valido extends Candidato {
@@ -62,6 +78,9 @@ function validarPeticion(p: Peticion): void {
     { id: ID_PETICION, tipo: 'descanso', intensidad: 'suave', fecha: p.fecha, horaInicio: p.horaInicio, duracionMin: 1 },
     ...p.historial,
   ])
+  if (p.estado !== undefined) {
+    throw new Error('proponerSesion: no pases `estado`; se calcula a partir de `seguimiento`')
+  }
   if (p.evaluacion !== undefined) {
     const relativa = fuerzaRelativa(p.evaluacion) // lanza si el test no es plausible
     if (p.perfil.anosEscalando < VALORES['P-12'].anosMaximosPerfilNovel && relativa > FUERZA_RELATIVA_MAX_NOVEL) {
@@ -147,7 +166,9 @@ function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComp
     partes.push(
       porDescanso
         ? `Sustituye a ${c.tipoPlan}, porque falta un día completo de descanso entre sesiones intensas de dedos.`
-        : `Sustituye a ${c.tipoPlan}, que hoy no cumple una regla de seguridad.`,
+        : c.sustitucionPorEstado
+          ? `Sustituye a ${c.tipoPlan} por tu estado de hoy (semáforo de dolor o chequeo).`
+          : `Sustituye a ${c.tipoPlan}, que hoy no cumple una regla de seguridad.`,
     )
   }
   if (anadidos.length > 0) {
@@ -201,7 +222,13 @@ export function proponerSesion(p: Peticion): Propuesta {
   return proponer(p, true)
 }
 
-function proponer(p: Peticion, conVentana: boolean): Propuesta {
+function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
+  // Tramo 2d: el estado se recalcula para cada fecha (el chequeo de hoy no vale para mañana) y puede adelantar
+  // la descarga (P-50).
+  const estado = recibida.seguimiento ? estadoAtleta(recibida.historial, recibida.seguimiento, recibida.fecha) : undefined
+  const r = estado ? restriccionesDe(estado) : undefined
+  const fase = estado?.descargaAdelantada && !recibida.fase.descarga ? descargar(recibida.fase) : recibida.fase
+  const p: Peticion = { ...recibida, fase, ...(estado ? { estado } : {}) }
   const posibles = new Set(tiposPosibles(p.contexto))
   const vigente = testReciente(p)
   const tipos = p.fase.prioridad.filter(
@@ -214,6 +241,7 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
 
   let huboDescansoDedos = false
   let huboBloqueoIntenso = false
+  let huboBloqueoEstado = false
   const candidatos: Candidato[] = []
   for (const tipo of tipos) {
     let c = evaluar(tipo, p)
@@ -229,11 +257,13 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
       huboBloqueoIntenso = true
     }
     const sustituto = SUSTITUTO_SUAVE[tipo]
-    if (c.violaciones.length > 0 && sustituto && posibles.has(sustituto)) {
+    const porEstado = bloqueadaPorEstado(c.plan.sesion, r)
+    if (porEstado) huboBloqueoEstado = true
+    if ((c.violaciones.length > 0 || porEstado) && sustituto && posibles.has(sustituto)) {
       const suave = evaluar(sustituto, p)
-      if (suave) c = { ...suave, tipoPlan: tipo, sustitucionPor: c.violaciones }
+      if (suave) c = { ...suave, tipoPlan: tipo, sustitucionPor: c.violaciones, ...(porEstado ? { sustitucionPorEstado: true } : {}) }
     }
-    if (c.violaciones.length === 0) candidatos.push(c)
+    if (c.violaciones.length === 0 && !bloqueadaPorEstado(c.plan.sesion, r)) candidatos.push(c)
   }
 
   const ultima = ultimaSesion(p)
@@ -260,9 +290,38 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
     const { plan, anadidos } = completar(v.plan, p, posibles)
     return { ...plan, explicaciones: [explicacionEleccion(v, p, anadidos), ...plan.explicaciones] }
   }
+  const conEstado = (prop: Propuesta): Propuesta => {
+    if (!estado) return prop
+    const principal = prop.principal
+      ? { ...prop.principal, explicaciones: [prop.principal.explicaciones[0]!, ...estado.explicaciones, ...prop.principal.explicaciones.slice(1)] }
+      : null
+    return { ...prop, principal, estado }
+  }
+
+  // Rojo (P-43, P-46, P-64): la principal es el descanso; con rojo en dedos, muñeca o codo se ofrece movilidad de
+  // hombro sin carga por si apetece moverse.
+  if (r && (r.soloDescanso || r.soloHombro)) {
+    const hombro = r.soloHombro && posibles.has('hombro') ? evaluar('hombro', p) : null
+    const alternativa = hombro && hombro.violaciones.length === 0 ? [hombro.plan] : []
+    return conEstado({
+      principal: null,
+      alternativas: alternativa,
+      descanso: explicar(
+        'autorregulacion.rojo',
+        ['P-43', 'P-44', 'P-46', 'P-64'],
+        `Tienes una zona en rojo: hoy toca descanso${alternativa.length > 0 ? ' (o, si quieres moverte, movilidad de hombro sin carga)' : ''}. La carga de la zona queda bloqueada hasta que un fisioterapeuta te dé el alta; pide valoración profesional. El motor no diagnostica.`,
+      ),
+    })
+  }
 
   let descanso: Explicacion | undefined
-  if (validos.length === 0) {
+  if (validos.length === 0 && huboBloqueoEstado) {
+    descanso = explicar(
+      'autorregulacion.sin-opciones',
+      ['P-64', 'P-65'],
+      'Con tu estado de hoy (semáforo de dolor o chequeo) no queda ninguna sesión posible en este contexto: hoy toca descanso.',
+    )
+  } else if (validos.length === 0) {
     descanso = huboDescansoDedos
       ? explicar(
           'generador.descanso',
@@ -288,7 +347,7 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
 
   // Solo tiene sentido avisar si hoy no queda ninguna sesión intensa de dedos válida.
   const hayIntensaValida = validos.some((v) => esIntensaDedos(v.plan.sesion))
-  const ventana = conVentana && huboBloqueoIntenso && !hayIntensaValida ? ventanaIntensa(p) : undefined
+  const ventana = conVentana && huboBloqueoIntenso && !hayIntensaValida ? ventanaIntensa(recibida) : undefined
 
   // Cuando se recomienda descansar, el descanso es la principal (decisión del usuario) y las alternativas son
   // las dos mejores sesiones suaves, por si apetece moverse.
@@ -301,10 +360,10 @@ function proponer(p: Peticion, conVentana: boolean): Propuesta {
     principal = elegidos[0] ? terminar(elegidos[0]) : null
     alternativas = elegidos.slice(1).map(terminar)
   }
-  return {
+  return conEstado({
     principal,
     alternativas,
     ...(descanso ? { descanso } : {}),
     ...(ventana ? { proximaVentanaIntensa: ventana } : {}),
-  }
+  })
 }
