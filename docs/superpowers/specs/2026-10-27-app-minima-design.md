@@ -4,7 +4,7 @@ Fecha: 2026-10-27 · Estado: aprobado en brainstorming, pendiente de revisión e
 
 ## 1. Objetivo y alcance
 
-Primera interfaz del entrenador: una app web (Next.js App Router + Supabase + Vercel) que carga los datos del usuario,
+Primera interfaz del entrenador: una app web (Next.js App Router + Postgres de Neon + Vercel) que carga los datos del usuario,
 llama al motor ya terminado (`motor/`) y guarda lo que propone y lo que el usuario hace. La app **no contiene lógica
 de entrenamiento**: toda decisión sale del motor.
 
@@ -22,51 +22,59 @@ confirmación de datos atípicos, dominio propio.
 
 - Mismo repo `D:\karstika-entreno`. Next.js se instala en la raíz; `app/` (rutas) convive con `motor/`. Antes de
   escribir código se lee la guía de la versión instalada en `node_modules/next/dist/docs/`.
-- **El motor se ejecuta en el servidor.** Las pantallas leen de Supabase en Server Components; las acciones
-  (proponer, aceptar, registrar, alta) son Server Actions que llaman al motor y escriben en Supabase.
+- **El motor se ejecuta en el servidor.** Las pantallas leen de la base de datos en Server Components; las acciones
+  (proponer, aceptar, registrar, alta) son Server Actions que llaman al motor y escriben en la base de datos.
 - `lib/datos/`: funciones **puras** que traducen filas de la base de datos a tipos del motor (`Peticion`,
-  `Seguimiento`, `EvaluacionDedos[]`, `IntentoLimite[]`) y la propuesta a filas. Sin Supabase dentro: reciben
+  `Seguimiento`, `EvaluacionDedos[]`, `IntentoLimite[]`) y la propuesta a filas. Sin base de datos dentro: reciben
   filas y devuelven objetos, para poder probarlas con vitest como el motor.
-- `lib/supabase/`: clientes de servidor y de navegador (`@supabase/ssr`) y tipos de la base de datos escritos a mano.
+- `lib/servidor/`: acceso a la base de datos (consultas SQL con `@neondatabase/serverless`) y la sesión de acceso.
 - `motor/` no cambia en este subproyecto salvo que una prueba de integración destape un fallo; si pasa, se arregla
   en el motor con su prueba y su parámetro, nunca con un parche en la app.
 
-## 3. Datos (Supabase, proyecto nuevo)
+## 3. Datos (Postgres de Neon, desde Vercel)
 
-Proyecto Supabase nuevo, independiente de Karstika. Todas las tablas llevan `user_id uuid not null default auth.uid()
-references auth.users on delete cascade`, RLS activada y una política por operación limitada a `user_id = auth.uid()`.
+Supabase no está disponible. La base de datos es un Postgres de Neon (plan gratuito) añadido desde el panel de Vercel
+al proyecto de la app; Vercel pone `DATABASE_URL` en las variables de entorno. Un único usuario: las tablas no
+llevan `user_id` (añadirlo para más usuarios será una migración).
 
 | Tabla | Contenido |
 |---|---|
-| `perfiles` | `user_id` (PK), `peso_kg`, `anos_escalando`, `lesiones text[]`, `grado_actual`, `grado_objetivo` (solo se muestran), `inicio_temporada`, `objetivo_temporada` (fechas), `aviso_aceptado_en` |
-| `evaluaciones` | `fecha`, `peso_corporal_kg`, `lastre_kg`, `resistencia_s` (nulo), `tecnica` (nulo, 1-7) |
+| `perfil` | una sola fila (`id = 1`): `peso_kg`, `anos_escalando`, `lesiones text[]`, `grado_actual`, `grado_objetivo` (solo se muestran), `inicio_temporada`, `objetivo_temporada` (fechas), `aviso_aceptado_en` |
+| `evaluaciones` | `fecha` (única), `peso_corporal_kg`, `lastre_kg`, `resistencia_s` (nulo), `tecnica` (nulo, 1-7) |
 | `sesiones` | `id` (uuid, se usa como `Sesion.id`), `fecha`, `sesion jsonb` (la `Sesion` del motor), `propuesta jsonb` (el `SesionPlan` aceptado: bloques y explicaciones; nulo si es una sesión libre), `origen` (`propuesta` \| `libre`) |
 | `registros` | `sesion_id` (PK, FK a `sesiones` con cascade), `rpe` (0-10), `duracion_min` (> 0), `molestias jsonb`, `registrado_en` |
-| `chequeos` | `fecha`, `sueno`, `fatiga`, `ganas` (1-5), `molestias jsonb`; **único por (`user_id`, `fecha`)** |
+| `chequeos` | `fecha` (única), `sueno`, `fatiga`, `ganas` (1-5), `molestias jsonb` |
 | `altas` | `zona`, `fecha` |
 | `consejos_mostrados` | `consejo_id`, `fecha` |
 | `intentos_limite` | `sesion_id` (FK, cascade), `fecha`, `encadenado`, `motivo_caida` (nulo) |
 
 - Restricciones CHECK con los mismos rangos que el motor (RPE y dolor enteros 0-10, escalas 1-5, zonas de `ZONAS`,
   motivos de `MotivoCaida`).
-- **La temporada no se guarda.** Se recalcula en cada petición con `planificarTemporada(inicio, objetivo, { ajuste })`,
-  donde `ajuste = ajusteCiclo2(diagnosticar(evaluaciones, intentos, fecha))`, y la fase con `faseEnFecha(t, fecha,
-  { descargasAdelantadas })` usando el `estadoAtleta` del seguimiento. El motor es determinista, así que sale igual
-  cada vez y no puede desincronizarse.
-- Migraciones SQL en `supabase/migrations/`, aplicadas a mano en el SQL Editor (no hay CLI con token).
+- Las consultas devuelven las fechas como texto `AAAA-MM-DD` (`fecha::text`), que es lo que espera el motor.
+- **La temporada no se guarda.** Se recalcula en cada petición con `planificarTemporada(inicio, objetivo, { ajuste })`
+  y la fase con `faseEnFecha(t, fecha, { descargasAdelantadas })` usando el `estadoAtleta` del seguimiento. El
+  ajuste del ciclo 2 sale de `ajusteCiclo2(diagnosticar(evaluaciones, intentos, L))`, donde `L` es el lunes en que
+  empieza el ciclo 2: así el reparto queda fijo durante todo el ciclo 2 aunque lleguen tests nuevos. El motor es
+  determinista, así que sale igual cada vez y no puede desincronizarse.
+- Migraciones SQL en `migraciones/`, aplicadas con `npm run migrar` (script que guarda en la tabla `migraciones` las
+  ya aplicadas y ejecuta las nuevas en orden).
+- Pruebas contra una **rama de Neon aparte** (`E2E_DATABASE_URL`), marcada con la tabla `_base_de_pruebas`. Los
+  scripts que vacían tablas se niegan a tocar una base sin esa marca.
 
 ### Acceso
 
-Supabase Auth con email y contraseña. El registro público queda desactivado en el panel (solo existe la cuenta de
-Diego). RLS deja la app lista para más usuarios sin cambiar el esquema. Rutas protegidas por el proxy/middleware de la
-versión instalada de Next.js; sin sesión, a `/entrar`.
+Una contraseña única (`CLAVE_ACCESO`, variable de entorno de Vercel). `/entrar` la compara y, si coincide, pone
+una cookie `httpOnly`, `secure`, `sameSite=lax` firmada con HMAC-SHA256 (`SECRETO_SESION`) que caduca a los 90 días.
+`proxy.ts` comprueba la firma en cada petición y manda a `/entrar` si falta o no vale. Tras 5 intentos fallidos
+seguidos desde la misma IP, espera de 1 minuto (en memoria; basta para un solo usuario).
 
 ## 4. Pantallas (móvil primero, en español)
 
 ### Primer acceso
 
-1. **Aviso médico:** la app no sustituye a un médico ni a un fisioterapeuta. Se acepta una vez (`aviso_aceptado_en`).
-2. **Perfil:** formulario único. Sin perfil completo no se puede entrar a Entrenar.
+1. **Perfil con aviso médico:** formulario único. La primera vez incluye el aviso (la app no sustituye a un médico
+   ni a un fisioterapeuta) con una casilla obligatoria; se guarda `aviso_aceptado_en`. Sin perfil no se puede entrar a
+   ninguna otra pantalla.
 3. **Evaluación:** formulario para meter los resultados de los tests (fecha, peso, lastre del mejor intento de 10 s,
    resistencia en segundos y técnica de 1 a 7, estas dos opcionales), validado con `validarEvaluacion`. Debajo, el
    historial de evaluaciones con opción de borrar una mal metida.
@@ -78,7 +86,7 @@ versión instalada de Next.js; sin sesión, a `/entrar`.
    `validarContexto`.
 3. **Chequeo:** sueño, fatiga y ganas (1-5) y molestias por zona (dolor 0-10 y casilla «alarma»: chasquido,
    hinchazón, pérdida de fuerza o de función). Solo se pide si la fecha pedida es hoy. Se guarda con *upsert* por
-   (`user_id`, `fecha`): repetir la petición el mismo día sustituye el chequeo, así varias peticiones no cuentan como
+   `fecha`: repetir la petición el mismo día sustituye el chequeo, así varias peticiones no cuentan como
    varios chequeos bajos.
 4. **Propuesta:** la app arma la `Peticion` (perfil, historial, fase, evaluación vigente, seguimiento,
    `limitantePrincipal = diagnostico.limitantes[0]`, consejos mostrados) y llama a `proponerSesion` y a
@@ -114,7 +122,7 @@ versión instalada de Next.js; sin sesión, a `/entrar`.
 - Si el motor no tiene ninguna opción, se dice tal cual, con su explicación (`autorregulacion.sin-opciones`).
 - Si el motor lanza un error inesperado: «No se ha podido preparar la sesión», con el detalle desplegable. Nunca se
   inventa una sesión ni se muestra una propuesta a medias.
-- Si falla una escritura en Supabase, la acción devuelve el error y la pantalla no cambia de estado.
+- Si falla una escritura en la base de datos, la acción devuelve el error y la pantalla no cambia de estado.
 
 ## 6. Pruebas
 
@@ -122,11 +130,14 @@ versión instalada de Next.js; sin sesión, a `/entrar`.
 - **`lib/datos/` (vitest):** filas → `Peticion` / `Seguimiento`, `SesionPlan` aceptado → fila (id nuevo, `Sesion`
   intacta), la regla de un chequeo por día, y un escenario de extremo a extremo con filas en memoria: perfil →
   evaluación → petición → aceptar → registro con RPE por encima → la siguiente petición sale frenada (P-11).
-- **RLS:** script contra el proyecto real con dos usuarios de prueba: B no puede leer, insertar, modificar ni borrar
-  filas de A en ninguna tabla. Los usuarios de prueba se borran al terminar.
+- **Acceso (vitest):** firma y comprobación de la cookie (válida, manipulada, caducada, con otro secreto).
+- **Base de datos:** las migraciones se aplican en la rama de pruebas y un script comprueba que las CHECK rechazan
+  valores fuera de rango.
 - **Playwright:** entrar → Entrenar (contexto y chequeo) → aceptar → Hoy → Terminar → registro guardado.
 
 ## 7. Despliegue
 
-- Proyecto nuevo en Vercel conectado al repo, con las variables de Supabase. Subdominio `*.vercel.app` por ahora.
-- Las migraciones se aplican antes de desplegar el código que las usa.
+- Proyecto nuevo en Vercel conectado al repo, con Neon añadido desde el panel (crea `DATABASE_URL`) y las variables
+  `CLAVE_ACCESO` y `SECRETO_SESION`. Subdominio `*.vercel.app` por ahora.
+- Las migraciones se aplican (`npm run migrar` con la `DATABASE_URL` de producción) antes de desplegar el código que
+  las usa.
