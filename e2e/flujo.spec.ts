@@ -31,9 +31,8 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await page.getByLabel('Fecha objetivo').fill(sumarDias(inicio, 48 * 7))
   await page.getByLabel('He leído el aviso y lo acepto').check()
   await page.getByRole('button', { name: 'Guardar perfil' }).click()
-  await expect(page).toHaveURL(/\/evaluacion$/)
+  await expect(page).toHaveURL(/\/entrenar$/)
 
-  await page.goto('/entrenar')
   await page.getByLabel('Hora').fill('10:00')
   await page.getByLabel('Con gente').check()
   await page.getByLabel('Rocódromo').check()

@@ -38,8 +38,13 @@ export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Pr
   return { ok: 'Evaluación guardada.' }
 }
 
-export async function borrarEvaluacion(fd: FormData): Promise<void> {
+export async function borrarEvaluacion(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const { sql } = await requerirDatos()
-  await borrarEvaluacionBd(sql, texto(fd, 'id', 'La evaluación'))
+  try {
+    await borrarEvaluacionBd(sql, texto(fd, 'id', 'La evaluación'))
+  } catch (e) {
+    return { error: `No se ha podido borrar la evaluación: ${mensajeDe(e)}` }
+  }
   revalidatePath('/evaluacion')
+  return { ok: 'Evaluación borrada.' }
 }

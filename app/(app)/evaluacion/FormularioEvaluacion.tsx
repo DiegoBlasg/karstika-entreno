@@ -5,11 +5,12 @@ import { BOTON, CAMPO } from '@/components/estilos'
 import type { EstadoAccion } from '@/lib/estado'
 import { guardarEvaluacion } from './acciones'
 
-export function FormularioEvaluacion({ hoy, peso }: { hoy: string; peso: number }) {
+// `fechaInicial`: la del último test registrado sin resultado, o hoy.
+export function FormularioEvaluacion({ hoy, fechaInicial, peso }: { hoy: string; fechaInicial: string; peso: number }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarEvaluacion, null)
   return (
     <form action={accion} className="space-y-4">
-      <label className="block">Fecha del test<input type="date" name="fecha" max={hoy} defaultValue={hoy} required className={CAMPO} /></label>
+      <label className="block">Fecha del test<input type="date" name="fecha" max={hoy} defaultValue={fechaInicial} required className={CAMPO} /></label>
       <label className="block">Peso ese día (kg)<input name="peso_corporal_kg" inputMode="decimal" defaultValue={peso} required className={CAMPO} /></label>
       <label className="block">
         Lastre del mejor intento de 10 s (kg)

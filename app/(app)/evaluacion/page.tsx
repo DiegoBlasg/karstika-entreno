@@ -1,21 +1,28 @@
+import Link from 'next/link'
 import { fuerzaRelativa } from '@/motor'
 import { TARJETA } from '@/components/estilos'
+import { testsSinResultado } from '@/lib/datos/hoy'
 import { evaluacionMotor } from '@/lib/datos/mapeo'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
 import { requerirDatos } from '@/lib/servidor/consultas'
-import { borrarEvaluacion } from './acciones'
+import { BotonBorrarEvaluacion } from './BotonBorrarEvaluacion'
 import { FormularioEvaluacion } from './FormularioEvaluacion'
 
 export default async function PaginaEvaluacion() {
   const { datos } = await requerirDatos()
   const hoy = ahoraMadrid(new Date()).fecha
   const lista = [...datos.evaluaciones].reverse()
+  const fechaInicial = testsSinResultado(datos, hoy).at(-1) ?? hoy
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Evaluación</h1>
+      <p className="text-sm text-stone-600">
+        Aquí se apunta el resultado del test de dedos <strong>después</strong> de hacerlo. ¿Aún no lo has hecho? No pasa
+        nada: el entrenador te lo propondrá cuando toque. <Link href="/entrenar" className="underline">Ir a Entrenar</Link>
+      </p>
       <section className={TARJETA}>
         <h2 className="font-medium">Nuevo resultado</h2>
-        <FormularioEvaluacion hoy={hoy} peso={datos.perfil.peso_kg} />
+        <FormularioEvaluacion hoy={hoy} fechaInicial={fechaInicial} peso={datos.perfil.peso_kg} />
       </section>
       <section className="space-y-2">
         <h2 className="font-medium">Historial</h2>
@@ -31,10 +38,7 @@ export default async function PaginaEvaluacion() {
                   {e.tecnica !== null ? ` · técnica ${e.tecnica}` : ''}
                 </p>
               </div>
-              <form action={borrarEvaluacion}>
-                <input type="hidden" name="id" value={e.id} />
-                <button className="text-red-700">Borrar</button>
-              </form>
+              <BotonBorrarEvaluacion id={e.id} fecha={e.fecha} />
             </li>
           ))}
         </ul>

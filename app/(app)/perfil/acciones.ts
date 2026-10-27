@@ -35,6 +35,6 @@ export async function guardarPerfil(_previo: EstadoAccion, fd: FormData): Promis
     return { error: `No se ha podido guardar el perfil: ${mensajeDe(e)}` }
   }
   revalidatePath('/', 'layout')
-  if (!previo) redirect('/evaluacion')
+  if (!previo) redirect('/entrenar') // primera vez: a preparar la primera sesión (el test lo propone el entrenador)
   return { ok: 'Perfil guardado.' }
 }

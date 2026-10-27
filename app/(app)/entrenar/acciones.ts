@@ -9,7 +9,7 @@ import { opcionElegida, prepararPropuesta, type EntradaPeticion, type Preparacio
 import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
-import { contexto, entero, fecha, hora, mensajeDe, molestias, texto } from '@/lib/formulario'
+import { contexto, entero, fecha, hora, leerEntradaPeticion, mensajeDe, molestias, texto } from '@/lib/formulario'
 import { guardarChequeo, insertarSesion, requerirDatos } from '@/lib/servidor/consultas'
 
 export type EstadoProponer = { error: string; detalle?: string } | { entrada: EntradaPeticion; prep: Preparacion } | null
@@ -41,7 +41,8 @@ export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<E
   } catch (e) {
     return { error: 'No se ha podido preparar la sesión.', detalle: mensajeDe(e) }
   }
-  if (chequeo) {
+  // Solo se guarda el chequeo si de verdad hay propuesta (fuera de temporada no cuenta para nada).
+  if (chequeo && prep.tipo === 'propuesta') {
     try {
       await guardarChequeo(sql, chequeo)
     } catch (e) {
@@ -58,13 +59,13 @@ export async function aceptar(_previo: EstadoAccion, fd: FormData): Promise<Esta
   let indice: number
   let tipo: string
   try {
-    entrada = JSON.parse(texto(fd, 'entrada', 'La petición')) as EntradaPeticion
+    entrada = leerEntradaPeticion(JSON.parse(texto(fd, 'entrada', 'La petición')))
     indice = entero(fd, 'indice', 'La opción', 0, 10)
     tipo = texto(fd, 'tipo', 'El tipo de sesión')
   } catch {
     return { error: 'Petición no válida: vuelve a preparar la sesión.' }
   }
-  if (typeof entrada?.fecha !== 'string' || entrada.fecha < ahoraMadrid(new Date()).fecha) {
+  if (entrada.fecha < ahoraMadrid(new Date()).fecha) {
     return { error: 'Solo puedes aceptar sesiones para hoy o para días futuros.' }
   }
   const { sql, datos } = await requerirDatos()
