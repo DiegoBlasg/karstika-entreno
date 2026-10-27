@@ -32,3 +32,5 @@ export {
   type Alta, type Chequeo, type EstadoAtleta, type Molestia, type RegistroSesion, type Restricciones, type Seguimiento, type Semaforo, type Zona,
 } from './autorregulacion-tipos'
 export { CONSEJOS, elegirConsejos, type Consejo } from './consejos'
+export { planificarSemana, validarHuecos } from './semana'
+export type { Hueco } from './propuesta-tipos'

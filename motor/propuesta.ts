@@ -8,6 +8,7 @@ import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
+import { explicacionSemana, planificarSemana, validarHuecos } from './semana'
 import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
 
@@ -251,7 +252,28 @@ function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
 
 export function proponerSesion(p: Peticion): Propuesta {
   validarPeticion(p)
-  return proponer(p, true)
+  const { huecos, ...sinHuecos } = p
+  if (!huecos || huecos.length === 0) return proponer(sinHuecos, true)
+  // Tramo 2e (P-67): se planifica la semana con los huecos y la sesión de hoy es la del mejor reparto.
+  validarHuecos(p)
+  const { ranuras, elegidas } = planificarSemana(p, (q) => proponer(q, false))
+  const r0 = proponer(sinHuecos, true)
+  const semana = ranuras.slice(1).map((hueco, i) => {
+    const o = elegidas[i + 1]
+    return { hueco, sesion: o ? { ...o.sesion, id: `semana-${i + 1}` } : null }
+  })
+  const hoy = elegidas[0] ?? null
+  if (!hoy) return { ...r0, semana }
+  const explicacion = explicacionSemana(ranuras, elegidas, r0.principal)
+  const otras = [r0.principal, ...r0.alternativas].filter(
+    (o): o is SesionPlan => o !== null && o.sesion.tipo !== hoy.sesion.tipo,
+  )
+  return {
+    ...r0,
+    principal: { ...hoy, explicaciones: [explicacion, ...hoy.explicaciones] },
+    alternativas: otras.slice(0, 2),
+    semana,
+  }
 }
 
 function proponer(recibida: Peticion, conVentana: boolean): Propuesta {

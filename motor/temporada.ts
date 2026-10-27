@@ -65,7 +65,7 @@ const MAX_SEMANAS_FASE_SIN_TEST = 8
 const SEMANAS_TRAS_OBJETIVO = 2
 
 // 1970-01-01 fue jueves: el día 4 fue lunes.
-const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
+export const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
 
 export function planificarTemporada(inicio: string, objetivo: string, opcionesRecibidas: OpcionesTemporada = {}): Temporada {
   if (opcionesRecibidas.ajuste && (opcionesRecibidas.ciclo2 || opcionesRecibidas.refuerzoTecnica !== undefined)) {
