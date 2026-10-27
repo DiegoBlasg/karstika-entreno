@@ -18,8 +18,8 @@ function comprobar(e: EvaluacionDedos): void {
   if (e.pesoCorporalKg < PESO_MIN_KG || e.pesoCorporalKg > PESO_MAX_KG) {
     throw new Error(`pesoCorporalKg fuera de rango plausible (${PESO_MIN_KG}-${PESO_MAX_KG} kg): ${e.pesoCorporalKg}`)
   }
-  if (e.resistenciaS !== undefined && !(Number.isFinite(e.resistenciaS) && e.resistenciaS > 0 && e.resistenciaS <= RESISTENCIA_MAX_S)) {
-    throw new Error(`resistenciaS debe estar entre 0 y ${RESISTENCIA_MAX_S} s: ${e.resistenciaS}`)
+  if (e.resistenciaS !== undefined && !(Number.isFinite(e.resistenciaS) && e.resistenciaS >= 1 && e.resistenciaS <= RESISTENCIA_MAX_S)) {
+    throw new Error(`resistenciaS debe estar entre 1 y ${RESISTENCIA_MAX_S} s: ${e.resistenciaS}`)
   }
   const { minimo, maximo } = VALORES['P-27']
   if (e.tecnica !== undefined && !(Number.isInteger(e.tecnica) && e.tecnica >= minimo && e.tecnica <= maximo)) {

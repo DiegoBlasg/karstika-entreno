@@ -154,3 +154,15 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
   técnica por semana; cabeza → 8 + 6 (el trabajo mental, en los consejos del tramo 2d). Rangos de P-31.
 - `planificarTemporada(inicio, objetivo, { ciclo2, refuerzoTecnica })` aplica el ajuste sin cambiar la fecha
   objetivo (las 14 semanas se reparten; error claro fuera de P-31 o si no suman 14).
+
+### Correcciones tras la revisión de la parte 2
+
+- **P-08**: las fases de fuerza o resistencia de más de 8 semanas (y los rendimientos de más de 6) llevan test a
+  mitad de fase; con cualquiera de los 4 repartos nunca pasan más de 10 semanas entre tests (probado).
+- **Progreso (P-19)**: hacen falta 3 tests y que los 2 últimos confirmen el cambio frente al primero (≥ 5 %, o 1 punto
+  en la técnica, que se muestra en puntos y no en %). Dos evaluaciones el mismo día se rechazan.
+- **Test de resistencia**: la carga se da en kg con la fórmula `0,6 × (peso + lastre de hoy) − peso` (negativo =
+  descarga con polea o banda) y un ejemplo con el último test; si hace falta descarga y no hay polea, en el rocódromo.
+- **Refuerzo de técnica**: es un cupo más de técnica que se usa cuando hay hueco (días suaves, descargas, rendimiento);
+  no desplaza a la fuerza, y la explicación lo dice así.
+- `planificarTemporada(..., { ajuste })` acepta directamente el resultado de `ajusteCiclo2`.

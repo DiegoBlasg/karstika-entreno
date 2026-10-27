@@ -274,6 +274,15 @@ function construirPegues(p: Peticion): SesionPlan | null {
   return plan(sesionDe('pegues-proyecto', p, total(n), 'alta'), bloques)
 }
 
+// Ejemplo de la carga del test de resistencia con el último test vigente (la carga real sale del máximo de hoy).
+function ejemploResistencia(p: Peticion, fraccion: number): string {
+  if (!p.evaluacion || !evaluacionVigente(p.evaluacion, p.fecha)) return ''
+  const { pesoCorporalKg: peso, lastreKg: lastre } = p.evaluacion
+  const kg = Math.floor((fraccion * (peso + lastre) - peso) * 2 + 1e-9) / 2 + 0
+  const texto = kg > 0 ? `+${fmt(kg)} kg de lastre` : kg < 0 ? `${fmt(-kg)} kg de descarga` : 'solo tu peso corporal'
+  return `Con tu último test (${fmt(peso)} kg y ${fmt(lastre)} kg de lastre) serían ${texto}. `
+}
+
 // Tras el test máximo, si hay tiempo: 10 min de descanso y el test de resistencia intermitente (P-24). Las duraciones
 // de los bloques son decisión de diseño.
 const DESCANSO_ENTRE_TESTS_MIN = 10
@@ -338,8 +347,8 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
             nombre: `Suspensiones ${trabajoS} s : ${descansoS} s al ${Math.round(fraccion * 100)} % de tu máximo de hoy, hasta el fallo`,
             trabajoS,
             descansoS,
-            cargaTexto: `${Math.round(fraccion * 100)} % de la carga máxima que acabas de medir`,
-            notas: 'Apunta los segundos totales hasta no poder completar una repetición. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.',
+            cargaTexto: `Carga total = ${fmt(fraccion)} × (tu peso + el lastre de tu mejor intento de hoy). Lastre = esa carga − tu peso; si sale negativo, quita ese peso con polea o banda`,
+            notas: `${ejemploResistencia(p, fraccion)}Si necesitas descarga y no tienes polea, haz este test en el rocódromo. Apunta los segundos totales hasta no poder completar una repetición. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.`,
           },
         ],
         explicacion: explicar(

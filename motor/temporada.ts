@@ -1,4 +1,5 @@
 import { descargar, FASE_OBJETIVO, FASES } from './fases'
+import type { AjusteCiclo2 } from './diagnostico'
 import { VALORES } from './parametros'
 import type { Fase, FaseId } from './propuesta-tipos'
 import { diaNumero, fechaDesdeDia } from './tiempo'
@@ -24,6 +25,7 @@ export interface Temporada {
 export interface OpcionesTemporada {
   ciclo2?: { fuerza: number; resistencia: number }
   refuerzoTecnica?: boolean
+  ajuste?: AjusteCiclo2         // atajo: aplica a la vez el reparto y el refuerzo de técnica de ajusteCiclo2
 }
 
 interface Tramo {
@@ -55,14 +57,23 @@ const ORDEN_AJUSTE = [7, 4, 3] as const
 // P-47: 1 semana de descarga de cada 4 para < 2 años. Solo cuentan las fases de carga.
 const CADA_CUANTAS_DESCARGA = 4
 const FASES_QUE_CUENTAN: readonly FaseId[] = ['fuerza', 'resistencia', 'rendimiento']
+// Test a mitad de fase cuando la fase es larga, para no pasar de 10 semanas sin reevaluar (P-08) contando con la
+// transición: rendimiento de más de 6 semanas, fuerza o resistencia de más de 8.
 const MAX_SEMANAS_SIN_TEST = 6
+const MAX_SEMANAS_FASE_SIN_TEST = 8
 // La semana objetivo y la siguiente (el viaje del 7a) se tratan como rendimiento sin test ni descarga.
 const SEMANAS_TRAS_OBJETIVO = 2
 
 // 1970-01-01 fue jueves: el día 4 fue lunes.
 const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
 
-export function planificarTemporada(inicio: string, objetivo: string, opciones: OpcionesTemporada = {}): Temporada {
+export function planificarTemporada(inicio: string, objetivo: string, opcionesRecibidas: OpcionesTemporada = {}): Temporada {
+  const opciones: OpcionesTemporada = opcionesRecibidas.ajuste
+    ? {
+        ciclo2: { fuerza: opcionesRecibidas.ajuste.fuerza, resistencia: opcionesRecibidas.ajuste.resistencia },
+        refuerzoTecnica: opcionesRecibidas.ajuste.refuerzoTecnica,
+      }
+    : opcionesRecibidas
   const di = diaNumero(inicio)
   if (desdeLunes(di) !== 0) throw new Error(`El inicio de la temporada debe ser un lunes: ${inicio}`)
   const dObjetivo = diaNumero(objetivo)
@@ -121,7 +132,7 @@ export function planificarTemporada(inicio: string, objetivo: string, opciones: 
         // reevaluar (P-08). La base no: su test lo desbloquea P-32 (28 días y 6 sesiones), no el calendario.
         reevaluar:
           t.faseId !== 'transicion' && t.faseId !== 'base' &&
-          (k === t.semanas || (t.faseId === 'rendimiento' && t.semanas > MAX_SEMANAS_SIN_TEST && k === Math.floor(t.semanas / 2))),
+          (k === t.semanas || (t.semanas > (t.faseId === 'rendimiento' ? MAX_SEMANAS_SIN_TEST : MAX_SEMANAS_FASE_SIN_TEST) && k === Math.floor(t.semanas / 2))),
       })
     }
   }

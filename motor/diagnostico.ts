@@ -19,7 +19,9 @@ export type Tendencia = 'mejora' | 'sin-cambio' | 'empeora' | 'sin-datos'
 export interface Progreso {
   inicial?: number
   actual?: number
-  cambioPct?: number
+  cambio?: number                 // en % (fuerza, resistencia) o en puntos (técnica, escala 1-7)
+  unidad: '%' | 'puntos'
+  mediciones: number
   tendencia: Tendencia
 }
 
@@ -38,10 +40,13 @@ export interface AjusteCiclo2 {
   explicacion: Explicacion
 }
 
-// Decisiones de diseño (no están en parametros.md): se desconoce el cambio mínimo detectable (P-19), así que un
-// cambio de menos del 5 % se trata como «sin cambio»; el registro de caídas manda con al menos 10 caídas con motivo
-// en las últimas 8 semanas.
+// Decisiones de diseño (no están en parametros.md). Se desconoce el cambio mínimo detectable y una sola medición
+// no basta (P-19): hacen falta al menos 3 tests y que los 2 últimos confirmen el cambio frente al primero, de al
+// menos un 5 % (o 1 punto en la técnica, escala 1-7). El registro de caídas manda con al menos 10 caídas con
+// motivo en las últimas 8 semanas.
 const UMBRAL_CAMBIO_PCT = 5
+const UMBRAL_PUNTOS = 1
+const MIN_MEDICIONES = 3
 const MIN_CAIDAS = 10
 const VENTANA_CAIDAS_DIAS = 56
 
@@ -53,15 +58,23 @@ const LIMITANTE_DE: Record<MotivoCaida, Limitante> = {
 }
 const MOTIVOS: readonly MotivoCaida[] = ['bombeo', 'paso-fuerza', 'tecnica-lectura', 'cabeza']
 
-function progreso(valores: readonly number[]): Progreso {
-  if (valores.length === 0) return { tendencia: 'sin-datos' }
+function progreso(valores: readonly number[], unidad: '%' | 'puntos'): Progreso {
+  const mediciones = valores.length
+  if (mediciones === 0) return { unidad, mediciones, tendencia: 'sin-datos' }
   const inicial = valores[0]!
-  const actual = valores[valores.length - 1]!
-  if (valores.length < 2) return { inicial, actual, tendencia: 'sin-datos' }
-  const cambioPct = ((actual - inicial) / inicial) * 100
-  const tendencia: Tendencia =
-    Math.abs(cambioPct) < UMBRAL_CAMBIO_PCT ? 'sin-cambio' : cambioPct > 0 ? 'mejora' : 'empeora'
-  return { inicial, actual, cambioPct, tendencia }
+  const actual = valores[mediciones - 1]!
+  const delta = (v: number): number => (unidad === '%' ? ((v - inicial) / inicial) * 100 : v - inicial)
+  const cambio = mediciones >= 2 ? delta(actual) : undefined
+  const base = { inicial, actual, ...(cambio !== undefined ? { cambio } : {}), unidad, mediciones }
+  if (mediciones < MIN_MEDICIONES) return { ...base, tendencia: 'sin-datos' }
+  const umbral = unidad === '%' ? UMBRAL_CAMBIO_PCT : UMBRAL_PUNTOS
+  const ultimas = valores.slice(-2).map(delta)
+  const tendencia: Tendencia = ultimas.every((x) => x >= umbral)
+    ? 'mejora'
+    : ultimas.every((x) => x <= -umbral)
+      ? 'empeora'
+      : 'sin-cambio'
+  return { ...base, tendencia }
 }
 
 function validarIntento(i: IntentoLimite): void {
@@ -75,17 +88,20 @@ function validarIntento(i: IntentoLimite): void {
 
 export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], intentos: readonly IntentoLimite[], fecha: string): Diagnostico {
   const hoy = diaNumero(fecha)
+  const fechas = new Set<string>()
   for (const e of evaluaciones) {
     validarEvaluacion(e)
     diaNumero(e.fecha)
+    if (fechas.has(e.fecha)) throw new Error(`Hay dos evaluaciones el mismo día (${e.fecha}): deja solo una`)
+    fechas.add(e.fecha)
   }
   for (const i of intentos) validarIntento(i)
 
   // Solo cuenta lo que ya ha pasado; las evaluaciones, en orden de fecha.
   const pasadas = evaluaciones.filter((e) => diaNumero(e.fecha) <= hoy).sort((a, b) => diaNumero(a.fecha) - diaNumero(b.fecha))
-  const fuerza = progreso(pasadas.map(fuerzaRelativa))
-  const resistencia = progreso(pasadas.flatMap((e) => (e.resistenciaS === undefined ? [] : [e.resistenciaS])))
-  const tecnica = progreso(pasadas.flatMap((e) => (e.tecnica === undefined ? [] : [e.tecnica])))
+  const fuerza = progreso(pasadas.map(fuerzaRelativa), '%')
+  const resistencia = progreso(pasadas.flatMap((e) => (e.resistenciaS === undefined ? [] : [e.resistenciaS])), '%')
+  const tecnica = progreso(pasadas.flatMap((e) => (e.tecnica === undefined ? [] : [e.tecnica])), 'puntos')
 
   const caidas: Record<Limitante, number> = { 'fuerza-dedos': 0, resistencia: 0, tecnica: 0, cabeza: 0 }
   for (const i of intentos) {
@@ -100,12 +116,13 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], intentos:
       ? [...ordenEvidencia].sort((a, b) => caidas[b] - caidas[a] || ordenEvidencia.indexOf(a) - ordenEvidencia.indexOf(b))
       : [...ordenEvidencia]
 
-  const pct = (x?: number) => (x === undefined ? '' : ` (${x > 0 ? '+' : ''}${x.toFixed(1)} %)`)
+  const cambio = (p: Progreso) =>
+    p.cambio === undefined ? '' : ` (${p.cambio > 0 ? '+' : ''}${p.unidad === '%' ? `${p.cambio.toFixed(1)} %` : `${p.cambio} puntos`})`
   const explicaciones = [
     explicar(
       'diagnostico.progreso',
       ['P-19', 'P-24', 'P-27'],
-      `Progreso frente a tu propia línea base: fuerza de dedos ${fuerza.tendencia}${pct(fuerza.cambioPct)}, resistencia ${resistencia.tendencia}${pct(resistencia.cambioPct)}, técnica ${tecnica.tendencia}${pct(tecnica.cambioPct)}. Un cambio de menos del ${UMBRAL_CAMBIO_PCT} % se trata como «sin cambio» porque el cambio mínimo detectable es desconocido (decisión de diseño).`,
+      `Progreso frente a tu propia línea base: fuerza de dedos ${fuerza.tendencia}${cambio(fuerza)}, resistencia ${resistencia.tendencia}${cambio(resistencia)}, técnica ${tecnica.tendencia}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_CAMBIO_PCT} % (1 punto en la técnica); los umbrales son decisión de diseño. Los segundos de resistencia se miden al 60 % del máximo de ese día: si tu fuerza sube, pueden quedarse igual aunque hayas mejorado.`,
     ),
     fuente === 'caidas'
       ? explicar(
@@ -116,7 +133,7 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], intentos:
       : explicar(
           'diagnostico.limitantes',
           ['P-23'],
-          `Con menos de ${MIN_CAIDAS} caídas registradas en 8 semanas (${totalCaidas}), el orden es el de la evidencia: fuerza de dedos, resistencia intermitente y después técnica y cabeza (P-23).`,
+          `Con menos de ${MIN_CAIDAS} caídas registradas en 8 semanas (${totalCaidas}), el orden es el de la evidencia: fuerza de dedos y resistencia intermitente (P-23); después técnica y cabeza (la táctica de P-23), cuyo orden entre sí es decisión de diseño.`,
         ),
   ]
   return { progreso: { fuerza, resistencia, tecnica }, limitantes, fuente, caidas, explicaciones }
@@ -137,7 +154,7 @@ export function ajusteCiclo2(d: Diagnostico): AjusteCiclo2 {
   const motivo = {
     'fuerza-dedos': 'Tu limitante principal es la fuerza de dedos: el ciclo 2 alarga la fuerza a 10 semanas y acorta la resistencia a 4.',
     resistencia: 'Tu limitante principal es la resistencia (te caes por bombeo): el ciclo 2 alarga la resistencia a 8 semanas y acorta la fuerza a 6.',
-    tecnica: 'Tu limitante principal es la técnica o la lectura: el ciclo 2 mantiene 8 + 6 semanas y añade una sesión de técnica por semana.',
+    tecnica: 'Tu limitante principal es la técnica o la lectura: el ciclo 2 mantiene 8 + 6 semanas y añade un cupo de técnica por semana, que se usa cuando hay hueco (días suaves, descargas y rendimiento); no desplaza a las sesiones de fuerza.',
     cabeza: 'Tu limitante principal es la cabeza: el ciclo 2 mantiene 8 + 6 semanas; el trabajo mental va en los consejos (no hay protocolo con evidencia, P-62).',
   }[principal]
   return {

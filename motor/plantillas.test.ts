@@ -390,3 +390,22 @@ describe('plantillas en semana de descarga (P-48)', () => {
     expect(cuatro.sesion.duracionMin).toBe(35)
   })
 })
+
+describe('test de resistencia: carga explícita (revisión)', () => {
+  it('da la fórmula en kg y un ejemplo con el último test: 0,6 × (72 + 20) − 72 = −16,8 → 17 kg de descarga', () => {
+    const p = peticion({
+      contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 },
+      evaluacion: { fecha: '2026-10-20', pesoCorporalKg: 72, lastreKg: 20 },
+    })
+    const e = construirSesion('evaluacion-dedos', p)!.bloques[4]!.ejercicios[0]!
+    expect(e.cargaTexto).toMatch(/Carga total = 0,6 × \(tu peso \+ el lastre de tu mejor intento de hoy\)/)
+    expect(e.cargaTexto).toMatch(/polea o banda/)
+    expect(e.notas).toMatch(/serían 17 kg de descarga/)
+    expect(e.notas).toMatch(/no tienes polea, haz este test en el rocódromo/)
+  })
+  it('sin test vigente da la fórmula sin ejemplo', () => {
+    const e = construirSesion('evaluacion-dedos', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 } }))!.bloques[4]!.ejercicios[0]!
+    expect(e.notas).not.toMatch(/Con tu último test/)
+    expect(e.cargaTexto).toMatch(/Carga total/)
+  })
+})
