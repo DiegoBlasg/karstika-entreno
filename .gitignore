@@ -2,3 +2,8 @@
 node_modules
 .next
 .env*
+test-results
+playwright-report
+.vercel
+next-env.d.ts
+*.tsbuildinfo

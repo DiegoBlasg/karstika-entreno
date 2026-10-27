@@ -1,0 +1,47 @@
+import { describe, expect, it } from 'vitest'
+import { datosVacios, sesionFila, uuid } from './_fabrica'
+import { validarDatos } from './validar'
+
+const ev = (n: number, fecha: string) => ({ id: uuid(n), fecha, peso_corporal_kg: 70, lastre_kg: 10, resistencia_s: null, tecnica: null })
+
+describe('validarDatos', () => {
+  it('acepta datos coherentes', () => {
+    expect(() => validarDatos(datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03')],
+      registros: [{ sesion_id: uuid(1), rpe: 5, duracion_min: 60, molestias: [], registrado_en: 'x' }],
+      evaluaciones: [ev(2, '2026-11-04')],
+      intentos: [{ id: uuid(3), sesion_id: uuid(1), fecha: '2026-11-03', encadenado: false, motivo_caida: 'bombeo' }],
+    }))).not.toThrow()
+  })
+  it('rechaza un RPE fuera de rango (lo dice el motor)', () => {
+    expect(() => validarDatos(datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03')],
+      registros: [{ sesion_id: uuid(1), rpe: 11, duracion_min: 60, molestias: [], registrado_en: 'x' }],
+    }))).toThrow('el RPE debe estar entre 0 y 10')
+  })
+  it('rechaza dos evaluaciones el mismo día', () => {
+    expect(() => validarDatos(datosVacios({ evaluaciones: [ev(1, '2026-11-04'), ev(2, '2026-11-04')] }))).toThrow('Hay dos evaluaciones el mismo día')
+  })
+  it('rechaza un intento sin sesión o con otra fecha', () => {
+    const intento = { id: uuid(3), sesion_id: uuid(1), fecha: '2026-11-04', encadenado: true, motivo_caida: null }
+    expect(() => validarDatos(datosVacios({ intentos: [intento] }))).toThrow(`El intento ${uuid(3)} no tiene sesión`)
+    expect(() => validarDatos(datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03')], intentos: [intento] }))).toThrow(
+      `El intento ${uuid(3)} no tiene la fecha de su sesión`,
+    )
+  })
+  it('rechaza sesiones solapadas, acepta las contiguas y detecta solapes al cruzar la medianoche', () => {
+    const solapa = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 19.5, duracionMin: 30 })] })
+    expect(() => validarDatos(solapa)).toThrow('La sesión del 2026-11-03 a las 19:30 se solapa con otra sesión.')
+    const contiguas = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 20, duracionMin: 30 })] })
+    expect(() => validarDatos(contiguas)).not.toThrow()
+    const medianoche = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 23, duracionMin: 120 }), sesionFila(uuid(2), '2026-11-04', { horaInicio: 0.5, duracionMin: 30 })] })
+    expect(() => validarDatos(medianoche)).toThrow('La sesión del 2026-11-04 a las 00:30 se solapa')
+  })
+  it('compara el solape en minutos enteros (sin falsos positivos por coma flotante)', () => {
+    const par = (h1: number, d1: number, h2: number) =>
+      datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: h1, duracionMin: d1 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: h2, duracionMin: 30 })] })
+    expect(() => validarDatos(par(10 / 60, 25, 35 / 60))).not.toThrow()
+    expect(() => validarDatos(par(19 + 20 / 60, 50, 20 + 10 / 60))).not.toThrow()
+    expect(() => validarDatos(par(18 + 40 / 60, 35, 19 + 14 / 60))).toThrow('a las 19:14 se solapa')
+  })
+})
