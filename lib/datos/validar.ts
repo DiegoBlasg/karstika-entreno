@@ -8,12 +8,15 @@ export function validarDatos(d: DatosAtleta): void {
   validarEntrada(historial)
   validarSeguimiento(historial, seguimientoMotor(d))
   // El motor no comprueba solapes: dos sesiones no pueden pisarse en el tiempo (acabar justo cuando empieza otra vale).
-  const porInicio = [...historial].sort((a, b) => inicioHoras(a) - inicioHoras(b))
-  for (let k = 1; k < porInicio.length; k++) {
-    const previa = porInicio[k - 1]!
-    const actual = porInicio[k]!
-    if (inicioHoras(actual) < finHoras(previa)) {
-      throw new Error(`La sesión del ${actual.fecha} a las ${hhmm(actual.horaInicio)} se solapa con otra sesión de ese día.`)
+  // Se compara en minutos enteros: con horas decimales el fin de una y el inicio de la siguiente difieren en un ulp.
+  const minutos = historial
+    .map((s) => ({ s, ini: Math.round(inicioHoras(s) * 60), fin: Math.round(finHoras(s) * 60) }))
+    .sort((a, b) => a.ini - b.ini)
+  for (let k = 1; k < minutos.length; k++) {
+    const previa = minutos[k - 1]!
+    const actual = minutos[k]!
+    if (actual.ini < previa.fin) {
+      throw new Error(`La sesión del ${actual.s.fecha} a las ${hhmm(actual.ini)} se solapa con otra sesión.`)
     }
   }
   const fechaDe = new Map(d.sesiones.map((s) => [s.id, s.fecha]))
@@ -29,7 +32,7 @@ export function validarDatos(d: DatosAtleta): void {
   if (ultima !== undefined) diagnosticar(evaluacionesMotor(d.evaluaciones), intentosMotor(d.intentos), ultima)
 }
 
-function hhmm(h: number): string {
-  const min = Math.round(h * 60)
+function hhmm(minutosAbsolutos: number): string {
+  const min = ((minutosAbsolutos % 1440) + 1440) % 1440
   return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
 }

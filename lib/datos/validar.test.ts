@@ -31,10 +31,17 @@ describe('validarDatos', () => {
   })
   it('rechaza sesiones solapadas, acepta las contiguas y detecta solapes al cruzar la medianoche', () => {
     const solapa = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 19.5, duracionMin: 30 })] })
-    expect(() => validarDatos(solapa)).toThrow('La sesión del 2026-11-03 a las 19:30 se solapa con otra sesión de ese día.')
+    expect(() => validarDatos(solapa)).toThrow('La sesión del 2026-11-03 a las 19:30 se solapa con otra sesión.')
     const contiguas = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 20, duracionMin: 30 })] })
     expect(() => validarDatos(contiguas)).not.toThrow()
     const medianoche = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 23, duracionMin: 120 }), sesionFila(uuid(2), '2026-11-04', { horaInicio: 0.5, duracionMin: 30 })] })
     expect(() => validarDatos(medianoche)).toThrow('La sesión del 2026-11-04 a las 00:30 se solapa')
+  })
+  it('compara el solape en minutos enteros (sin falsos positivos por coma flotante)', () => {
+    const par = (h1: number, d1: number, h2: number) =>
+      datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: h1, duracionMin: d1 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: h2, duracionMin: 30 })] })
+    expect(() => validarDatos(par(10 / 60, 25, 35 / 60))).not.toThrow()
+    expect(() => validarDatos(par(19 + 20 / 60, 50, 20 + 10 / 60))).not.toThrow()
+    expect(() => validarDatos(par(18 + 40 / 60, 35, 19 + 14 / 60))).toThrow('a las 19:14 se solapa')
   })
 })
