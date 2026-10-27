@@ -266,13 +266,15 @@ function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
 export function proponerSesion(p: Peticion): Propuesta {
   validarPeticion(p)
   const { huecos, ...sinHuecos } = p
-  if (!huecos || huecos.length === 0) return proponer(sinHuecos, true)
+  // Sin `huecos`, el generador de siempre. Con `huecos` (aunque esté vacío, como en el último hueco de la semana) se
+  // usa el plan, para que las reglas del plan (el rocódromo se aprovecha) valgan también en el último hueco.
+  if (huecos === undefined || huecos === null) return proponer(sinHuecos, true)
   // Tramo 2e (P-67): se planifica la semana con los huecos y la sesión de hoy es la del mejor reparto.
   validarHuecos(p)
   const r0 = proponer(sinHuecos, true)
   // Con alguna zona en rojo no se planifica la semana: cada día se decide con el estado de ese día (falla cerrado).
   if (r0.estado && Object.values(r0.estado.zonas).includes('rojo')) return r0
-  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas) => proponer(q, false, sinDominadas))
+  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas, soloSuave) => proponer(q, false, sinDominadas, soloSuave))
   const semana = ranuras.slice(1).map((hueco, i) => {
     const o = elegidas[i + 1]
     return { hueco, sesion: o ? { ...o.sesion, id: `${PREFIJO_SEMANA}${i + 1}` } : null }
@@ -282,24 +284,37 @@ export function proponerSesion(p: Peticion): Propuesta {
     ops.filter((o): o is SesionPlan => o !== null).slice(0, 2).map((o) => ({ ...o, explicaciones: [explicacionAlternativaSemana(), ...o.explicaciones] }))
   if (!elegidaHoy) {
     if (!r0.principal) return { ...r0, semana }
-    // El plan deja libre este hueco para reservar la carga a otro mejor: la principal es no entrenar, con las opciones
-    // de siempre como alternativas.
-    return { ...r0, principal: null, alternativas: avisadas([r0.principal, ...r0.alternativas]), descanso: explicacionHuecoLibre(ranuras, elegidas), semana }
+    // El plan deja libre este hueco para reservar la carga a otro mejor: la principal es no entrenar y las
+    // alternativas son solo suaves (una de carga alta quitaría el sitio que el plan reserva).
+    const suaves = proponer(sinHuecos, false, false, true)
+    return {
+      ...r0,
+      principal: null,
+      alternativas: avisadas([suaves.principal, ...suaves.alternativas]),
+      descanso: explicacionHuecoLibre(ranuras, elegidas),
+      semana,
+    }
   }
   // El plan se buscó con un historial recortado: la sesión de hoy se toma de la propuesta con el historial completo
   // (mismo tipo y complementos; cargas exactas).
-  const conDom = (elegidaHoy.sesion.incluye ?? []).includes('dominadas')
-  const completa = conDom ? r0 : proponer(sinHuecos, false, true)
   const iguales = (o: SesionPlan | null): o is SesionPlan =>
     o !== null && o.sesion.tipo === elegidaHoy.sesion.tipo && (o.sesion.incluye ?? []).join() === (elegidaHoy.sesion.incluye ?? []).join()
-  const hoy = [completa.principal, ...completa.alternativas, r0.principal, ...r0.alternativas].find(iguales)
+  const variantes: [boolean, boolean][] = [[true, false], [false, true], [true, true]]
+  let hoy = [r0.principal, ...r0.alternativas].find(iguales)
+  for (const [sinDom, suave] of variantes) {
+    if (hoy) break
+    const v = proponer(sinHuecos, false, sinDom, suave)
+    hoy = [v.principal, ...v.alternativas].find(iguales)
+  }
   // Falla cerrado: si la sesión del plan no es una de las que el generador propone hoy con el historial completo, el
   // plan no es fiable y se devuelve la propuesta de siempre, sin plan.
   if (!hoy) return r0
   const explicacion = explicacionSemana(ranuras, elegidas, r0.principal)
   const otras = avisadas([r0.principal, ...r0.alternativas].filter((o) => o !== null && o.sesion.tipo !== hoy.sesion.tipo))
+  // La principal sale del plan: un `descanso` heredado de r0 (p. ej. el recomendado, P-16) ya no aplica.
+  const { descanso: _descanso, ...sinDescanso } = r0
   return {
-    ...r0,
+    ...sinDescanso,
     principal: { ...hoy, explicaciones: [explicacion, ...hoy.explicaciones] },
     alternativas: otras,
     semana,
@@ -308,7 +323,9 @@ export function proponerSesion(p: Peticion): Propuesta {
 
 // `sinDominadas`: el plan semanal pide la misma propuesta sin el complemento opcional de dominadas (P-39), que no
 // puede ir el día de una sesión intensa de dedos y podría quitarle sitio a otra del mismo día.
-function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false): Propuesta {
+// `soloSuave`: el plan semanal pide solo opciones sin carga alta (como si el estado la bloqueara: las intensas de
+// bloque pasan a su versión suave), para aprovechar un hueco de rocódromo que reserva la carga para otro día.
+function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false, soloSuave = false): Propuesta {
   // Tramo 2d: el estado se recalcula para cada fecha (el chequeo de hoy no vale para mañana) y puede adelantar
   // la descarga (P-50).
   const estado = recibida.seguimiento ? estadoAtleta(recibida.historial, recibida.seguimiento, recibida.fecha) : undefined
@@ -348,13 +365,13 @@ function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false)
       huboBloqueoIntenso = true
     }
     const sustituto = SUSTITUTO_SUAVE[tipo]
-    const porEstado = bloqueadaPorEstado(c.plan.sesion, r)
+    const porEstado = bloqueadaPorEstado(c.plan.sesion, r) || (soloSuave && esCargaAlta(c.plan.sesion))
     if (porEstado) huboBloqueoEstado = true
     if ((c.violaciones.length > 0 || porEstado) && sustituto && posibles.has(sustituto)) {
       const suave = evaluar(sustituto, p)
       if (suave) c = { ...suave, tipoPlan: tipo, sustitucionPor: c.violaciones, ...(porEstado ? { sustitucionPorEstado: true } : {}) }
     }
-    if (c.violaciones.length === 0 && !bloqueadaPorEstado(c.plan.sesion, r)) candidatos.push(c)
+    if (c.violaciones.length === 0 && !bloqueadaPorEstado(c.plan.sesion, r) && !(soloSuave && esCargaAlta(c.plan.sesion))) candidatos.push(c)
   }
 
   const ultima = ultimaSesion(p)

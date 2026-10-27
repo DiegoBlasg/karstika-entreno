@@ -131,10 +131,17 @@ Una revisión de código y otra de producto (44 semanas simuladas con variantes)
   - Se abre una rama por cada opción de carga alta de un hueco, otra por la mejor suave y, si esa suave lleva dominadas, otra con la misma sin dominadas (P-39).
   - Se poda una rama cuando ni en el mejor caso puede superar al reparto actual.
   - Las llamadas internas usan los últimos 75 días de historial, que es lo que miran las reglas, como mucho 70 días (P-08). La sesión de hoy se recalcula con el historial completo.
-  - Medido: unos 300 ms con 8 huecos y un año de historial, y prácticamente no crece con el historial.
+  - Medido: unos 300 ms con 8 huecos y un año de historial. Tras añadir las ramas del rocódromo (abajo), unos 650-750 ms en el peor caso (8 huecos); casi no crece con el historial. Para una app de un solo usuario se acepta; el test de presupuesto pide menos de 1,5 s.
 - **Ids `semana-*`:** reservados en el historial, como `propuesta-*`.
 - **Textos:**
   - Las explicaciones usan nombres en español (`motor/nombres.ts`, que la app reexporta) y dicen «pide N por semana y esta semana llevas M».
   - Las alternativas avisan de que elegirlas puede cambiar el resto de la semana (`plan.semana-alternativa`).
 - **Desviación del §4.1:** no se ofrece «nada» como opción de un hueco que tiene sesiones posibles. Con las reglas actuales no mejora ningún reparto, porque descansar a propósito no desbloquea nada que no desbloquee una sesión suave. Por eso tampoco existe el caso «hoy descansas para…» del §6.
+- **El rocódromo manda** (decisión de Diego: «priorizar siempre el rocódromo y hacer las mejores sesiones ahí»):
+  - Tras el vector de cupos, desempatan las sesiones de carga alta fuera de casa, después los minutos fuera de casa y por último los minutos totales.
+  - En un hueco de rocódromo o roca no se deja la tarde vacía por el descanso recomendado (P-16): se prueban sus alternativas suaves, y si no hay ninguna suave entre las primeras opciones, se pide la mejor suave.
+  - Un hueco cuyas opciones son todas de carga alta también se puede dejar libre. Si queda libre el hueco pedido, la principal es no entrenar (`plan.semana-libre`) y las alternativas son solo suaves.
+- **`huecos: []`** (último hueco de la semana) también usa el plan, para que estas reglas valgan en ese hueco. Sin `huecos`, el generador de siempre.
+- **Con una zona en rojo no se planifica:** se devuelve la propuesta de siempre.
+- **Descanso:** cuando la principal sale del plan, la respuesta no lleva `descanso`.
 

@@ -47,8 +47,28 @@ describe('validarHuecos (P-67)', () => {
 })
 
 describe('proponerSesion con huecos (P-67)', () => {
-  it('sin huecos o con huecos vacíos, igual que siempre', () => {
-    expect(proponerSesion(lunes({ huecos: [] }))).toEqual(proponerSesion(lunes()))
+  it('con huecos vacíos (último hueco de la semana) se usa el plan, con la misma sesión', () => {
+    const sin = proponerSesion(lunes())
+    const vacio = proponerSesion(lunes({ huecos: [] }))
+    expect(vacio.principal?.sesion.tipo).toBe(sin.principal?.sesion.tipo)
+    expect(vacio.semana).toEqual([])
+  })
+  it('en el último hueco de rocódromo de la semana no se descansa por el descanso recomendado (P-16)', () => {
+    // El mismo escenario que en propuesta.test.ts: semana con los cupos cubiertos y 4 sesiones recientes; se pide el
+    // domingo en el rocódromo con gente.
+    const historial: Sesion[] = [
+      { id: 'via1', tipo: 'via-cuerda-limite', intensidad: 'alta', fecha: '2026-10-26', horaInicio: 19, duracionMin: 100, incluye: ['hombro'] },
+      { id: 'blq1', tipo: 'bloque-limite', intensidad: 'alta', fecha: '2026-10-28', horaInicio: 19, duracionMin: 50, incluye: ['hombro'] },
+      { id: 't1', tipo: 'tecnica', intensidad: 'suave', fecha: '2026-10-29', horaInicio: 18, duracionMin: 45 },
+      { id: 't2', tipo: 'tecnica', intensidad: 'suave', fecha: '2026-10-30', horaInicio: 18, duracionMin: 45 },
+      { id: 'a1', tipo: 'arc', intensidad: 'suave', fecha: '2026-10-31', horaInicio: 18, duracionMin: 50 },
+    ]
+    const p = peticion({ fecha: '2026-11-01', historial })
+    expect(proponerSesion(p).descanso?.regla).toBe('generador.descanso-recomendado')
+    const plan = proponerSesion({ ...p, huecos: [] })
+    expect(plan.principal).not.toBeNull()
+    expect(esCargaAlta(plan.principal!.sesion)).toBe(false)
+    expect(plan.descanso).toBeUndefined()
   })
   it('el lunes no pone multipresa intensa si eso le quita al martes la vía al límite', () => {
     const sinPlan = proponerSesion(lunes())

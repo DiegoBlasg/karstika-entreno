@@ -128,7 +128,7 @@ const mismaSesion = (a: SesionPlan, b: SesionPlan): boolean =>
 // Se poda una rama cuando ni sumando un hueco por tipo a todos los restantes podría superar al mejor reparto.
 export function planificarSemana(
   p: Peticion,
-  proponerEn: (q: Peticion, sinDominadas: boolean) => Propuesta,
+  proponerEn: (q: Peticion, sinDominadas: boolean, soloSuave: boolean) => Propuesta,
 ): { ranuras: Hueco[]; elegidas: (SesionPlan | null)[] } {
   const { huecos = [], ...base } = p
   const ranuras: Hueco[] = [
@@ -166,7 +166,7 @@ export function planificarSemana(
     if (mejor && lex(cota(i, elegidas), mejor.vector) < 0) return
     const h = ranuras[i]!
     const q: Peticion = { ...baseCorta, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial }
-    const r = proponerEn(q, false)
+    const r = proponerEn(q, false, false)
     // En un hueco de rocódromo o roca no se deja la tarde vacía por el descanso recomendado (P-16): se prueban sus
     // alternativas suaves (decisión del usuario del 2026-10-27: el rocódromo se aprovecha siempre).
     const fuera = h.contexto.lugar !== 'casa'
@@ -182,8 +182,14 @@ export function planificarSemana(
     const suave = opciones.find((o) => !esCargaAlta(o.sesion))
     for (const o of opciones) if (esCargaAlta(o.sesion) || o === suave) anadir(o)
     if (suave && (suave.sesion.incluye ?? []).includes('dominadas')) {
-      const r2 = proponerEn(q, true)
+      const r2 = proponerEn(q, true, false)
       anadir([r2.principal, ...r2.alternativas].find((o) => o !== null && !esCargaAlta(o.sesion)))
+    }
+    // En el rocódromo o la roca, si no hay ninguna opción suave entre las primeras, se pide la mejor suave: el hueco se
+    // aprovecha aunque el plan reserve la carga alta para otro (decisión del usuario del 2026-10-27).
+    if (fuera && !ramas.some((o) => !esCargaAlta(o.sesion))) {
+      const r3 = proponerEn(q, false, true)
+      anadir([r3.principal, ...r3.alternativas].find((o) => o !== null && !esCargaAlta(o.sesion)))
     }
     // Si no hay opciones, o si todas son de carga alta, también se prueba dejar el hueco libre: una carga alta
     // forzada aquí puede quitar sitio a otra mejor más adelante.
