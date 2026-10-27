@@ -58,15 +58,15 @@ interface Hueco {
 
    Para cada combinación, los huecos se rellenan en orden con la mejor opción de carga alta o suave que permite la
    combinación.
-3. **Puntuación** de un reparto, incluyendo la sesión pedida:
-   - Por cada tipo con cupo en la fase, `min(sesiones del tipo en los 7 días que acaban en el último hueco, cupo)`
-     × peso de prioridad.
-   - El peso de prioridad es la longitud de `fase.prioridad` menos la posición del tipo, para que un puesto
-     más alto valga más.
-   - Las sesiones de carga alta solo puntúan dentro del cupo, como hoy.
-   - Desempate 1: más minutos totales de sesión.
-   - Desempate 2: lo más prioritario, antes en la semana.
-   - Desempate 3: orden lexicográfico de los tipos, para que el resultado sea determinista.
+3. **Puntuación** de un reparto, incluyendo la sesión pedida: un vector con, para cada tipo de `fase.prioridad`
+   en su orden, `min(sesiones del tipo en los 7 días que acaban en el último hueco, cupo)` (contando también los
+   complementos de `incluye`). Los vectores se comparan **lexicográficamente**: manda el cupo del tipo que la fase
+   pone primero, después el siguiente, y así. Por ejemplo, en la fuerza «vía al límite + 1 multipresa» gana a
+   «2 multipresas». (Al hacer el plan se vio que sumar cupos por pesos dejaba que los complementos inclinaran la
+   balanza al lado contrario.) Desempates: más minutos totales; después, lo más prioritario antes en la semana; por
+   último, el orden lexicográfico de los tipos, para que sea determinista.
+   - Si el generador recomienda descanso en un hueco (principal nula), el hueco se queda vacío: se respeta la decisión
+     de Diego de que el descanso sea la propuesta principal.
 4. **Resultado:** la sesión del hueco pedido sale del mejor reparto, completada con sus complementos como ahora.
    Las alternativas son las de hoy, y cada una lleva una nota: elegirla puede cambiar el resto de la semana.
 
@@ -113,5 +113,5 @@ es suave.
   - Determinista.
   - Ninguna sesión del plan viola una regla de seguridad con el historial más el plan.
   - Con un solo hueco, el resultado es el del generador actual.
-  - Quitar un hueco nunca sube la puntuación.
+  - Con todas las sesiones del plan en el historial a la vez, ninguna viola una regla de seguridad.
 - **Regla P-68:** prueba propia en `seguridad.test.ts`.
