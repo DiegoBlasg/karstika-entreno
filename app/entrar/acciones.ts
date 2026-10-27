@@ -12,10 +12,10 @@ const limitador = crearLimitador()
 export async function entrar(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
   const ahora = Date.now()
-  if (limitador.bloqueado(ip, ahora)) return { error: 'Demasiados intentos fallidos. Espera un minuto.' }
+  // El intento se cuenta antes del await: así las peticiones en paralelo no se cuelan todas.
+  if (!limitador.intentar(ip, ahora)) return { error: 'Demasiados intentos fallidos. Espera un minuto.' }
   const recibida = fd.get('clave')
   if (typeof recibida !== 'string' || !(await claveCorrecta(recibida, variable('CLAVE_ACCESO')))) {
-    limitador.fallo(ip, ahora)
     return { error: 'Contraseña incorrecta.' }
   }
   limitador.exito(ip)

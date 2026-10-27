@@ -20,6 +20,11 @@ Pasos que hace Diego a mano (una vez). La base de datos es Postgres de Neon; Sup
 
 Para generar el secreto: `node -e "console.log(crypto.randomBytes(30).toString('base64url'))"`.
 
+`CLAVE_ACCESO` tiene que ser **larga y aleatoria**: genérala igual que el secreto (el mismo comando) y guárdala en tu
+gestor de contraseñas. La página de entrada es pública y el límite de 5 intentos por minuto y por IP vive **en
+memoria y es por instancia**: se reinicia con cada despliegue y cada instancia de Vercel lleva su propia cuenta, así
+que lo que de verdad frena la fuerza bruta es la entropía de la contraseña, no el límite.
+
 Después:
 
     npm run migrar           # aplica el esquema en main
