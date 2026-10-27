@@ -58,8 +58,9 @@ describe('seguridad.dedos-dia-descanso', () => {
   })
   it('dos sesiones intensas el mismo día violan, aunque no se solapen', () => {
     const v = validarSesion(ses('tarde', '2026-10-26', 21), [ses('manana', '2026-10-26', 8)], perfilExperto)
-    expect(reglas(v)).toEqual(['seguridad.dedos-dia-descanso'])
-    expect(v[0]!.mensaje).toMatch(/mismo día/)
+    // P-68 también salta: son dos sesiones de carga alta el mismo día.
+    expect(reglas(v)).toEqual(['seguridad.carga-alta-mismo-dia', 'seguridad.dedos-dia-descanso'])
+    expect(v.find((x) => x.regla === 'seguridad.dedos-dia-descanso')!.mensaje).toMatch(/mismo día/)
   })
   it('vale también cuando la sesión del historial es posterior a la propuesta', () => {
     expect(reglas(validarSesion(lunes, [ses('martes', '2026-10-27', 8)], perfilExperto))).toEqual(['seguridad.dedos-dia-descanso'])
@@ -111,7 +112,8 @@ describe('seguridad.carga-alta-seguida', () => {
   })
   it('dos sesiones altas el mismo día cuentan como un día', () => {
     const v = validarSesion(alta('c', '2026-10-27'), [alta('a', '2026-10-26'), ses('b', '2026-10-27', 20, { tipo: 'resistencia-4x4' })], perfilExperto)
-    expect(v).toEqual([])
+    // Sin racha de 3 días; solo salta P-68 (dos de carga alta el mismo día).
+    expect(reglas(v)).toEqual(['seguridad.carga-alta-mismo-dia'])
   })
   it('una sesión solo cuenta en su día de inicio, aunque cruce la medianoche', () => {
     const noche = ses('noche', '2026-10-26', 23.5, { tipo: 'resistencia-4x4', duracionMin: 300 })
@@ -474,5 +476,18 @@ describe('seguridad.dominadas-dia-dedos y seguridad.dominadas-7dias (P-39)', () 
     expect(reglas(tecnicaConDominadas('b', '2026-11-10'), [previa])).toContain('seguridad.dominadas-7dias')
     expect(reglas(tecnicaConDominadas('b', '2026-11-11'), [previa])).not.toContain('seguridad.dominadas-7dias')
     expect(validarSesion(tecnicaConDominadas('b', '2026-11-10'), [previa], perfilNovel).map((v) => v.regla)).toContain('seguridad.dominadas-7dias')
+  })
+})
+
+describe('seguridad.carga-alta-mismo-dia (P-68)', () => {
+  const manana = ses('m', '2026-11-10', 9, { tipo: 'multipresa-resistencia', intensidad: 'alta', duracionMin: 45, detalle: { regletaMm: 20, agarre: 'semiarqueado' } })
+  const tarde = ses('t', '2026-11-10', 19, { tipo: 'via-cuerda-limite', intensidad: 'alta', duracionMin: 120 })
+  const reglas = (s: Sesion, h: Sesion[]) => validarSesion(s, h, perfilExperto).map((v) => v.regla)
+  it('rechaza una segunda sesión de carga alta el mismo día', () => {
+    expect(reglas(tarde, [manana])).toContain('seguridad.carga-alta-mismo-dia')
+  })
+  it('una suave por la tarde o la de carga alta otro día sí valen', () => {
+    expect(reglas(ses('s', '2026-11-10', 19, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 }), [manana])).not.toContain('seguridad.carga-alta-mismo-dia')
+    expect(reglas(tarde, [{ ...manana, fecha: '2026-11-09' }])).not.toContain('seguridad.carga-alta-mismo-dia')
   })
 })

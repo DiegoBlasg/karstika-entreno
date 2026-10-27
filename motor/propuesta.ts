@@ -8,6 +8,9 @@ import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
+import { NOMBRE_TIPO } from './nombres'
+import { explicacionAlternativaSemana, explicacionHuecoLibre, explicacionSemana, planificarSemana, PREFIJO_SEMANA, validarHuecos } from './semana'
+import { desdeLunes } from './temporada'
 import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
 
@@ -68,7 +71,9 @@ function validarPeticion(p: Peticion): void {
   if (p.contexto == null) throw new Error('proponerSesion: el contexto es obligatorio')
   if (p.perfil == null) throw new Error('proponerSesion: el perfil es obligatorio')
   if (!Array.isArray(p.historial)) throw new Error('proponerSesion: el historial debe ser un array')
-  const reservado = p.historial.find((s) => s.id === ID_PETICION || String(s.id).startsWith(PREFIJO_PROPUESTA))
+  const reservado = p.historial.find(
+    (s) => s.id === ID_PETICION || String(s.id).startsWith(PREFIJO_PROPUESTA) || String(s.id).startsWith(PREFIJO_SEMANA),
+  )
   if (reservado) {
     throw new Error(
       `proponerSesion: el historial contiene el id reservado «${reservado.id}». Al guardar una sesión propuesta, asígnale un id propio.`,
@@ -106,18 +111,25 @@ function validarPlan(sesion: Sesion, p: Peticion): Violacion[] {
 const cuentaPara = (s: Sesion, tipo: TipoSesion): boolean =>
   s.tipo === tipo || (s.incluye ?? []).some((t) => t === tipo)
 
-function hechasEn7Dias(p: Peticion, tipo: TipoSesion): number {
+// Los cupos de la fase son por semana natural, de lunes a domingo (decisión del usuario del 2026-10-27: planifica por
+// semanas y descansa de viernes a domingo). Cuentan también las sesiones ya planificadas más adelante en la semana.
+// Las reglas de seguridad siguen en ventanas móviles.
+function hechasEnLaSemana(p: Peticion, tipo: TipoSesion): number {
   const d = diaNumero(p.fecha)
+  const lunes = d - desdeLunes(d)
   return p.historial.filter((s) => {
     const x = diaNumero(s.fecha)
-    return cuentaPara(s, tipo) && x >= d - 6 && x <= d
+    return cuentaPara(s, tipo) && x >= lunes && x <= lunes + 6
   }).length
 }
 
 const cupoPendiente = (p: Peticion, tipo: TipoSesion): boolean => {
   const cupo = p.fase.cupos[tipo] ?? 0
-  return cupo > 0 && hechasEn7Dias(p, tipo) < cupo
+  return cupo > 0 && hechasEnLaSemana(p, tipo) < cupo
 }
+
+// P-41: el hombro (como sesión o como complemento) solo hasta su cupo semanal y nunca dos veces el mismo día.
+const hombroHoy = (p: Peticion): boolean => p.historial.some((s) => s.fecha === p.fecha && cuentaPara(s, 'hombro'))
 
 function ultimaSesion(p: Peticion): Sesion | undefined {
   return [...p.historial].sort((a, b) => inicioHoras(a) - inicioHoras(b) || comparar(a.id, b.id)).at(-1)
@@ -140,6 +152,7 @@ function completar(
   p: Peticion,
   posibles: ReadonlySet<TipoSesion>,
   enDiaDeDescanso = false,
+  sinDominadas = false,
 ): { plan: SesionPlan; anadidos: TipoComplemento[] } {
   // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás (sí las
   // dominadas, que no son escalada).
@@ -150,6 +163,7 @@ function completar(
   const anadir = (t: TipoComplemento, exigirCupo: boolean): void => {
     if (elegidos.has(t) || t === plan.sesion.tipo || !posibles.has(t) || p.fase.prohibidos.includes(t)) return
     if (exigirCupo && !cupoPendiente(p, t)) return
+    if (t === 'hombro' && hombroHoy(p)) return
     const bloque = construirComplemento(t, p, libres)
     if (!bloque) return
     elegidos.set(t, bloque)
@@ -161,7 +175,7 @@ function completar(
     for (const t of PRIORIDAD_COMPLEMENTOS) anadir(t, true)
     for (const t of RELLENO_SUAVE) anadir(t, false)
   }
-  if (dominadasPermitidas(plan.sesion, p, posibles, enDiaDeDescanso)) {
+  if (!sinDominadas && dominadasPermitidas(plan.sesion, p, posibles, enDiaDeDescanso)) {
     const bloque = construirComplemento('dominadas', p, libres)
     if (bloque) {
       elegidos.set('dominadas', bloque)
@@ -185,24 +199,24 @@ function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComp
   const cupo = p.fase.cupos[c.tipoPlan] ?? 0
   const partes = [
     cupo > 0
-      ? `La fase «${p.fase.nombre}» pide ${cupo} sesión(es) de ${c.tipoPlan} cada 7 días y llevas ${c.hechas7d}.`
+      ? `La fase «${p.fase.nombre}» pide ${cupo} ${cupo === 1 ? 'sesión' : 'sesiones'} de ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()} por semana y esta semana llevas ${c.hechas7d} (contando las ya planificadas).`
       : `Opción válida según la prioridad de la fase «${p.fase.nombre}».`,
   ]
   if (c.plan.sesion.tipo !== c.tipoPlan) {
     const porDescanso = (c.sustitucionPor ?? []).some((v) => v.regla === REGLA_DESCANSO_DEDOS)
     partes.push(
       porDescanso
-        ? `Sustituye a ${c.tipoPlan}, porque falta un día completo de descanso entre sesiones intensas de dedos.`
+        ? `Sustituye a ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()}, porque falta un día completo de descanso entre sesiones intensas de dedos.`
         : c.sustitucionPorEstado
-          ? `Sustituye a ${c.tipoPlan} por tu estado de hoy (semáforo de dolor o chequeo).`
-          : `Sustituye a ${c.tipoPlan}, que hoy no cumple una regla de seguridad.`,
+          ? `Sustituye a ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()} por tu estado de hoy (semáforo de dolor o chequeo).`
+          : `Sustituye a ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()}, que hoy no cumple una regla de seguridad.`,
     )
   }
   if (p.fase.descargaSustituida) {
     partes.push('Esta semana tocaba descarga, pero ya hiciste una adelantada hace poco: se sustituye (P-50).')
   }
   if (anadidos.length > 0) {
-    partes.push(`Se completa con ${anadidos.join(', ')} (cupos pendientes de la fase y volumen suave para aprovechar el tiempo).`)
+    partes.push(`Se completa con ${anadidos.map((t) => NOMBRE_TIPO[t].toLowerCase()).join(', ')} (cupos pendientes de la fase y volumen suave para aprovechar el tiempo).`)
   }
   return explicar('generador.eleccion', p.fase.descargaSustituida ? ['P-30', 'P-50'] : ['P-30'], partes.join(' '))
 }
@@ -251,10 +265,67 @@ function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
 
 export function proponerSesion(p: Peticion): Propuesta {
   validarPeticion(p)
-  return proponer(p, true)
+  const { huecos, ...sinHuecos } = p
+  // Sin `huecos`, el generador de siempre. Con `huecos` (aunque esté vacío, como en el último hueco de la semana) se
+  // usa el plan, para que las reglas del plan (el rocódromo se aprovecha) valgan también en el último hueco.
+  if (huecos === undefined || huecos === null) return proponer(sinHuecos, true)
+  // Tramo 2e (P-67): se planifica la semana con los huecos y la sesión de hoy es la del mejor reparto.
+  validarHuecos(p)
+  const r0 = proponer(sinHuecos, true)
+  // Con alguna zona en rojo no se planifica la semana: cada día se decide con el estado de ese día (falla cerrado).
+  if (r0.estado && Object.values(r0.estado.zonas).includes('rojo')) return r0
+  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas, soloSuave) => proponer(q, false, sinDominadas, soloSuave))
+  const semana = ranuras.slice(1).map((hueco, i) => {
+    const o = elegidas[i + 1]
+    return { hueco, sesion: o ? { ...o.sesion, id: `${PREFIJO_SEMANA}${i + 1}` } : null }
+  })
+  const elegidaHoy = elegidas[0] ?? null
+  const avisadas = (ops: (SesionPlan | null)[]): SesionPlan[] =>
+    ops.filter((o): o is SesionPlan => o !== null).slice(0, 2).map((o) => ({ ...o, explicaciones: [explicacionAlternativaSemana(), ...o.explicaciones] }))
+  if (!elegidaHoy) {
+    if (!r0.principal) return { ...r0, semana }
+    // El plan deja libre este hueco para reservar la carga a otro mejor: la principal es no entrenar y las
+    // alternativas son solo suaves (una de carga alta quitaría el sitio que el plan reserva).
+    const suaves = proponer(sinHuecos, false, false, true)
+    return {
+      ...r0,
+      principal: null,
+      alternativas: avisadas([suaves.principal, ...suaves.alternativas]),
+      descanso: explicacionHuecoLibre(ranuras, elegidas),
+      semana,
+    }
+  }
+  // El plan se buscó con un historial recortado: la sesión de hoy se toma de la propuesta con el historial completo
+  // (mismo tipo y complementos; cargas exactas).
+  const iguales = (o: SesionPlan | null): o is SesionPlan =>
+    o !== null && o.sesion.tipo === elegidaHoy.sesion.tipo && (o.sesion.incluye ?? []).join() === (elegidaHoy.sesion.incluye ?? []).join()
+  const variantes: [boolean, boolean][] = [[true, false], [false, true], [true, true]]
+  let hoy = [r0.principal, ...r0.alternativas].find(iguales)
+  for (const [sinDom, suave] of variantes) {
+    if (hoy) break
+    const v = proponer(sinHuecos, false, sinDom, suave)
+    hoy = [v.principal, ...v.alternativas].find(iguales)
+  }
+  // Falla cerrado: si la sesión del plan no es una de las que el generador propone hoy con el historial completo, el
+  // plan no es fiable y se devuelve la propuesta de siempre, sin plan.
+  if (!hoy) return r0
+  const explicacion = explicacionSemana(ranuras, elegidas, r0.principal)
+  const otras = avisadas([r0.principal, ...r0.alternativas].filter((o) => o !== null && o.sesion.tipo !== hoy.sesion.tipo))
+  // La principal sale del plan: un `descanso` heredado de r0 (p. ej. el recomendado, P-16) ya no aplica.
+  const { descanso: _descanso, ...sinDescanso } = r0
+  return {
+    ...sinDescanso,
+    principal: { ...hoy, explicaciones: [explicacion, ...hoy.explicaciones] },
+    alternativas: otras,
+    semana,
+  }
 }
 
-function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
+// `sinDominadas`: el plan semanal pide la misma propuesta sin el complemento opcional de dominadas (P-39), que no
+// puede ir el día de una sesión intensa de dedos y podría quitarle sitio a otra del mismo día.
+// `soloSuave`: el plan semanal pide solo opciones sin carga alta (como si el estado la bloqueara: las intensas de
+// bloque pasan a su versión suave), para aprovechar un hueco de rocódromo que reserva la carga para otro día.
+function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false, soloSuave = false): Propuesta {
   // Tramo 2d: el estado se recalcula para cada fecha (el chequeo de hoy no vale para mañana) y puede adelantar
   // la descarga (P-50).
   const estado = recibida.seguimiento ? estadoAtleta(recibida.historial, recibida.seguimiento, recibida.fecha) : undefined
@@ -285,6 +356,7 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
     // Los cupos son también un tope: una sesión de carga alta (intensa de dedos, 4x4…) con el cupo semanal
     // cubierto no se propone.
     if (esCargaAlta(c.plan.sesion) && !cupoPendiente(p, tipo)) continue
+    if (tipo === 'hombro' && (!cupoPendiente(p, 'hombro') || hombroHoy(p))) continue
     if (c.violaciones.some((v) => v.regla === REGLA_DESCANSO_DEDOS)) huboDescansoDedos = true
     // Solo cuenta como bloqueo por carga si las únicas reglas que lo impiden son de carga reciente
     // (p. ej. un test de dedos prematuro no se resuelve esperando un día).
@@ -293,13 +365,13 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
       huboBloqueoIntenso = true
     }
     const sustituto = SUSTITUTO_SUAVE[tipo]
-    const porEstado = bloqueadaPorEstado(c.plan.sesion, r)
+    const porEstado = bloqueadaPorEstado(c.plan.sesion, r) || (soloSuave && esCargaAlta(c.plan.sesion))
     if (porEstado) huboBloqueoEstado = true
     if ((c.violaciones.length > 0 || porEstado) && sustituto && posibles.has(sustituto)) {
       const suave = evaluar(sustituto, p)
       if (suave) c = { ...suave, tipoPlan: tipo, sustitucionPor: c.violaciones, ...(porEstado ? { sustitucionPorEstado: true } : {}) }
     }
-    if (c.violaciones.length === 0 && !bloqueadaPorEstado(c.plan.sesion, r)) candidatos.push(c)
+    if (c.violaciones.length === 0 && !bloqueadaPorEstado(c.plan.sesion, r) && !(soloSuave && esCargaAlta(c.plan.sesion))) candidatos.push(c)
   }
 
   const ultima = ultimaSesion(p)
@@ -308,7 +380,7 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
       // Orden: primero los tipos con cupo pendiente; entre ellos manda la prioridad de la fase; la fracción
       // pendiente solo desempata (vale menos que un puesto de prioridad).
       const cupo = p.fase.cupos[c.tipoPlan] ?? 0
-      const hechas7d = hechasEn7Dias(p, c.tipoPlan)
+      const hechas7d = hechasEnLaSemana(p, c.tipoPlan)
       const fraccion = cupo > 0 ? Math.max(0, cupo - hechas7d) / cupo : 0
       const pendiente = (fraccion > 0 ? PESO_CUPO_PENDIENTE : 0) + PESO_FRACCION * fraccion
       const prioridad = PESO_PRIORIDAD * (p.fase.prioridad.length - p.fase.prioridad.indexOf(c.tipoPlan))
@@ -329,7 +401,7 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
   const elegidos = elegidosDe(validos, 3)
 
   const terminar = (v: Valido, enDiaDeDescanso = false): SesionPlan => {
-    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso)
+    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso, sinDominadas)
     return { ...plan, explicaciones: [explicacionEleccion(v, p, anadidos), ...plan.explicaciones] }
   }
   const conEstado = (prop: Propuesta): Propuesta => {

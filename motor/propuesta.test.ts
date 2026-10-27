@@ -38,7 +38,7 @@ describe('proponerSesion: primera semana (fase base, historial vacío, martes co
     expect(e.regla).toBe('generador.eleccion')
     expect(e.parametros).toEqual(['P-30'])
     expect(e.motivo).toMatch(/Base técnica y adaptación/)
-    expect(e.motivo).toMatch(/1 sesión\(es\) de via-cuerda-limite/)
+    expect(e.motivo).toMatch(/pide 1 sesión de vía con cuerda al límite por semana y esta semana llevas 0/)
     expect(e.motivo).toMatch(/Se completa con hombro/)
   })
   it('las explicaciones son la de la elección y una por bloque', () => {
@@ -59,7 +59,7 @@ describe('proponerSesion: semana real (martes con gente, jueves solo)', () => {
     const r = proponerSesion(peticion({ fecha: '2026-10-28', contexto: solo, historial: [martes] }))
     expect(tipos(r)).toEqual(['bloque-suave', 'tecnica', 'arc'])
     expect(r.principal!.sesion.intensidad).toBe('suave')
-    expect(r.principal!.explicaciones[0]!.motivo).toMatch(/Sustituye a bloque-limite, porque falta un día completo de descanso/)
+    expect(r.principal!.explicaciones[0]!.motivo).toMatch(/Sustituye a bloque al límite, porque falta un día completo de descanso/)
     expect(r.proximaVentanaIntensa).toEqual({ fecha: '2026-10-29' })
   })
   it('sin compañero ninguna sesión menciona cuerda', () => {
@@ -148,14 +148,15 @@ describe('proponerSesion: tiempo y descanso', () => {
     expect(r.descanso!.origen).toBe('contexto')
   })
   it('con todos los cupos cubiertos y mucha actividad reciente la principal es descansar y las alternativas son suaves', () => {
+    // Los cupos son por semana natural: todo cae en la semana del lunes 2026-10-26 y se pide el domingo.
     const historial = [
-      ses('via1', '2026-10-21', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] }),
-      ses('blq1', '2026-10-23', 19, { tipo: 'bloque-limite', duracionMin: 50, incluye: ['hombro'] }),
-      ses('t1', '2026-10-24', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
-      ses('t2', '2026-10-25', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
-      ses('a1', '2026-10-26', 18, { tipo: 'arc', intensidad: 'suave', duracionMin: 50 }),
+      ses('via1', '2026-10-26', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] }),
+      ses('blq1', '2026-10-28', 19, { tipo: 'bloque-limite', duracionMin: 50, incluye: ['hombro'] }),
+      ses('t1', '2026-10-29', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
+      ses('t2', '2026-10-30', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
+      ses('a1', '2026-10-31', 18, { tipo: 'arc', intensidad: 'suave', duracionMin: 50 }),
     ]
-    const r = proponerSesion(peticion({ historial }))
+    const r = proponerSesion(peticion({ fecha: '2026-11-01', historial }))
     expect(r.descanso!.regla).toBe('generador.descanso-recomendado')
     expect(r.principal).toBeNull()
     expect(r.alternativas.length).toBeGreaterThan(0)
@@ -166,9 +167,10 @@ describe('proponerSesion: tiempo y descanso', () => {
     }
   })
   it('los complementos de sesiones pasadas cuentan para los cupos', () => {
-    const conHombro = ses('v', '2026-10-25', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] })
-    const otro = ses('w', '2026-10-23', 19, { tipo: 'bloque-limite', duracionMin: 50, incluye: ['hombro'] })
-    const r = proponerSesion(peticion({ historial: [otro, conHombro] }))
+    // Misma semana natural (lunes 2026-10-26): los dos complementos de hombro cubren su cupo de 2.
+    const conHombro = ses('v', '2026-10-27', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] })
+    const otro = ses('w', '2026-10-26', 19, { tipo: 'bloque-limite', duracionMin: 50, incluye: ['hombro'] })
+    const r = proponerSesion(peticion({ fecha: '2026-10-29', historial: [otro, conHombro] }))
     for (const plan of [r.principal!, ...r.alternativas]) expect(plan.sesion.incluye ?? []).not.toContain('hombro')
   })
   it('con actividad reciente pero cupos pendientes no recomienda descanso', () => {

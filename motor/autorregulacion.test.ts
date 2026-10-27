@@ -304,3 +304,23 @@ describe('salir de un rojo (P-46, decisión del usuario)', () => {
     expect(estadoAtleta([a], seg({ registros: [reg(a, 4, [{ zona: 'otra', dolor: 5 }])], altas: [{ zona: 'otra', fecha: hace(10) }] }), HOY).retestDesde).toBeUndefined()
   })
 })
+
+describe('dos sesiones el mismo día (decisión del 2026-10-27)', () => {
+  it('ámbar en las dos sesiones de un mismo día no es rojo: P-45 pide 2 días distintos', () => {
+    const m = suave('m', hace(1), 9)
+    const t = suave('t', hace(1), 19)
+    const e = estadoAtleta([m, t], seg({ registros: [reg(m, 4, [dedos(2)]), reg(t, 4, [dedos(2)])] }), HOY)
+    expect(e.zonas.dedos).toBe('ambar')
+    const otro = suave('o', HOY, 9)
+    const e2 = estadoAtleta([m, t, otro], seg({ registros: [reg(m, 4, [dedos(2)]), reg(t, 4, [dedos(2)]), reg(otro, 4, [dedos(2)])] }), HOY)
+    expect(e2.zonas.dedos).toBe('rojo')
+  })
+  it('una zona que no aparece en el registro toma el valor del chequeo de ese día', () => {
+    const m = suave('m', hace(1), 9)
+    const e = estadoAtleta([m], seg({ chequeos: [chq(hace(1), 4, [dedos(2)])], registros: [reg(m, 4, [])] }), HOY)
+    expect(e.zonas.dedos).toBe('ambar')
+    // Si el registro sí apunta los dedos, manda el registro.
+    const e2 = estadoAtleta([m], seg({ chequeos: [chq(hace(1), 4, [dedos(2)])], registros: [reg(m, 4, [dedos(1)])] }), HOY)
+    expect(e2.zonas.dedos).toBe('verde')
+  })
+})

@@ -8,7 +8,7 @@ export type FaseId = 'base' | 'fuerza' | 'resistencia' | 'rendimiento' | 'transi
 export interface Fase {
   id: FaseId
   nombre: string
-  cupos: Partial<Record<TipoSesion, number>>      // sesiones deseadas por cada 7 días
+  cupos: Partial<Record<TipoSesion, number>>      // sesiones deseadas por semana natural (lunes a domingo)
   prioridad: TipoSesion[]                         // de más a menos preferida
   prohibidos: TipoSesion[]
   descarga?: boolean                              // semana de descarga (P-47, P-48): mitad de volumen, nada al límite
@@ -49,6 +49,13 @@ export interface SesionPlan {
   explicaciones: Explicacion[]                    // porqué de la elección + una por bloque
 }
 
+// Un hueco disponible más adelante en la semana (tramo 2e, P-67).
+export interface Hueco {
+  fecha: string                                   // 'AAAA-MM-DD'
+  horaInicio: number
+  contexto: Contexto
+}
+
 export interface Peticion {
   fecha: string
   horaInicio: number
@@ -62,6 +69,7 @@ export interface Peticion {
   estado?: EstadoAtleta
   limitantePrincipal?: Limitante                  // de diagnosticar (activa el consejo de miedo a caer)
   consejosMostrados?: { id: string; fecha: string }[]   // para no repetir consejos en 7 días (P-66)
+  huecos?: Hueco[]                                // huecos posteriores hasta el domingo: el motor planifica la semana (P-67)
 }
 
 export interface Propuesta {
@@ -70,4 +78,5 @@ export interface Propuesta {
   descanso?: Explicacion
   proximaVentanaIntensa?: { fecha: string }       // primer día en que vuelve a caber una sesión intensa de dedos
   estado?: EstadoAtleta                           // con `seguimiento`: semáforo, freno, descarga adelantada y chequeo
+  semana?: { hueco: Hueco; sesion: Sesion | null }[]   // con `huecos`: el plan del resto de la semana (P-67)
 }
