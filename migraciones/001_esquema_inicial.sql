@@ -35,7 +35,9 @@ create table sesiones (
 );
 create index sesiones_fecha on sesiones (fecha);
 
--- Molestias: [{ zona, dolor 0-10, alarma? }]. El motor las valida a fondo; aquí, rango y zona como última barrera.
+-- Molestias: [{ zona, dolor 0-10, alarma? }]. El motor las valida a fondo; aquí, tipo, rango y zona como última barrera.
+-- El elemento se rechaza salvo que todo sea cierto: `!(ok) || (ok) is unknown` cubre también el caso «desconocido»
+-- (clave ausente o de otro tipo), que en un filtro jsonpath de modo lax no casaría y dejaría pasar el elemento.
 create table registros (
   sesion_id uuid primary key references sesiones (id) on delete cascade,
   rpe integer not null check (rpe between 0 and 10),
@@ -43,7 +45,7 @@ create table registros (
   molestias jsonb not null default '[]',
   registrado_en timestamptz not null default now(),
   check (jsonb_typeof(molestias) = 'array' and not jsonb_path_exists(molestias,
-    '$[*] ? (!(@.dolor >= 0 && @.dolor <= 10) || !(@.zona == "dedos" || @.zona == "muneca" || @.zona == "codo" || @.zona == "hombro" || @.zona == "otra"))'))
+    '$[*] ? (!(@.type() == "object" && @.dolor.type() == "number" && @.dolor >= 0 && @.dolor <= 10 && @.zona.type() == "string" && (@.zona == "dedos" || @.zona == "muneca" || @.zona == "codo" || @.zona == "hombro" || @.zona == "otra")) || (@.type() == "object" && @.dolor.type() == "number" && @.dolor >= 0 && @.dolor <= 10 && @.zona.type() == "string" && (@.zona == "dedos" || @.zona == "muneca" || @.zona == "codo" || @.zona == "hombro" || @.zona == "otra")) is unknown)'))
 );
 
 create table chequeos (
@@ -53,7 +55,7 @@ create table chequeos (
   ganas smallint not null check (ganas between 1 and 5),
   molestias jsonb not null default '[]',
   check (jsonb_typeof(molestias) = 'array' and not jsonb_path_exists(molestias,
-    '$[*] ? (!(@.dolor >= 0 && @.dolor <= 10) || !(@.zona == "dedos" || @.zona == "muneca" || @.zona == "codo" || @.zona == "hombro" || @.zona == "otra"))'))
+    '$[*] ? (!(@.type() == "object" && @.dolor.type() == "number" && @.dolor >= 0 && @.dolor <= 10 && @.zona.type() == "string" && (@.zona == "dedos" || @.zona == "muneca" || @.zona == "codo" || @.zona == "hombro" || @.zona == "otra")) || (@.type() == "object" && @.dolor.type() == "number" && @.dolor >= 0 && @.dolor <= 10 && @.zona.type() == "string" && (@.zona == "dedos" || @.zona == "muneca" || @.zona == "codo" || @.zona == "hombro" || @.zona == "otra")) is unknown)'))
 );
 
 create table altas (

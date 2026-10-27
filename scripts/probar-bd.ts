@@ -27,6 +27,8 @@ const casos: [string, () => Promise<unknown>][] = [
   ['registro con RPE 11', () => sql`insert into registros (sesion_id, rpe, duracion_min) values (${S1}, 11, 60)`],
   ['registro de 0 minutos', () => sql`insert into registros (sesion_id, rpe, duracion_min) values (${S1}, 5, 0)`],
   ['molestia con dolor 11', () => sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${S1}, 5, 60, ${JSON.stringify([{ zona: 'dedos', dolor: 11 }])}::jsonb)`],
+  ['molestia con dolor no numérico', () => sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${S1}, 5, 60, ${JSON.stringify([{ zona: 'dedos', dolor: 'x' }])}::jsonb)`],
+  ['molestia con zona que no es texto', () => sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${S1}, 5, 60, ${JSON.stringify([{ zona: 5, dolor: 2 }])}::jsonb)`],
   ['molestia de zona desconocida', () => sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${S1}, 5, 60, ${JSON.stringify([{ zona: 'rodilla', dolor: 2 }])}::jsonb)`],
   ['segundo chequeo el mismo día', () => sql`insert into chequeos (fecha, sueno, fatiga, ganas) values ('2026-11-03', 4, 4, 4)`],
   ['chequeo con sueño 6', () => sql`insert into chequeos (fecha, sueno, fatiga, ganas) values ('2026-11-04', 6, 3, 3)`],
@@ -35,13 +37,18 @@ const casos: [string, () => Promise<unknown>][] = [
   ['intento con motivo desconocido', () => sql`insert into intentos_limite (sesion_id, fecha, encadenado, motivo_caida) values (${S1}, '2026-11-03', false, 'lluvia')`],
 ]
 
+// Solo cuenta como rechazo una violación de restricción: 23514 (check) o 23505 (unique).
+// Cualquier otro error (sintaxis, columna inexistente, conexión...) es un fallo del propio caso.
+const VIOLACIONES = new Set(['23514', '23505'])
 const aceptados: string[] = []
+const inesperados: [string, unknown][] = []
 for (const [nombre, consulta] of casos) {
   try {
     await consulta()
     aceptados.push(nombre)
-  } catch {
-    // rechazado: es lo esperado
+  } catch (e) {
+    const code = (e as { code?: string } | null)?.code
+    if (!code || !VIOLACIONES.has(code)) inesperados.push([nombre, e])
   }
 }
 
@@ -51,8 +58,10 @@ await sql`delete from sesiones where id = ${S1}`
 const [quedan] = await sql`select count(*)::int as n from registros`
 await vaciar(sql)
 
-if (aceptados.length > 0 || quedan?.n !== 0) {
-  console.error('La base de datos aceptó datos que debía rechazar:', aceptados, 'registros sin sesión:', quedan?.n)
-  process.exit(1)
+if (inesperados.length > 0) {
+  for (const [nombre, e] of inesperados) console.error(`Caso «${nombre}» falló con un error que no es una violación de restricción:`, e)
 }
+if (aceptados.length > 0) console.error('La base de datos aceptó datos que debía rechazar:', aceptados)
+if (quedan?.n !== 0) console.error('registros sin sesión:', quedan?.n)
+if (aceptados.length > 0 || inesperados.length > 0 || quedan?.n !== 0) process.exit(1)
 console.log(`base de datos correcta: ${casos.length} casos rechazados`)
