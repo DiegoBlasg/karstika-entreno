@@ -116,13 +116,18 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], intentos:
       ? [...ordenEvidencia].sort((a, b) => caidas[b] - caidas[a] || ordenEvidencia.indexOf(a) - ordenEvidencia.indexOf(b))
       : [...ordenEvidencia]
 
-  const cambio = (p: Progreso) =>
-    p.cambio === undefined ? '' : ` (${p.cambio > 0 ? '+' : ''}${p.unidad === '%' ? `${p.cambio.toFixed(1)} %` : `${p.cambio} puntos`})`
+  const cambio = (p: Progreso) => {
+    if (p.cambio === undefined) return ''
+    const signo = p.cambio > 0 ? '+' : ''
+    const valor = p.unidad === '%' ? `${p.cambio.toFixed(1)} %` : `${p.cambio} ${Math.abs(p.cambio) === 1 ? 'punto' : 'puntos'}`
+    return ` (${signo}${valor} con ${p.mediciones} tests)`
+  }
+  const estado = (p: Progreso) => (p.tendencia === 'sin-datos' ? 'sin datos suficientes' : p.tendencia)
   const explicaciones = [
     explicar(
       'diagnostico.progreso',
       ['P-19', 'P-24', 'P-27'],
-      `Progreso frente a tu propia línea base: fuerza de dedos ${fuerza.tendencia}${cambio(fuerza)}, resistencia ${resistencia.tendencia}${cambio(resistencia)}, técnica ${tecnica.tendencia}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_CAMBIO_PCT} % (1 punto en la técnica); los umbrales son decisión de diseño. Los segundos de resistencia se miden al 60 % del máximo de ese día: si tu fuerza sube, pueden quedarse igual aunque hayas mejorado.`,
+      `Progreso frente a tu propia línea base: fuerza de dedos ${estado(fuerza)}${cambio(fuerza)}, resistencia ${estado(resistencia)}${cambio(resistencia)}, técnica ${estado(tecnica)}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_CAMBIO_PCT} % (1 punto en la técnica); los umbrales son decisión de diseño. Los segundos de resistencia se miden al 60 % del máximo de ese día: si tu fuerza sube, pueden quedarse igual aunque hayas mejorado.`,
     ),
     fuente === 'caidas'
       ? explicar(

@@ -34,7 +34,7 @@ describe('diagnosticar: progreso frente a la propia línea base (P-19: una medic
       [], HOY,
     )
     expect(d.progreso.tecnica).toMatchObject({ inicial: 3, actual: 4, cambio: 1, unidad: 'puntos', tendencia: 'mejora' })
-    expect(d.explicaciones[0]!.motivo).toMatch(/\+1 puntos/)
+    expect(d.explicaciones[0]!.motivo).toMatch(/\+1 punto con 3 tests/)
   })
   it('la resistencia usa solo las evaluaciones que la midieron', () => {
     const d = diagnosticar(
@@ -136,6 +136,30 @@ describe('temporada ajustada con el diagnóstico', () => {
       }
     },
   )
+  it('P-08 en todas las longitudes válidas (42-53 semanas) y todos los repartos: tests separados entre 3 y 10 semanas', () => {
+    const repartos = [undefined, ...(['bombeo', 'paso-fuerza', 'tecnica-lectura', 'cabeza'] as const).map(ajuste)]
+    for (let n = 42; n <= 53; n++) {
+      const objetivo = fechaDesdeDia(diaNumero('2026-11-02') + n * 7)
+      for (const a of repartos) {
+        const t = planificarTemporada('2026-11-02', objetivo, a ? { ajuste: a } : {})
+        expect(t.semanas).toHaveLength(n)
+        const reev = [t.semanas.findIndex((s) => s.faseId === 'fuerza'), ...t.semanas.flatMap((s, i) => (s.reevaluar ? [i] : []))]
+        const etiqueta = `${n} semanas, ${a ? `${a.fuerza}+${a.resistencia}` : 'por defecto'}`
+        for (let i = 1; i < reev.length; i++) {
+          expect(reev[i]! - reev[i - 1]!, etiqueta).toBeLessThanOrEqual(10)
+          expect(reev[i]! - reev[i - 1]!, etiqueta).toBeGreaterThanOrEqual(3)
+        }
+        expect(t.semanas.length - reev.at(-1)!, etiqueta).toBeLessThanOrEqual(10)
+        expect(t.semanas.at(-1)!.reevaluar, etiqueta).toBe(false)
+        for (const i of reev.slice(1)) expect(['transicion', 'base'], etiqueta).not.toContain(t.semanas[i]!.faseId)
+      }
+    }
+  })
+  it('rechaza combinar `ajuste` con `ciclo2` o `refuerzoTecnica`', () => {
+    const a = ajuste('bombeo')
+    expect(() => planificarTemporada('2026-11-02', '2027-10-04', { ajuste: a, ciclo2: { fuerza: 8, resistencia: 6 } })).toThrow(/no ambos/)
+    expect(() => planificarTemporada('2026-11-02', '2027-10-04', { ajuste: a, refuerzoTecnica: false })).toThrow(/no ambos/)
+  })
   it('con 10 semanas de fuerza hay test a mitad (semana 5) y al final', () => {
     const t = planificarTemporada('2026-11-02', '2027-10-04', { ciclo2: { fuerza: 10, resistencia: 4 } })
     const reev = t.semanas.filter((s) => s.ciclo === 2 && s.faseId === 'fuerza' && s.reevaluar).map((s) => s.semanaDeFase)

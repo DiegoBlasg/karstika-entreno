@@ -17,7 +17,7 @@ export interface Temporada {
   inicio: string
   objetivo: string              // lunes de la semana objetivo
   semanas: SemanaPlan[]
-  refuerzoTecnica: boolean      // ciclo 2 con una sesión más de técnica por semana (diagnóstico)
+  refuerzoTecnica: boolean      // ciclo 2 con un cupo más de técnica por semana, usado cuando hay hueco (diagnóstico)
 }
 
 // Ajuste del ciclo 2 que sale del diagnóstico (ajusteCiclo2). Las 14 semanas de fuerza + resistencia se reparten
@@ -68,6 +68,9 @@ const SEMANAS_TRAS_OBJETIVO = 2
 const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
 
 export function planificarTemporada(inicio: string, objetivo: string, opcionesRecibidas: OpcionesTemporada = {}): Temporada {
+  if (opcionesRecibidas.ajuste && (opcionesRecibidas.ciclo2 || opcionesRecibidas.refuerzoTecnica !== undefined)) {
+    throw new Error('planificarTemporada: pasa o bien `ajuste` o bien `ciclo2`/`refuerzoTecnica`, no ambos')
+  }
   const opciones: OpcionesTemporada = opcionesRecibidas.ajuste
     ? {
         ciclo2: { fuerza: opcionesRecibidas.ajuste.fuerza, resistencia: opcionesRecibidas.ajuste.resistencia },
@@ -140,7 +143,26 @@ export function planificarTemporada(inicio: string, objetivo: string, opcionesRe
   const ultima = semanas[semanas.length - 1]!
   ultima.descarga = true
   ultima.reevaluar = false
+  garantizarTestsFrecuentes(semanas)
   return { inicio, objetivo: fechaDesdeDia(lunesObjetivo), semanas, refuerzoTecnica: opciones.refuerzoTecnica ?? false }
+}
+
+// P-08: nunca más de 10 semanas sin reevaluar. Pase final sobre el calendario: si se llega a MAX_SEMANAS_ENTRE_TESTS
+// sin test (contando la transición), se pone uno; y se quitan los que quedarían a menos de MIN_SEMANAS_ENTRE_TESTS
+// del anterior (el generador tampoco repetiría el test máximo con menos de 3 semanas). El primer test lo desbloquea
+// la base al empezar la primera fuerza.
+const MAX_SEMANAS_ENTRE_TESTS = 10
+const MIN_SEMANAS_ENTRE_TESTS = 3
+
+function garantizarTestsFrecuentes(semanas: SemanaPlan[]): void {
+  let ultimo = semanas.findIndex((s) => s.faseId === 'fuerza')
+  for (let i = ultimo + 1; i < semanas.length - 1; i++) {
+    const s = semanas[i]!
+    const elegible = s.faseId !== 'transicion' && s.faseId !== 'base'
+    if (s.reevaluar && i - ultimo < MIN_SEMANAS_ENTRE_TESTS) s.reevaluar = false
+    if (!s.reevaluar && elegible && i - ultimo >= MAX_SEMANAS_ENTRE_TESTS) s.reevaluar = true
+    if (s.reevaluar) ultimo = i
+  }
 }
 
 export function semanaEnFecha(t: Temporada, fecha: string): SemanaPlan | undefined {

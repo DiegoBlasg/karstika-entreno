@@ -150,8 +150,8 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
   < 5 % = sin cambio, diseño) y limitantes (con ≥ 10 caídas con motivo en 8 semanas manda el registro; si no, P-23;
   empates por P-23). `IntentoLimite { fecha, encadenado, motivoCaida? }`: bombeo → resistencia, paso de fuerza →
   fuerza de dedos, técnica o lectura → técnica, cabeza → cabeza.
-- `ajusteCiclo2(diagnostico)`: fuerza de dedos → 10 + 4; resistencia → 6 + 8; técnica → 8 + 6 con una sesión más de
-  técnica por semana; cabeza → 8 + 6 (el trabajo mental, en los consejos del tramo 2d). Rangos de P-31.
+- `ajusteCiclo2(diagnostico)`: fuerza de dedos → 10 + 4; resistencia → 6 + 8; técnica → 8 + 6 con un cupo más de
+  técnica por semana (se usa cuando hay hueco); cabeza → 8 + 6 (el trabajo mental, en los consejos del tramo 2d). Rangos de P-31.
 - `planificarTemporada(inicio, objetivo, { ciclo2, refuerzoTecnica })` aplica el ajuste sin cambiar la fecha
   objetivo (las 14 semanas se reparten; error claro fuera de P-31 o si no suman 14).
 
@@ -166,3 +166,9 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
 - **Refuerzo de técnica**: es un cupo más de técnica que se usa cuando hay hueco (días suaves, descargas, rendimiento);
   no desplaza a la fuerza, y la explicación lo dice así.
 - `planificarTemporada(..., { ajuste })` acepta directamente el resultado de `ajusteCiclo2`.
+- **P-08 en cualquier longitud de temporada**: tras construir el calendario, una pasada final garantiza que nunca pasan
+  más de 10 semanas entre tests (contando la transición, que en temporadas de 51-53 semanas sube a 3) y quita los que
+  quedarían a menos de 3 semanas del anterior. La temporada de 48 semanas no cambia. Una prueba recorre todas las
+  longitudes válidas (42-53) con los 4 repartos.
+- `planificarTemporada` lanza error si se pasa `ajuste` junto con `ciclo2` o `refuerzoTecnica`.
+- La explicación del progreso dice «sin datos suficientes», da el número de tests y usa «1 punto» en singular.
