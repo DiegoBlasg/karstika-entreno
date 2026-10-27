@@ -215,4 +215,8 @@ Interfaz y persistencia (subproyecto 3). `Perfil.lesiones` sigue como texto info
   siguientes (`faseEnFecha(t, fecha, { descargasAdelantadas })`, P-50). No se desplazan las descargas siguientes.
 - Sin cambios (decisión de alcance): consejos de calentamiento y pegues siguen rotando; el test puede caer en el
   día con amigos; en roca con ámbar no se propone qué hacer con el resto del día.
+- Última revisión: un rojo que exige alta nunca pasa a «por persistencia» aunque luego se repita el ámbar; y el
+  rojo por persistencia solo se levanta con un dato sin dolor al menos 7 días después del primero sin dolor (sin
+  datos no se supone que no duele). Con la sustitución de descargas puede haber hasta unas 6 semanas sin descarga
+  (dentro del rango de la práctica citado en P-47, 5,6 ± 2,3 semanas); es la decisión del usuario.
 

@@ -105,25 +105,27 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
   let levantado: number | undefined
   let verdeDesde: number | undefined   // primer dato sin dolor tras un rojo por persistencia
   const rojo = (dia: number, persistencia: boolean): void => {
+    // Un rojo que exige alta (dolor 4 o más, o alarma) no se convierte en «por persistencia» porque luego se
+    // repita el ámbar: sigue exigiendo alta.
+    porPersistencia = persistencia && (ultimoRojo === undefined || porPersistencia)
     ultimoRojo = dia
-    porPersistencia = persistencia
     ambarDesde = undefined
     ambarRegistros = 0
     verdeDesde = undefined
   }
   const persistente = (dia: number): boolean => ultimo === 'ambar' && ambarDesde !== undefined && dia - ambarDesde > diasAmbarMax
-  // P-46: un rojo que vino de un ámbar persistente se levanta solo tras 7 días seguidos con dolor 0-1.
+  // P-46: un rojo que vino de un ámbar persistente se levanta solo tras 7 días seguidos con dolor 0-1, y hace falta
+  // un dato sin dolor al final de esos 7 días (sin datos no se supone que no duele: falla cerrado, como P-45).
   const sinDolor = VALORES['P-46'].diasSinDolorTrasPersistencia
   const levantarSiSinDolor = (dia: number): void => {
     if (ultimoRojo !== undefined && porPersistencia && verdeDesde !== undefined && dia - verdeDesde >= sinDolor) {
-      levantado = verdeDesde + sinDolor
+      levantado = dia
       ultimoRojo = undefined
       porPersistencia = false
       verdeDesde = undefined
     }
   }
   for (const e of eventos) {
-    levantarSiSinDolor(e.dia)
     if (e.fuente === 'alta') {
       if (e.molestias[0]?.zona !== zona) continue
       // Si el ámbar ya pasa a rojo justo el día del alta, ese rojo es del mismo día y el alta no lo levanta (hace
@@ -150,12 +152,14 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
     } else {
       ambarDesde = undefined
       ambarRegistros = 0
-      if (ultimoRojo !== undefined && porPersistencia) verdeDesde ??= e.dia
+      if (ultimoRojo !== undefined && porPersistencia) {
+        verdeDesde ??= e.dia
+        levantarSiSinDolor(e.dia)
+      }
     }
     if (nivel !== 'verde') verdeDesde = undefined
   }
   if (persistente(hoy)) rojo(ambarDesde! + diasAmbarMax + 1, true)
-  levantarSiSinDolor(hoy)
   const extra = levantado !== undefined ? { levantado } : {}
   if (ultimoRojo !== undefined) return { nivel: 'rojo', porPersistencia, ...extra }
   return { nivel: ultimo, porPersistencia: false, ...extra }

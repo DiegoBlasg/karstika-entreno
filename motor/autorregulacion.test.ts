@@ -256,10 +256,24 @@ describe('salir de un rojo (P-46, decisión del usuario)', () => {
       HOY,
     )
   }
-  it('un rojo por persistencia se levanta tras 7 días seguidos sin dolor, contados desde el primer dato sin dolor', () => {
-    expect(persistente([7]).zonas.dedos).toBe('verde')
-    expect(persistente([6]).zonas.dedos).toBe('rojo')
+  it('un rojo por persistencia se levanta con un dato sin dolor 7 días después del primero sin dolor', () => {
+    expect(persistente([8, 1]).zonas.dedos).toBe('verde')
+    expect(persistente([8, 2]).zonas.dedos).toBe('rojo')
     expect(persistente([]).zonas.dedos).toBe('rojo')
+  })
+  it('sin datos no se supone que no duele: un solo dato sin dolor no levanta el rojo', () => {
+    expect(persistente([10]).zonas.dedos).toBe('rojo')
+  })
+  it('un rojo por alarma o por dolor 4 o más sigue exigiendo alta aunque luego se repita el ámbar', () => {
+    for (const inicial of [dedos(1, true), dedos(6)]) {
+      const [a, b] = [suave('a', hace(19)), suave('b', hace(18))]
+      const e = estadoAtleta(
+        [a, b],
+        seg({ chequeos: [chq(hace(20), 4, [inicial]), chq(hace(17), 4), chq(hace(1), 4)], registros: [reg(a, 4, [dedos(2)]), reg(b, 4, [dedos(2)])] }),
+        HOY,
+      )
+      expect(e.zonas.dedos, JSON.stringify(inicial)).toBe('rojo')
+    }
   })
   it('un dato con dolor en medio vuelve a empezar la cuenta', () => {
     const [a, b] = [suave('a', hace(20)), suave('b', hace(18))]
@@ -275,8 +289,8 @@ describe('salir de un rojo (P-46, decisión del usuario)', () => {
     expect(estadoAtleta([a], seg({ registros: [reg(a, 4, [dedos(5)])], chequeos: [chq(hace(25), 4)] }), HOY).zonas.dedos).toBe('rojo')
   })
   it('tras levantar un rojo en dedos se pide repetir el test, hasta que se hace', () => {
-    const e = persistente([7])
-    expect(e.retestDesde).toBe(hace(0))
+    const e = persistente([8, 1])
+    expect(e.retestDesde).toBe(hace(1))
     expect(e.explicaciones.map((x) => x.regla)).toContain('autorregulacion.retest')
     const a = suave('a', hace(30))
     const conAlta = estadoAtleta([a], seg({ registros: [reg(a, 4, [dedos(5)])], altas: [{ zona: 'dedos', fecha: hace(10) }] }), HOY)
