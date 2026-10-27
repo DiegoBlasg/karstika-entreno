@@ -692,6 +692,29 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
         explicacion: explicar('plantilla.hombro', ['P-41'], 'Hombro en cadena cerrada, excéntricos y de fuerza, 15 minutos (la dosis es decisión de diseño).'),
       }
     }
+    case 'dominadas': {
+      const { minutos, series, repeticiones, repeticionesEnReserva, descansoMin } = VALORES['P-39']
+      if (minutos > minutosLibres) return null
+      return {
+        nombre: 'Complemento: dominadas lastradas',
+        minutos,
+        ejercicios: [
+          {
+            nombre: 'Dominadas lastradas en barra',
+            series,
+            repeticiones,
+            descansoSeriesS: descansoMin * 60,
+            cargaTexto: `Lastre que te deje ${repeticionesEnReserva} repeticiones en reserva`,
+            notas: 'En barra, no en la multipresa. Si notas el codo o el hombro, para.',
+          },
+        ],
+        explicacion: explicar(
+          'plantilla.dominadas',
+          ['P-39'],
+          `Complemento opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado; la dosis es decisión de diseño y nunca van el día de dedos intensos.`,
+        ),
+      }
+    }
     case 'arc': {
       const { minutosSerie, minutosSerieCorta } = VALORES['P-35']
       const minutos = [minutosSerie, minutosSerieCorta].find((m) => m <= minutosLibres)

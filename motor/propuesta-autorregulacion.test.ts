@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
 import type { Chequeo, Molestia, RegistroSesion, Seguimiento } from './autorregulacion-tipos'
-import { FASE_FUERZA } from './fases'
+import { descargar, FASE_BASE, FASE_FUERZA } from './fases'
 import { proponerSesion } from './propuesta'
 import type { Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { esCargaAlta } from './seguridad'
@@ -54,7 +54,7 @@ describe('semáforo de dolor en el generador (P-64)', () => {
       const r = proponerSesion(pet('2026-11-10', contexto, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'dedos', dolor: 2 }])] }) }))
       expect(planes(r).length, contexto.lugar).toBeGreaterThan(0)
       for (const x of planes(r)) expect(esCargaAlta(x.sesion), `${contexto.compania}:${x.sesion.tipo}`).toBe(false)
-      expect(r.principal!.explicaciones.map((e) => e.regla)).toContain('autorregulacion.semaforo')
+      expect(r.estado!.explicaciones.map((e) => e.regla)).toContain('autorregulacion.semaforo')
     }
   })
   it('ámbar en hombro: el hombro va sin carga', () => {
@@ -95,7 +95,7 @@ describe('chequeo y descarga adelantada (P-50, P-65)', () => {
     const seguimiento = seg({ chequeos: [chq('2026-11-10', 1)] })
     const hoy = proponerSesion(pet('2026-11-10', MARTES, { seguimiento }))
     for (const x of planes(hoy)) expect(esCargaAlta(x.sesion), x.sesion.tipo).toBe(false)
-    expect(hoy.principal!.explicaciones.map((e) => e.regla)).toContain('autorregulacion.chequeo-bajo')
+    expect(hoy.estado!.explicaciones.map((e) => e.regla)).toContain('autorregulacion.chequeo-bajo')
     const manana = proponerSesion(pet('2026-11-11', MARTES, { seguimiento }))
     expect(esCargaAlta(manana.principal!.sesion)).toBe(true)
   })
@@ -142,5 +142,36 @@ describe('progresión de la multipresa con seguimiento (P-11, P-46)', () => {
     expect(repeaters(r).bloques).toBe(2)
     expect(repeaters(r).notas).toMatch(/70 %/)
     expect(repeaters(r).parametros).toContain('P-46')
+  })
+})
+
+describe('dominadas como complemento (P-39)', () => {
+  // Con las 2 multipresas de la semana ya hechas, en casa toca hombro; sobra tiempo para las dominadas.
+  const semana = [multipresa('m1', '2026-11-05'), multipresa('m2', '2026-11-07')]
+  const casa = (extra: Partial<Peticion> = {}) => proponerSesion(pet('2026-11-10', CASA, { historial: semana, ...extra }))
+  const incluye = (r: Propuesta) => planes(r).flatMap((x) => x.sesion.incluye ?? [])
+  it('en la fuerza se añaden a un día sin dedos intensos, con su bloque de 15 min y P-39', () => {
+    const r = casa()
+    expect(r.principal!.sesion.tipo).toBe('hombro')
+    expect(r.principal!.sesion.incluye).toEqual(['dominadas'])
+    const bloque = r.principal!.bloques.find((b) => b.nombre.includes('dominadas'))!
+    expect(bloque.minutos).toBe(15)
+    expect(bloque.explicacion.parametros).toEqual(['P-39'])
+  })
+  it('no en otras fases ni en descarga', () => {
+    expect(incluye(casa({ fase: FASE_BASE }))).not.toContain('dominadas')
+    expect(incluye(casa({ fase: descargar(FASE_FUERZA) }))).not.toContain('dominadas')
+  })
+  it('no si ese día hay una sesión intensa de dedos ni si ya hubo dominadas en 7 días', () => {
+    const conDedosHoy = [...semana.slice(0, 1), multipresa('hoy', '2026-11-10')]
+    expect(incluye(proponerSesion(pet('2026-11-10', CASA, { historial: conDedosHoy, horaInicio: 20 })))).not.toContain('dominadas')
+    const previa = ses('h', '2026-11-06', 18, { tipo: 'hombro', intensidad: 'suave', duracionMin: 35, incluye: ['dominadas'] })
+    expect(incluye(casa({ historial: [...semana, previa] }))).not.toContain('dominadas')
+  })
+  it('no con ámbar en codo, ni con ninguna intensa de dedos como principal', () => {
+    expect(incluye(casa({ seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'codo', dolor: 2 }])] }) }))).not.toContain('dominadas')
+    const r = proponerSesion(pet('2026-11-10', CASA, { historial: [], seguimiento: undefined }))
+    expect(r.principal!.sesion.tipo).toBe('multipresa-resistencia')
+    expect(r.principal!.sesion.incluye ?? []).not.toContain('dominadas')
   })
 })

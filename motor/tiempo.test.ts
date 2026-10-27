@@ -125,8 +125,8 @@ describe('validarEntrada: complementos (incluye)', () => {
   it('acepta complementos suaves distintos del tipo principal', () => {
     expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['arc', 'hombro'] })])).not.toThrow()
   })
-  it('rechaza complementos que no son suaves, repetidos o iguales al principal', () => {
-    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['multipresa-resistencia' as never] })])).toThrow(/complementos suaves/)
+  it('rechaza lo que no es complemento, repetidos o iguales al principal', () => {
+    expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['multipresa-resistencia' as never] })])).toThrow(/solo admite complementos/)
     expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: ['hombro', 'hombro'] })])).toThrow(/repetido/)
     expect(() => validarEntrada([ses('a', '2026-10-26', 18, { tipo: 'tecnica', incluye: ['tecnica'] })])).toThrow(/principal/)
     expect(() => validarEntrada([ses('a', '2026-10-26', 18, { incluye: 'arc' as never })])).toThrow(/lista/)

@@ -7,7 +7,7 @@ import { descargar } from './fases'
 import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
-import { esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
+import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
 
@@ -30,7 +30,8 @@ const FUERZA_RELATIVA_MAX_NOVEL = 160
 // Si una sesión intensa de bloque no es segura hoy, se ofrece su versión suave en lugar de descartarla.
 const SUSTITUTO_SUAVE: Partial<Record<TipoSesion, TipoSesion>> = { board: 'bloque-suave', 'bloque-limite': 'bloque-suave' }
 // Complementos: el hombro se elige primero (es el único con un ensayo que reduce lesiones, P-41), pero se coloca
-// siempre al final de la sesión; el orden de colocación es el de TIPOS_COMPLEMENTO (técnica, ARC, hombro).
+// siempre al final de la sesión; el orden de colocación es el de TIPOS_COMPLEMENTO (técnica, ARC, dominadas,
+// hombro). Las dominadas (P-39) van detrás de todo en prioridad y por su propio camino (dominadasPermitidas).
 const PRIORIDAD_COMPLEMENTOS: readonly TipoComplemento[] = ['hombro', 'tecnica', 'arc']
 const RELLENO_SUAVE: readonly TipoComplemento[] = ['tecnica', 'arc']
 
@@ -122,10 +123,22 @@ function ultimaSesion(p: Peticion): Sesion | undefined {
   return [...p.historial].sort((a, b) => inicioHoras(a) - inicioHoras(b) || comparar(a.id, b.id)).at(-1)
 }
 
-// Rellena el tiempo libre con complementos suaves cuyo cupo de la fase sigue pendiente.
+// P-39: dominadas lastradas como complemento opcional, solo en la fuerza fuera de la descarga, con todas las zonas de
+// carga en verde, y si la sesión resultante no rompe ninguna regla de dominadas (día de dedos, 1 en 7 días).
+function dominadasPermitidas(sesion: Sesion, p: Peticion, posibles: ReadonlySet<TipoSesion>): boolean {
+  if (p.fase.id !== 'fuerza' || p.fase.descarga || !posibles.has('dominadas')) return false
+  if (p.estado && restriccionesDe(p.estado).sinDominadas) return false
+  if (esIntensaDedos(sesion) || conDominadas(sesion)) return false
+  const con: Sesion = { ...sesion, incluye: [...(sesion.incluye ?? []), 'dominadas'] }
+  return !validarSesion(con, p.historial, p.perfil).some((v) => v.regla.startsWith('seguridad.dominadas-'))
+}
+
+// Rellena el tiempo libre con complementos cuyo cupo de la fase sigue pendiente, volumen suave y, en la fuerza,
+// dominadas opcionales.
 function completar(plan: SesionPlan, p: Peticion, posibles: ReadonlySet<TipoSesion>): { plan: SesionPlan; anadidos: TipoComplemento[] } {
-  // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás.
-  if (plan.sesion.tipo === 'hombro') return { plan, anadidos: [] }
+  // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás (sí las
+  // dominadas, que no son escalada).
+  const soloDominadas = plan.sesion.tipo === 'hombro'
   const libresIniciales = p.contexto.minutosDisponibles - plan.sesion.duracionMin
   let libres = libresIniciales
   const elegidos = new Map<TipoComplemento, Bloque>()
@@ -139,8 +152,17 @@ function completar(plan: SesionPlan, p: Peticion, posibles: ReadonlySet<TipoSesi
   }
   // Primero, los complementos con cupo pendiente; después, si sobra tiempo, volumen suave de técnica y ARC
   // (más práctica técnica es lo que más margen tiene con menos de 2 años). El hombro solo entra por cupo.
-  for (const t of PRIORIDAD_COMPLEMENTOS) anadir(t, true)
-  for (const t of RELLENO_SUAVE) anadir(t, false)
+  if (!soloDominadas) {
+    for (const t of PRIORIDAD_COMPLEMENTOS) anadir(t, true)
+    for (const t of RELLENO_SUAVE) anadir(t, false)
+  }
+  if (dominadasPermitidas(plan.sesion, p, posibles)) {
+    const bloque = construirComplemento('dominadas', p, libres)
+    if (bloque) {
+      elegidos.set('dominadas', bloque)
+      libres -= bloque.minutos
+    }
+  }
   if (elegidos.size === 0) return { plan, anadidos: [] }
   const anadidos = TIPOS_COMPLEMENTO.filter((t) => elegidos.has(t))
   const bloques = [...plan.bloques, ...anadidos.map((t) => elegidos.get(t)!)]
@@ -292,10 +314,7 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
   }
   const conEstado = (prop: Propuesta): Propuesta => {
     if (!estado) return prop
-    const principal = prop.principal
-      ? { ...prop.principal, explicaciones: [prop.principal.explicaciones[0]!, ...estado.explicaciones, ...prop.principal.explicaciones.slice(1)] }
-      : null
-    return { ...prop, principal, estado }
+    return { ...prop, estado }
   }
 
   // Rojo (P-43, P-46, P-64): la principal es el descanso; con rojo en dedos, muñeca o codo se ofrece movilidad de

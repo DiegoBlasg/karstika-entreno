@@ -7,9 +7,11 @@ export const TIPOS_SESION = [
 ] as const
 export type TipoSesion = (typeof TIPOS_SESION)[number]
 
-// Únicos tipos que pueden ir como complemento dentro de otra sesión: son suaves y no cargan los dedos,
-// para que nadie pueda esconder carga intensa de dedos dentro de una sesión compuesta.
-export const TIPOS_COMPLEMENTO = ['tecnica', 'arc', 'hombro'] as const
+// Únicos tipos que pueden ir como complemento dentro de otra sesión: no cargan los dedos, para que nadie pueda
+// esconder carga intensa de dedos dentro de una sesión compuesta. Técnica, ARC y hombro son suaves; las dominadas
+// (P-39) tienen sus propias reglas de seguridad (seguridad.dominadas-*). El orden es el de colocación: el hombro,
+// siempre al final.
+export const TIPOS_COMPLEMENTO = ['tecnica', 'arc', 'dominadas', 'hombro'] as const
 export type TipoComplemento = (typeof TIPOS_COMPLEMENTO)[number]
 
 export type Intensidad = 'alta' | 'suave'

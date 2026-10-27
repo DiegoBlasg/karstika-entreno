@@ -58,7 +58,7 @@ function validarIncluye(s: Sesion): void {
   const vistos = new Set<string>()
   for (const t of inc) {
     if (!(TIPOS_COMPLEMENTO as readonly unknown[]).includes(t)) {
-      throw new Error(`incluye solo admite complementos suaves (${TIPOS_COMPLEMENTO.join(', ')}) en ${s.id}: ${String(t)}`)
+      throw new Error(`incluye solo admite complementos (${TIPOS_COMPLEMENTO.join(', ')}) en ${s.id}: ${String(t)}`)
     }
     if (t === s.tipo) throw new Error(`incluye no puede repetir el tipo principal en ${s.id}: ${t}`)
     if (vistos.has(t)) throw new Error(`incluye tiene un complemento repetido en ${s.id}: ${t}`)

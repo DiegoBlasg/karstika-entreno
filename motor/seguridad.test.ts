@@ -452,3 +452,27 @@ describe('seguridad.evaluacion-prematura: mínimo de sesiones en la base', () =>
     expect(validarSesion(evaluacion, [primera, ...viejas], perfilNovel).map((x) => x.regla)).toEqual(['seguridad.evaluacion-prematura'])
   })
 })
+
+describe('seguridad.dominadas-dia-dedos y seguridad.dominadas-7dias (P-39)', () => {
+  const reglas = (p: Sesion, h: Sesion[]) => validarSesion(p, h, perfilExperto).map((v) => v.regla)
+  const tecnicaConDominadas = (id: string, fecha: string) =>
+    ses(id, fecha, 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 75, incluye: ['dominadas'] })
+  const multipresa = (id: string, fecha: string, h = 9) =>
+    ses(id, fecha, h, { tipo: 'multipresa-resistencia', duracionMin: 55, detalle: { regletaMm: 20, agarre: 'semiarqueado' } })
+  it('no van el mismo día que una sesión intensa de dedos, en los dos sentidos', () => {
+    expect(reglas(tecnicaConDominadas('d', '2026-11-10'), [multipresa('m', '2026-11-10')])).toContain('seguridad.dominadas-dia-dedos')
+    expect(reglas(multipresa('m', '2026-11-10', 20), [tecnicaConDominadas('d', '2026-11-10')])).toContain('seguridad.dominadas-dia-dedos')
+    expect(reglas(ses('x', '2026-11-10', 18, { tipo: 'bloque-limite', incluye: ['dominadas'] }), [])).toContain('seguridad.dominadas-dia-dedos')
+    expect(reglas(tecnicaConDominadas('d', '2026-11-10'), [multipresa('m', '2026-11-09')])).not.toContain('seguridad.dominadas-dia-dedos')
+  })
+  it('también como sesión propia', () => {
+    const sola = ses('d', '2026-11-10', 18, { tipo: 'dominadas', intensidad: 'alta', duracionMin: 20 })
+    expect(reglas(sola, [multipresa('m', '2026-11-10')])).toContain('seguridad.dominadas-dia-dedos')
+  })
+  it('como mucho 1 en cualquier ventana de 7 días, para cualquier perfil', () => {
+    const previa = tecnicaConDominadas('a', '2026-11-04')
+    expect(reglas(tecnicaConDominadas('b', '2026-11-10'), [previa])).toContain('seguridad.dominadas-7dias')
+    expect(reglas(tecnicaConDominadas('b', '2026-11-11'), [previa])).not.toContain('seguridad.dominadas-7dias')
+    expect(validarSesion(tecnicaConDominadas('b', '2026-11-10'), [previa], perfilNovel).map((v) => v.regla)).toContain('seguridad.dominadas-7dias')
+  })
+})
