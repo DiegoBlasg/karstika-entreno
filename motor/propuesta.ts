@@ -9,7 +9,7 @@ import { construirComplemento, construirSesion } from './plantillas'
 import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 import { NOMBRE_TIPO } from './nombres'
-import { explicacionAlternativaSemana, explicacionSemana, planificarSemana, PREFIJO_SEMANA, validarHuecos } from './semana'
+import { explicacionAlternativaSemana, explicacionHuecoLibre, explicacionSemana, planificarSemana, PREFIJO_SEMANA, validarHuecos } from './semana'
 import { desdeLunes } from './temporada'
 import { diaNumero, fechaDesdeDia, inicioHoras, validarEntrada } from './tiempo'
 import { TIPOS_COMPLEMENTO, type Sesion, type TipoComplemento, type TipoSesion, type Violacion } from './tipos'
@@ -269,14 +269,23 @@ export function proponerSesion(p: Peticion): Propuesta {
   if (!huecos || huecos.length === 0) return proponer(sinHuecos, true)
   // Tramo 2e (P-67): se planifica la semana con los huecos y la sesión de hoy es la del mejor reparto.
   validarHuecos(p)
-  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas) => proponer(q, false, sinDominadas))
   const r0 = proponer(sinHuecos, true)
+  // Con alguna zona en rojo no se planifica la semana: cada día se decide con el estado de ese día (falla cerrado).
+  if (r0.estado && Object.values(r0.estado.zonas).includes('rojo')) return r0
+  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas) => proponer(q, false, sinDominadas))
   const semana = ranuras.slice(1).map((hueco, i) => {
     const o = elegidas[i + 1]
     return { hueco, sesion: o ? { ...o.sesion, id: `${PREFIJO_SEMANA}${i + 1}` } : null }
   })
   const elegidaHoy = elegidas[0] ?? null
-  if (!elegidaHoy) return { ...r0, semana }
+  const avisadas = (ops: (SesionPlan | null)[]): SesionPlan[] =>
+    ops.filter((o): o is SesionPlan => o !== null).slice(0, 2).map((o) => ({ ...o, explicaciones: [explicacionAlternativaSemana(), ...o.explicaciones] }))
+  if (!elegidaHoy) {
+    if (!r0.principal) return { ...r0, semana }
+    // El plan deja libre este hueco para reservar la carga a otro mejor: la principal es no entrenar, con las opciones
+    // de siempre como alternativas.
+    return { ...r0, principal: null, alternativas: avisadas([r0.principal, ...r0.alternativas]), descanso: explicacionHuecoLibre(ranuras, elegidas), semana }
+  }
   // El plan se buscó con un historial recortado: la sesión de hoy se toma de la propuesta con el historial completo
   // (mismo tipo y complementos; cargas exactas).
   const conDom = (elegidaHoy.sesion.incluye ?? []).includes('dominadas')
@@ -288,10 +297,7 @@ export function proponerSesion(p: Peticion): Propuesta {
   // plan no es fiable y se devuelve la propuesta de siempre, sin plan.
   if (!hoy) return r0
   const explicacion = explicacionSemana(ranuras, elegidas, r0.principal)
-  const otras = [r0.principal, ...r0.alternativas]
-    .filter((o): o is SesionPlan => o !== null && o.sesion.tipo !== hoy.sesion.tipo)
-    .slice(0, 2)
-    .map((o) => ({ ...o, explicaciones: [explicacionAlternativaSemana(), ...o.explicaciones] }))
+  const otras = avisadas([r0.principal, ...r0.alternativas].filter((o) => o !== null && o.sesion.tipo !== hoy.sesion.tipo))
   return {
     ...r0,
     principal: { ...hoy, explicaciones: [explicacion, ...hoy.explicaciones] },

@@ -55,6 +55,8 @@ const cuentaPara = (s: Sesion, t: TipoSesion): boolean => s.tipo === t || (s.inc
 interface Candidata {
   elegidas: (SesionPlan | null)[]
   vector: number[]     // cupos cubiertos, en el orden de prioridad de la fase
+  altaFuera: number    // sesiones de carga alta en huecos fuera de casa (rocódromo o roca)
+  minutosFuera: number
   minutos: number
   orden: number[]      // puesto de prioridad de cada hueco (menor = más prioritario)
   tipos: string
@@ -70,7 +72,7 @@ function enLaSemana(p: Peticion, sesiones: readonly Sesion[]): Sesion[] {
   })
 }
 
-function puntuar(p: Peticion, elegidas: (SesionPlan | null)[]): Candidata {
+function puntuar(p: Peticion, ranuras: readonly Hueco[], elegidas: (SesionPlan | null)[]): Candidata {
   const plan = elegidas.flatMap((o) => (o ? [o.sesion] : []))
   const ventana = enLaSemana(p, [...p.historial, ...plan])
   const n = p.fase.prioridad.length
@@ -82,6 +84,8 @@ function puntuar(p: Peticion, elegidas: (SesionPlan | null)[]): Candidata {
   return {
     elegidas,
     vector: p.fase.prioridad.map((t) => Math.min(ventana.filter((s) => cuentaPara(s, t)).length, p.fase.cupos[t] ?? 0)),
+    altaFuera: elegidas.filter((o, i) => o !== null && esCargaAlta(o.sesion) && ranuras[i]!.contexto.lugar !== 'casa').length,
+    minutosFuera: elegidas.reduce((a, o, i) => a + (o !== null && ranuras[i]!.contexto.lugar !== 'casa' ? o.sesion.duracionMin : 0), 0),
     minutos: plan.reduce((a, s) => a + s.duracionMin, 0),
     orden: elegidas.map(puesto),
     tipos: elegidas.map((o) => o?.sesion.tipo ?? '-').join(','),
@@ -96,6 +100,9 @@ const lex = (a: readonly number[], b: readonly number[]): number => {
 function esMejor(a: Candidata, b: Candidata): boolean {
   const v = lex(a.vector, b.vector)
   if (v !== 0) return v > 0
+  // Decisión del usuario (2026-10-27): el rocódromo manda; las mejores sesiones van ahí y sus huecos se aprovechan.
+  if (a.altaFuera !== b.altaFuera) return a.altaFuera > b.altaFuera
+  if (a.minutosFuera !== b.minutosFuera) return a.minutosFuera > b.minutosFuera
   if (a.minutos !== b.minutos) return a.minutos > b.minutos
   const o = lex(a.orden, b.orden)
   if (o !== 0) return o < 0
@@ -109,8 +116,9 @@ function esMejor(a: Candidata, b: Candidata): boolean {
 // recalcula después con el historial completo; si no coincide, se descarta el plan (falla cerrado).
 const DIAS_HISTORIAL_PLAN = 75
 
+const enFrase = (x: string): string => (/^[A-Z]{2}/.test(x) ? x : x.charAt(0).toLowerCase() + x.slice(1))
 const nombreSesion = (s: Sesion): string =>
-  [NOMBRE_TIPO[s.tipo], ...(s.incluye ?? []).map((t) => NOMBRE_TIPO[t])].map((x) => x.toLowerCase()).join(' + ')
+  [NOMBRE_TIPO[s.tipo], ...(s.incluye ?? []).map((t) => NOMBRE_TIPO[t])].map(enFrase).join(' + ')
 const mismaSesion = (a: SesionPlan, b: SesionPlan): boolean =>
   a.sesion.tipo === b.sesion.tipo && (a.sesion.incluye ?? []).join() === (b.sesion.incluye ?? []).join()
 
@@ -128,7 +136,11 @@ export function planificarSemana(
     ...[...huecos].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio - b.horaInicio),
   ]
   const hoy = diaNumero(p.fecha)
-  const conMolestia = new Set((p.seguimiento?.registros ?? []).filter((r) => r.molestias.length > 0).map((r) => r.sesionId))
+  // Molestias efectivas: un registro sin molestias hereda las del chequeo de su día (P-45).
+  const diasConMolestia = new Set((p.seguimiento?.chequeos ?? []).filter((c) => c.molestias.length > 0).map((c) => c.fecha))
+  const conMolestia = new Set(
+    (p.seguimiento?.registros ?? []).filter((r) => r.molestias.length > 0 || diasConMolestia.has(r.fecha)).map((r) => r.sesionId),
+  )
   const primera = p.historial.reduce<Sesion | undefined>((a, s) => (!a || s.fecha < a.fecha ? s : a), undefined)
   const corto = p.historial.filter(
     (s) => diaNumero(s.fecha) >= hoy - DIAS_HISTORIAL_PLAN || conMolestia.has(s.id) || s.tipo === 'evaluacion-dedos' || s === primera,
@@ -147,7 +159,7 @@ export function planificarSemana(
   }
   const visitar = (i: number, elegidas: (SesionPlan | null)[], historial: Sesion[]): void => {
     if (i === ranuras.length) {
-      const c = puntuar(p, elegidas)
+      const c = puntuar(p, ranuras, elegidas)
       if (!mejor || esMejor(c, mejor)) mejor = c
       return
     }
@@ -155,7 +167,14 @@ export function planificarSemana(
     const h = ranuras[i]!
     const q: Peticion = { ...baseCorta, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial }
     const r = proponerEn(q, false)
-    const opciones = r.principal ? [r.principal, ...r.alternativas] : []
+    // En un hueco de rocódromo o roca no se deja la tarde vacía por el descanso recomendado (P-16): se prueban sus
+    // alternativas suaves (decisión del usuario del 2026-10-27: el rocódromo se aprovecha siempre).
+    const fuera = h.contexto.lugar !== 'casa'
+    const opciones = r.principal
+      ? [r.principal, ...r.alternativas]
+      : fuera && r.descanso?.regla === 'generador.descanso-recomendado'
+        ? r.alternativas
+        : []
     const ramas: SesionPlan[] = []
     const anadir = (o: SesionPlan | null | undefined): void => {
       if (o && !ramas.some((x) => mismaSesion(x, o))) ramas.push(o)
@@ -166,7 +185,9 @@ export function planificarSemana(
       const r2 = proponerEn(q, true)
       anadir([r2.principal, ...r2.alternativas].find((o) => o !== null && !esCargaAlta(o.sesion)))
     }
-    if (ramas.length === 0) visitar(i + 1, [...elegidas, null], historial)
+    // Si no hay opciones, o si todas son de carga alta, también se prueba dejar el hueco libre: una carga alta
+    // forzada aquí puede quitar sitio a otra mejor más adelante.
+    if (ramas.length === 0 || !ramas.some((o) => !esCargaAlta(o.sesion))) visitar(i + 1, [...elegidas, null], historial)
     for (const o of ramas) visitar(i + 1, [...elegidas, o], [...historial, { ...o.sesion, id: `${PREFIJO_SEMANA}${i}` }])
   }
   visitar(0, [], [...corto])
@@ -188,6 +209,12 @@ export function explicacionSemana(ranuras: readonly Hueco[], elegidas: readonly 
   }
   partes.push('El plan se recalcula cada vez que pides una sesión.')
   return explicar('plan.semana', ['P-67'], partes.join(' '))
+}
+
+export function explicacionHuecoLibre(ranuras: readonly Hueco[], elegidas: readonly (SesionPlan | null)[]): Explicacion {
+  const i = elegidas.findIndex((o, k) => k > 0 && o !== null && esCargaAlta(o.sesion))
+  const reserva = i > 0 ? ` El plan reserva la carga alta para ${franja(ranuras[i]!)} (${nombreSesion(elegidas[i]!.sesion)}).` : ''
+  return explicar('plan.semana-libre', ['P-67'], `En este hueco no hace falta entrenar.${reserva} Si te apetece moverte, tienes las alternativas.`)
 }
 
 export function explicacionAlternativaSemana(): Explicacion {
