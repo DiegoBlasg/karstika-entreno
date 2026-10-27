@@ -269,9 +269,56 @@ function reglaEvaluacionPrematura(propuesta: Sesion, historial: readonly Sesion[
   ]
 }
 
+// P-39: dominadas lastradas (como sesión o como complemento) nunca el día de una sesión intensa de dedos, y como
+// mucho 1 en cualquier ventana de 7 días. Para todos los perfiles.
+export const conDominadas = (s: Sesion): boolean => s.tipo === 'dominadas' || (s.incluye ?? []).includes('dominadas')
+
+function reglaDominadasDiaDedos(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
+  const mismoDia = historial.filter((h) => h.fecha === propuesta.fecha)
+  const choques = conDominadas(propuesta)
+    ? [...(esIntensaDedos(propuesta) ? [propuesta] : []), ...mismoDia.filter(esIntensaDedos)]
+    : esIntensaDedos(propuesta)
+      ? mismoDia.filter(conDominadas)
+      : []
+  if (choques.length === 0) return []
+  return [
+    {
+      regla: 'seguridad.dominadas-dia-dedos',
+      sesionIds: [...new Set([propuesta.id, ...choques.map((s) => s.id)])].sort(),
+      mensaje: 'Las dominadas lastradas no van el mismo día que una sesión intensa de dedos.',
+      explicacion: explicar('seguridad.dominadas-dia-dedos', ['P-39'], 'Las dominadas lastradas son opcionales y van siempre fuera de los días de dedos intensos.'),
+    },
+  ]
+}
+
+function reglaDominadas7Dias(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
+  if (!conDominadas(propuesta)) return []
+  const max = VALORES['P-39'].max7Dias
+  const todas = [...historial, propuesta].filter(conDominadas)
+  const d = diaNumero(propuesta.fecha)
+  for (let inicio = d - 6; inicio <= d; inicio++) {
+    const ventana = todas.filter((s) => {
+      const x = diaNumero(s.fecha)
+      return x >= inicio && x <= inicio + 6
+    })
+    if (ventana.length > max) {
+      return [
+        {
+          regla: 'seguridad.dominadas-7dias',
+          sesionIds: ventana.map((s) => s.id).sort(),
+          mensaje: `Habría ${ventana.length} sesiones con dominadas lastradas en 7 días; el máximo es ${max}.`,
+          explicacion: explicar('seguridad.dominadas-7dias', ['P-39'], `Las dominadas lastradas, como mucho ${max} vez en cualquier ventana de 7 días.`),
+        },
+      ]
+    }
+  }
+  return []
+}
+
 const REGLAS: Regla[] = [
   reglaDedosDiaDescanso, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
   reglaMultipresa7Dias, reglaDedos7Dias, reglaRegleta, reglaArqueado, reglaEvaluacionPrematura,
+  reglaDominadasDiaDedos, reglaDominadas7Dias,
 ]
 
 const comparar = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)

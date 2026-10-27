@@ -18,6 +18,8 @@ export const FASE_BASE: Fase = {
   ],
 }
 
+// Las dominadas siguen prohibidas como sesión principal en todas las fases: P-39 solo las admite como complemento
+// opcional, en la fuerza y fuera de la descarga (lo decide el generador al completar la sesión).
 // Fuerza: 2 multipresas (P-07) y 1 vía al límite por semana = 3 sesiones intensas de dedos, justo el tope de
 // P-12 para perfiles novel. La vía va antes en la prioridad para que el día con compañero sea de cuerda y la
 // multipresa caiga en los días sin compañero o en casa.

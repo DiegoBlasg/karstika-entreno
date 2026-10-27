@@ -25,4 +25,10 @@ export {
   type AjusteCiclo2, type Diagnostico, type IntentoLimite, type Limitante, type MotivoCaida, type Progreso, type Tendencia,
 } from './diagnostico'
 export { validarEvaluacion } from './evaluacion'
-export type { OpcionesTemporada } from './temporada'
+export type { OpcionesFase, OpcionesTemporada } from './temporada'
+export { estadoAtleta, objetivoRpe, restriccionesDe, validarSeguimiento } from './autorregulacion'
+export {
+  ZONAS,
+  type Alta, type Chequeo, type EstadoAtleta, type Molestia, type RegistroSesion, type Restricciones, type Seguimiento, type Semaforo, type Zona,
+} from './autorregulacion-tipos'
+export { CONSEJOS, elegirConsejos, type Consejo } from './consejos'

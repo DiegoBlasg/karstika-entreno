@@ -1,3 +1,5 @@
+import type { EstadoAtleta, Seguimiento } from './autorregulacion-tipos'
+import type { Limitante } from './diagnostico'
 import type { Explicacion } from './explicacion'
 import type { Contexto, Perfil, Sesion, TipoSesion } from './tipos'
 
@@ -11,6 +13,7 @@ export interface Fase {
   prohibidos: TipoSesion[]
   descarga?: boolean                              // semana de descarga (P-47, P-48): mitad de volumen, nada al límite
   reevaluar?: boolean                             // última semana de fase: toca repetir los tests (P-26)
+  descargaSustituida?: boolean                    // la descarga programada de esta semana la cubrió una adelantada (P-50)
 }
 
 export interface EvaluacionDedos {
@@ -54,6 +57,11 @@ export interface Peticion {
   historial: Sesion[]
   fase: Fase
   evaluacion?: EvaluacionDedos
+  seguimiento?: Seguimiento                       // registros, chequeos y altas (tramo 2d)
+  // Lo calcula proponerSesion a partir de `seguimiento` para cada fecha que evalúa; no lo pases tú.
+  estado?: EstadoAtleta
+  limitantePrincipal?: Limitante                  // de diagnosticar (activa el consejo de miedo a caer)
+  consejosMostrados?: { id: string; fecha: string }[]   // para no repetir consejos en 7 días (P-66)
 }
 
 export interface Propuesta {
@@ -61,4 +69,5 @@ export interface Propuesta {
   alternativas: SesionPlan[]                      // 0 a 2, de tipos distintos entre sí y de la principal
   descanso?: Explicacion
   proximaVentanaIntensa?: { fecha: string }       // primer día en que vuelve a caber una sesión intensa de dedos
+  estado?: EstadoAtleta                           // con `seguimiento`: semáforo, freno, descarga adelantada y chequeo
 }

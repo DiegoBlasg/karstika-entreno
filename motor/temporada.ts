@@ -172,7 +172,13 @@ export function semanaEnFecha(t: Temporada, fecha: string): SemanaPlan | undefin
 
 // La fase de una fecha con la semana aplicada: descarga si toca y, en la semana de reevaluación, el test de
 // dedos permitido (también si coincide con una descarga: es poco volumen y medir tras descargar es lo habitual).
-export function faseEnFecha(t: Temporada, fecha: string): Fase {
+export interface OpcionesFase {
+  // Las de estadoAtleta(...).descargasAdelantadas. Si la descarga programada de la semana empieza en las 2 semanas
+  // siguientes al final de una adelantada (o se solapa con ella), la adelantada la sustituye (P-50).
+  descargasAdelantadas?: readonly { desde: string; hasta: string }[]
+}
+
+export function faseEnFecha(t: Temporada, fecha: string, opciones: OpcionesFase = {}): Fase {
   const s = semanaEnFecha(t, fecha)
   const desdeObjetivo = diaNumero(fecha) - diaNumero(t.objetivo)
   // Semana objetivo: solo pegues y cosas suaves; la siguiente, rendimiento normal sin test.
@@ -183,7 +189,15 @@ export function faseEnFecha(t: Temporada, fecha: string): Fase {
   if (t.refuerzoTecnica && s.ciclo === 2 && fase.prioridad.includes('tecnica')) {
     fase = { ...fase, cupos: { ...fase.cupos, tecnica: (fase.cupos.tecnica ?? 0) + 1 } }
   }
-  if (s.descarga) fase = descargar(fase)
+  const ultima = t.semanas[t.semanas.length - 1]!
+  const lunes = diaNumero(s.lunes)
+  const margen = VALORES['P-50'].semanasSustitucion * 7
+  const sustituida =
+    s.descarga &&
+    s !== ultima &&
+    (opciones.descargasAdelantadas ?? []).some((a) => diaNumero(a.desde) <= lunes + 6 && lunes - diaNumero(a.hasta) <= margen)
+  if (s.descarga && !sustituida) fase = descargar(fase)
+  if (sustituida) fase = { ...fase, descargaSustituida: true }
   if (s.reevaluar) {
     fase = {
       ...fase,

@@ -1,4 +1,5 @@
-import { explicar } from './explicacion'
+import { restriccionesDe } from './autorregulacion'
+import { explicar, type Explicacion } from './explicacion'
 import { evaluacionVigente, lastreRepeaters } from './evaluacion'
 import { VALORES } from './parametros'
 import type { Bloque, Peticion, SesionPlan } from './propuesta-tipos'
@@ -45,6 +46,7 @@ function sesionDe(
     horaInicio: p.horaInicio,
     duracionMin,
     ...(detalle ? { detalle } : {}),
+    ...(p.fase.descarga ? { descarga: true } : {}),
   }
 }
 
@@ -76,15 +78,58 @@ const TIPOS_MULTIPRESA_PROGRESION: readonly TipoSesion[] = ['multipresa-resisten
 // Progresión común a las multipresas. Solo cuentan las anteriores al día de la petición (no las futuras ya
 // planificadas). Una sola subida cada vez (P-11): primero el volumen (1 → 2 bloques, P-04) y, otras tantas
 // sesiones después, la carga (70 % → 80 %). Decisión de diseño en la dirección segura.
+// Las sesiones hechas en descarga no cuentan para subir (el volumen era la mitad). Con seguimiento (tramo 2d), solo
+// cuentan las válidas (P-11: registradas, completadas, dentro del RPE objetivo y sin dolor en dedos o muñeca).
+// Escalones: 0 = 1 bloque al 70 %, 1 = 2 bloques al 70 %, 2 = 80 %. Cada episodio de molestia en dedos o muñeca
+// baja un escalón desde donde estabas en ese momento (P-46), y desde ahí se progresa de nuevo. Con el freno de P-11
+// (`sinSubida`), hoy no se pasa del escalón de la última multipresa.
 function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_MULTIPRESA_PROGRESION) {
   const hoy = diaNumero(p.fecha)
-  const previas = p.historial.filter((s) => tipos.includes(s.tipo) && diaNumero(s.fecha) < hoy).length
-  const sesionesConUnBloque = VALORES['P-04'].semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
+  const noValidas = new Set(p.estado?.sesionesNoValidas ?? [])
+  const sinRegistro = new Set(p.estado?.sesionesSinRegistro ?? [])
+  const pasadas = p.historial.filter((s) => tipos.includes(s.tipo) && diaNumero(s.fecha) < hoy)
+  const sinDescarga = pasadas.filter((s) => !s.descarga)
+  const lista = sinDescarga.filter((s) => !noValidas.has(s.id))
+  const sinApuntar = pasadas.filter((s) => sinRegistro.has(s.id)).length
+  const S = VALORES['P-04'].semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
+  const escalon = (n: number): number => (n < S ? 0 : n < 2 * S ? 1 : 2)
+  // Recorrido en orden (día y hora; la molestia de un chequeo va al principio del día). Toda multipresa fuera de
+  // descarga marca el escalón «de la última», pero solo las válidas suben: así una sola sesión mala no baja la carga.
+  const validas = new Set(lista.map((s) => s.id))
+  const eventos = [
+    ...(p.estado?.molestiasP46 ?? []).map((m) => ({ dia: diaNumero(m.fecha), orden: m.orden, molestia: true, valida: false })),
+    ...sinDescarga.map((s) => ({ dia: diaNumero(s.fecha), orden: s.horaInicio, molestia: false, valida: validas.has(s.id) })),
+  ]
+    .filter((e) => e.dia < hoy)
+    .sort((x, y) => x.dia - y.dia || x.orden - y.orden || Number(y.molestia) - Number(x.molestia))
+  let previas = 0
+  let antesDeLaUltima = 0
+  for (const e of eventos) {
+    if (e.molestia) previas = Math.min(previas, Math.max(0, escalon(previas) - 1) * S)
+    else {
+      antesDeLaUltima = previas
+      if (e.valida) previas++
+    }
+  }
+  const retornoP46 = escalon(previas) < escalon(lista.length)
+  let frenado = false
+  if (p.estado?.sinSubida && lista.length > 0 && escalon(previas) > escalon(antesDeLaUltima)) {
+    previas = (escalon(antesDeLaUltima) + 1) * S - 1
+    frenado = true
+  }
+  const sesionesConUnBloque = S
   const inicial = previas < 2 * sesionesConUnBloque
   const fraccion = inicial ? FRACCION_INICIAL_REPEATERS : VALORES['P-06'].fraccionMaximaRepeaters
   const kg = evaluacionVigente(p.evaluacion, p.fecha) ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
-  return { previas, sesionesConUnBloque, inicial, kg, porcentaje: Math.round(fraccion * 100) }
+  return { previas, sesionesConUnBloque, inicial, kg, porcentaje: Math.round(fraccion * 100), retornoP46, frenado, sinApuntar }
 }
+
+const TEXTO_P46 = ' Tras tu última molestia en dedos o muñeca, la progresión vuelve un escalón atrás y sube de nuevo con sesiones sin dolor (P-46).'
+const TEXTO_FRENO = ' Hoy no sube: tu última sesión quedó por encima del esfuerzo previsto o tienes una zona en ámbar (P-11).'
+const textoSinApuntar = (n: number): string =>
+  n === 0 ? '' : ` ${n === 1 ? '1 sesión de multipresa sin registro no cuenta' : `${n} sesiones de multipresa sin registro no cuentan`} para subir: apunta el RPE y los minutos al terminar.`
+const extrasProgresion = (r: { retornoP46: boolean; frenado: boolean; sinApuntar: number }): string =>
+  `${r.retornoP46 ? TEXTO_P46 : ''}${r.frenado ? TEXTO_FRENO : ''}${textoSinApuntar(r.sinApuntar)}`
 
 function notasCarga(kg: number | undefined, porcentaje: number): string {
   return kg === undefined
@@ -93,7 +138,8 @@ function notasCarga(kg: number | undefined, porcentaje: number): string {
 }
 
 function construirMultipresa(p: Peticion): SesionPlan | null {
-  const { previas, sesionesConUnBloque, inicial, kg, porcentaje } = progresionMultipresa(p)
+  const progresion = progresionMultipresa(p)
+  const { previas, sesionesConUnBloque, inicial, kg, porcentaje, retornoP46 } = progresion
   const { bloquesIniciales, bloquesDespues } = VALORES['P-04']
   const { trabajoS, descansoS } = VALORES['P-02']
   const { repeticionesPorSerie } = VALORES['P-03']
@@ -135,14 +181,17 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
       ],
       explicacion: explicar(
         'plantilla.multipresa',
-        p.fase.descarga
-          ? ['P-01', 'P-02', 'P-03', 'P-05', 'P-06', 'P-09', 'P-10', 'P-48']
-          : ['P-01', 'P-02', 'P-03', 'P-04', 'P-05', 'P-06', 'P-09', 'P-10', 'P-11'],
+        [
+          ...(p.fase.descarga
+            ? (['P-01', 'P-02', 'P-03', 'P-05', 'P-06', 'P-09', 'P-10', 'P-48'] as const)
+            : (['P-01', 'P-02', 'P-03', 'P-04', 'P-05', 'P-06', 'P-09', 'P-10', 'P-11'] as const)),
+          ...(retornoP46 ? (['P-46'] as const) : []),
+        ],
         `${p.fase.descarga ? 'Semana de descarga: la mitad de series en un solo bloque. ' : ''}Repeaters submáximos 7 s colgado : 3 s descanso, ${seriesPorBloque} series de 7 repeticiones, 2,5 min entre series, en regleta de 20 mm semiarqueado, ${
           kg === undefined
             ? 'por esfuerzo percibido porque no hay un test vigente'
             : `al ${porcentaje} % de tu test (${inicial ? `durante las primeras ${2 * sesionesConUnBloque} sesiones, por prudencia` : 'el tope de P-06'})`
-        }. Volumen y carga suben de uno en uno: primero de 1 a 2 bloques y después del 70 % al 80 %.`,
+        }. Volumen y carga suben de uno en uno: primero de 1 a 2 bloques y después del 70 % al 80 %.${extrasProgresion(progresion)}`,
       ),
     })
   }
@@ -158,7 +207,8 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
 // descarga, la mitad de series. Misma progresión de carga que los repeaters.
 function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
   // Protocolo nuevo, progresión propia (P-11): vuelve a empezar al 70 % aunque haya repeaters previos.
-  const { kg, porcentaje } = progresionMultipresa(p, ['multipresa-resistencia-fuerza'])
+  const progresion = progresionMultipresa(p, ['multipresa-resistencia-fuerza'])
+  const { kg, porcentaje, retornoP46 } = progresion
   const { trabajoS, descansoS, repeticiones, descansoSeriesS } = VALORES['P-36']
   const series = p.fase.descarga ? VALORES['P-36'].series / 2 : VALORES['P-36'].series
   const segundos = series * repeticiones * (trabajoS + descansoS) + (series - 1) * descansoSeriesS
@@ -185,8 +235,8 @@ function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
       ],
       explicacion: explicar(
         'plantilla.multipresa-resistencia-fuerza',
-        p.fase.descarga ? ['P-36', 'P-06', 'P-09', 'P-10', 'P-48'] : ['P-36', 'P-06', 'P-09', 'P-10', 'P-11'],
-        `${p.fase.descarga ? 'Semana de descarga: la mitad de series. ' : ''}Resistencia de fuerza: ${trabajoS} s colgado : ${descansoS} s de descanso, ${repeticiones} repeticiones, ${series} series y 1 min entre series, en regleta de 20 mm semiarqueado. La carga (70 % y después 80 % del test) es la de los repeaters (P-06): P-36 no fija intensidad para este perfil.`,
+        [...(p.fase.descarga ? (['P-36', 'P-06', 'P-09', 'P-10', 'P-48'] as const) : (['P-36', 'P-06', 'P-09', 'P-10', 'P-11'] as const)), ...(retornoP46 ? (['P-46'] as const) : [])],
+        `${p.fase.descarga ? 'Semana de descarga: la mitad de series. ' : ''}Resistencia de fuerza: ${trabajoS} s colgado : ${descansoS} s de descanso, ${repeticiones} repeticiones, ${series} series y 1 min entre series, en regleta de 20 mm semiarqueado. La carga (70 % y después 80 % del test) es la de los repeaters (P-06): P-36 no fija intensidad para este perfil.${extrasProgresion(progresion)}`,
       ),
     },
   ]
@@ -493,10 +543,35 @@ function construirArc(p: Peticion): SesionPlan | null {
 // Con 40 min o más se añaden antagonistas y movilidad (decisión del usuario: días en casa de la fase base).
 const ANTAGONISTAS_MOVILIDAD_MIN = 20
 
+const hombroSinCarga = (p: Peticion): boolean => p.estado !== undefined && restriccionesDe(p.estado).hombroSinCarga
+
+const explicacionHombroSinCarga = (): Explicacion =>
+  explicar(
+    'plantilla.hombro-sin-carga',
+    ['P-41', 'P-43', 'P-64'],
+    'Por tu semáforo de dolor, el trabajo de hombro va sin carga: solo movilidad y activación suave, los mismos minutos. Si duele, para.',
+  )
+
 function construirHombro(p: Peticion): SesionPlan | null {
   const activacionMin = 5
   const corto = activacionMin + VALORES['P-41'].minutos
   if (corto > p.contexto.minutosDisponibles) return null
+  if (hombroSinCarga(p)) {
+    return plan(sesionDe('hombro', p, corto, 'suave', { conCarga: false }), [
+      {
+        nombre: 'Movilidad y activación',
+        minutos: activacionMin,
+        ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular suave', cargaTexto: 'Esfuerzo percibido 1–2 de 10' }],
+        explicacion: explicacionHombroSinCarga(),
+      },
+      {
+        nombre: 'Movilidad sin carga',
+        minutos: VALORES['P-41'].minutos,
+        ejercicios: [{ nombre: 'Movilidad de hombro, cadera y muñecas, sin peso ni bandas', cargaTexto: 'Sin esfuerzo', notas: 'Solo rangos sin dolor.' }],
+        explicacion: explicacionHombroSinCarga(),
+      },
+    ])
+  }
   const largo = corto + ANTAGONISTAS_MOVILIDAD_MIN <= p.contexto.minutosDisponibles
   const total = largo ? corto + ANTAGONISTAS_MOVILIDAD_MIN : corto
   const bloques: Bloque[] = [
@@ -629,11 +704,42 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
     case 'hombro': {
       const minutos = VALORES['P-41'].minutos
       if (minutos > minutosLibres) return null
+      if (hombroSinCarga(p)) {
+        return {
+          nombre: 'Complemento: movilidad de hombro sin carga',
+          minutos,
+          ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular, sin peso ni bandas', cargaTexto: 'Sin esfuerzo' }],
+          explicacion: explicacionHombroSinCarga(),
+        }
+      }
       return {
         nombre: 'Complemento: hombro y antagonistas',
         minutos,
         ejercicios: [{ nombre: 'Ejercicios de hombro en cadena cerrada, excéntricos y de fuerza', cargaTexto: 'Esfuerzo percibido 5–6 de 10' }],
         explicacion: explicar('plantilla.hombro', ['P-41'], 'Hombro en cadena cerrada, excéntricos y de fuerza, 15 minutos (la dosis es decisión de diseño).'),
+      }
+    }
+    case 'dominadas': {
+      const { minutos, series, repeticiones, repeticionesEnReserva, descansoMin } = VALORES['P-39']
+      if (minutos > minutosLibres) return null
+      return {
+        nombre: 'Complemento: dominadas lastradas',
+        minutos,
+        ejercicios: [
+          {
+            nombre: 'Dominadas lastradas en barra',
+            series,
+            repeticiones,
+            descansoSeriesS: descansoMin * 60,
+            cargaTexto: `Lastre que te deje ${repeticionesEnReserva} repeticiones en reserva`,
+            notas: 'En barra, no en la multipresa. Si notas el codo o el hombro, para.',
+          },
+        ],
+        explicacion: explicar(
+          'plantilla.dominadas',
+          ['P-39'],
+          `Complemento opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado; la dosis es decisión de diseño y nunca van el día de dedos intensos.`,
+        ),
       }
     }
     case 'arc': {

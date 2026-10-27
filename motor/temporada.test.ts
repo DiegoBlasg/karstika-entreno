@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FASE_BASE } from './fases'
 import { faseEnFecha, planificarTemporada, semanaEnFecha } from './temporada'
+import { diaNumero, fechaDesdeDia } from './tiempo'
 
 const temporada = planificarTemporada('2026-11-02', '2027-10-04')
 const tramos = (t: typeof temporada) => {
@@ -110,5 +111,28 @@ describe('límites del rango', () => {
   it('42 y 53 semanas son válidas', () => {
     expect(planificarTemporada('2026-11-02', '2027-08-23').semanas).toHaveLength(42)
     expect(planificarTemporada('2026-11-02', '2027-11-08').semanas).toHaveLength(53)
+  })
+})
+
+describe('la descarga adelantada sustituye a la programada (P-50)', () => {
+  const t = planificarTemporada('2026-11-02', '2027-10-04')
+  const descarga = t.semanas.find((s) => s.descarga)!
+  const lunes = descarga.lunes
+  const dia = (n: number) => fechaDesdeDia(diaNumero(lunes) + n)
+  it('si la adelantada acaba en las 2 semanas anteriores, la semana programada es normal y lo dice', () => {
+    const f = faseEnFecha(t, dia(1), { descargasAdelantadas: [{ desde: dia(-11), hasta: dia(-5) }] })
+    expect(f.descarga).toBeUndefined()
+    expect(f.descargaSustituida).toBe(true)
+  })
+  it('si acabó hace más de 2 semanas, la programada se mantiene; sin opciones, todo igual', () => {
+    expect(faseEnFecha(t, dia(1), { descargasAdelantadas: [{ desde: dia(-21), hasta: dia(-15) }] }).descarga).toBe(true)
+    expect(faseEnFecha(t, dia(1), { descargasAdelantadas: [{ desde: dia(-20), hasta: dia(-14) }] }).descarga).toBeUndefined()
+    expect(faseEnFecha(t, dia(1)).descarga).toBe(true)
+  })
+  it('una adelantada posterior no sustituye a una programada anterior, y el afinado nunca se sustituye', () => {
+    expect(faseEnFecha(t, dia(1), { descargasAdelantadas: [{ desde: dia(7), hasta: dia(13) }] }).descarga).toBe(true)
+    const ultima = t.semanas.at(-1)!.lunes
+    const d = (n: number) => fechaDesdeDia(diaNumero(ultima) + n)
+    expect(faseEnFecha(t, d(1), { descargasAdelantadas: [{ desde: d(-8), hasta: d(-2) }] }).descarga).toBe(true)
   })
 })
