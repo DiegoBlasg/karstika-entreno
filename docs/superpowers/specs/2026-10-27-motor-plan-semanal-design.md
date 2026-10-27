@@ -42,7 +42,7 @@ interface Hueco {
   - Sin solapes entre huecos ni con la petición.
   - Contextos válidos (`validarContexto`).
   - Como mucho 2 huecos por día.
-- **Sin `huecos`, o con `huecos: []`:** el comportamiento es exactamente el actual. Se comprueba con las pruebas existentes, que no cambian.
+- **Sin `huecos`:** el comportamiento es exactamente el actual, y las pruebas existentes no cambian. Con `huecos: []` (el último hueco de la semana) se usa el plan; ver §9.
 
 ## 4. Búsqueda del reparto (P-67, decisión de diseño)
 

@@ -175,3 +175,15 @@ describe('plan semanal con un rojo antiguo sin alta (falla cerrado)', () => {
     }
   })
 })
+
+describe('hueco libre (P-67)', () => {
+  it('si la única opción de hoy es carga alta y quitaría la vía de mañana, hoy queda libre y sin alternativas de carga alta', () => {
+    const hombro = (id: string, fecha: string): Sesion => ({ id, tipo: 'hombro', intensidad: 'suave', fecha, horaInicio: 9, duracionMin: 40 })
+    const p = lunes({ fecha: '2026-11-11', historial: [hombro('h1', '2026-11-09'), hombro('h2', '2026-11-10')], huecos: [{ fecha: '2026-11-12', horaInicio: 19, contexto: AMIGOS }] })
+    const r = proponerSesion(p)
+    expect(r.principal).toBeNull()
+    expect(r.descanso?.regla).toBe('plan.semana-libre')
+    expect(r.semana?.[0]?.sesion?.tipo).toBe('via-cuerda-limite')
+    for (const a of r.alternativas) expect(esCargaAlta(a.sesion)).toBe(false)
+  })
+})
