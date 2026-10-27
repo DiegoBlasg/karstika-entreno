@@ -103,3 +103,17 @@ describe('VALORES', () => {
     expect(VALORES['P-53'].minutosPrevisualizacion).toBe(3)
   })
 })
+
+describe('VALORES del diagnóstico', () => {
+  it('P-23, P-24, P-27 y P-31 coinciden con el documento', () => {
+    // P-23 ordena fuerza de dedos, resistencia y después técnica y táctica; «cabeza» es la táctica del registro de caídas.
+    expect(columnas('P-23')[2]).toMatch(/^1\.º fuerza máxima de dedos; 2\.º resistencia intermitente de dedos; después técnica, táctica/)
+    expect(VALORES['P-23'].orden).toEqual(['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'])
+    expect(columnas('P-24')[2]).toMatch(/^Intermitente 7 s : 3 s al 60 % de la fuerza máxima, hasta el fallo; resultado en segundos/)
+    expect(VALORES['P-24']).toEqual({ trabajoS: 7, descansoS: 3, fraccion: 0.6 })
+    expect(columnas('P-27')[2]).toMatch(/^Puntuación de 1 a 7 por técnica/)
+    expect(VALORES['P-27']).toEqual({ minimo: 1, maximo: 7 })
+    expect(columnas('P-31')[2]).toMatch(/^Fuerza de dedos: 4-10 semanas\. Resistencia de fuerza: 4-8 semanas/)
+    expect(VALORES['P-31']).toEqual({ fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 })
+  })
+})

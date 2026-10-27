@@ -108,12 +108,22 @@ describe('multipresa-resistencia', () => {
 describe('evaluacion-dedos', () => {
   const base = () => peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } })
 
-  it('dura 30 min: calentamiento 10, subida progresiva 5 y test 15', () => {
+  it('con 45 min o más: calentamiento 10, subida 5, test máximo 15, descanso 10 y test de resistencia 5', () => {
     const plan = construirSesion('evaluacion-dedos', base())!
     expect(plan.sesion).toMatchObject({
-      id: 'propuesta-evaluacion-dedos', tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 30,
+      id: 'propuesta-evaluacion-dedos', tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 45,
       detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: true },
     })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 5, 15, 10, 5])
+    expect(suma(plan)).toBe(45)
+    const resistencia = plan.bloques[4]!
+    expect(resistencia.ejercicios[0]).toMatchObject({ trabajoS: 7, descansoS: 3 })
+    expect(resistencia.ejercicios[0]!.nombre).toMatch(/60 %/)
+    expect(resistencia.ejercicios[0]!.notas).toMatch(/segundos.*técnica de 1 a 7/)
+    expect(resistencia.explicacion.parametros).toEqual(['P-24', 'P-27'])
+  })
+  it('con 30-44 min solo el test máximo: 10 + 5 + 15 = 30', () => {
+    const plan = construirSesion('evaluacion-dedos', { ...base(), contexto: { ...base().contexto, minutosDisponibles: 44 } })!
     expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 5, 15])
     expect(suma(plan)).toBe(30)
   })
@@ -378,5 +388,24 @@ describe('plantillas en semana de descarga (P-48)', () => {
     const cuatro = construirSesion('resistencia-4x4', peticion({ fase: descarga }))!
     expect(cuatro.bloques[2]!.ejercicios[0]!.series).toBe(2)
     expect(cuatro.sesion.duracionMin).toBe(35)
+  })
+})
+
+describe('test de resistencia: carga explícita (revisión)', () => {
+  it('da la fórmula en kg y un ejemplo con el último test: 0,6 × (72 + 20) − 72 = −16,8 → 17 kg de descarga', () => {
+    const p = peticion({
+      contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 },
+      evaluacion: { fecha: '2026-10-20', pesoCorporalKg: 72, lastreKg: 20 },
+    })
+    const e = construirSesion('evaluacion-dedos', p)!.bloques[4]!.ejercicios[0]!
+    expect(e.cargaTexto).toMatch(/Carga total = 0,6 × \(tu peso \+ el lastre de tu mejor intento de hoy\)/)
+    expect(e.cargaTexto).toMatch(/polea o banda/)
+    expect(e.notas).toMatch(/serían 17 kg de descarga/)
+    expect(e.notas).toMatch(/no tienes polea, haz este test en el rocódromo/)
+  })
+  it('sin test vigente da la fórmula sin ejemplo', () => {
+    const e = construirSesion('evaluacion-dedos', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 } }))!.bloques[4]!.ejercicios[0]!
+    expect(e.notas).not.toMatch(/Con tu último test/)
+    expect(e.cargaTexto).toMatch(/Carga total/)
   })
 })

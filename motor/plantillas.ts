@@ -274,11 +274,27 @@ function construirPegues(p: Peticion): SesionPlan | null {
   return plan(sesionDe('pegues-proyecto', p, total(n), 'alta'), bloques)
 }
 
+// Ejemplo de la carga del test de resistencia con el último test vigente (la carga real sale del máximo de hoy).
+function ejemploResistencia(p: Peticion, fraccion: number): string {
+  if (!p.evaluacion || !evaluacionVigente(p.evaluacion, p.fecha)) return ''
+  const { pesoCorporalKg: peso, lastreKg: lastre } = p.evaluacion
+  const kg = Math.floor((fraccion * (peso + lastre) - peso) * 2 + 1e-9) / 2 + 0
+  const texto = kg > 0 ? `+${fmt(kg)} kg de lastre` : kg < 0 ? `${fmt(-kg)} kg de descarga` : 'solo tu peso corporal'
+  return `Con tu último test (${fmt(peso)} kg y ${fmt(lastre)} kg de lastre) serían ${texto}. `
+}
+
+// Tras el test máximo, si hay tiempo: 10 min de descanso y el test de resistencia intermitente (P-24). Las duraciones
+// de los bloques son decisión de diseño.
+const DESCANSO_ENTRE_TESTS_MIN = 10
+const TEST_RESISTENCIA_MIN = 5
+
 function construirEvaluacion(p: Peticion): SesionPlan | null {
   const subidaMin = 5
   const testMin = 15
-  const total = CALENTAMIENTO_MIN + subidaMin + testMin
-  if (total > p.contexto.minutosDisponibles) return null
+  const soloMaximo = CALENTAMIENTO_MIN + subidaMin + testMin
+  if (soloMaximo > p.contexto.minutosDisponibles) return null
+  const conResistencia = soloMaximo + DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN <= p.contexto.minutosDisponibles
+  const total = conResistencia ? soloMaximo + DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN : soloMaximo
   const { duracionS, intentos, descansoS } = VALORES['P-18']
   const bloques: Bloque[] = [
     bloqueCalentamiento(),
@@ -314,6 +330,35 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
       ),
     },
   ]
+  if (conResistencia) {
+    const { trabajoS, descansoS, fraccion } = VALORES['P-24']
+    bloques.push(
+      {
+        nombre: 'Descanso entre tests',
+        minutos: DESCANSO_ENTRE_TESTS_MIN,
+        ejercicios: [{ nombre: 'Descanso suave, sin colgarte', cargaTexto: 'Sin esfuerzo' }],
+        explicacion: explicar('plantilla.descanso-tests', ['P-24'], 'Se descansa antes del test de resistencia para no mezclar la fatiga del máximo.'),
+      },
+      {
+        nombre: 'Test de resistencia intermitente',
+        minutos: TEST_RESISTENCIA_MIN,
+        ejercicios: [
+          {
+            nombre: `Suspensiones ${trabajoS} s : ${descansoS} s al ${Math.round(fraccion * 100)} % de tu máximo de hoy, hasta el fallo`,
+            trabajoS,
+            descansoS,
+            cargaTexto: `Carga total = ${fmt(fraccion)} × (tu peso + el lastre de tu mejor intento de hoy). Lastre = esa carga − tu peso; si sale negativo, quita ese peso con polea o banda`,
+            notas: `${ejemploResistencia(p, fraccion)}Si necesitas descarga y no tienes polea, haz este test en el rocódromo. Apunta los segundos totales hasta no poder completar una repetición. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.`,
+          },
+        ],
+        explicacion: explicar(
+          'plantilla.test-resistencia',
+          ['P-24', 'P-27'],
+          'Test intermitente 7 s : 3 s al 60 % de la fuerza máxima hasta el fallo (resultado en segundos) y autoevaluación técnica de 1 a 7.',
+        ),
+      },
+    )
+  }
   const sesion = sesionDe('evaluacion-dedos', p, total, 'alta', {
     regletaMm: REGLETA_MM,
     agarre: 'semiarqueado',

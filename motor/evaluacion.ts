@@ -8,6 +8,7 @@ const PESO_MIN_KG = 30
 const PESO_MAX_KG = 200
 const LASTRE_MIN_FRACCION = -0.6   // descarga de hasta el 60 % del peso
 const LASTRE_MAX_FRACCION = 1.0    // lastre de hasta el 100 % del peso (200 % del peso colgado)
+const RESISTENCIA_MAX_S = 600      // 10 min colgando al 60 % es imposible: casi seguro un error al teclear
 
 function comprobar(e: EvaluacionDedos): void {
   if (!Number.isFinite(e.pesoCorporalKg) || e.pesoCorporalKg <= 0) {
@@ -17,12 +18,21 @@ function comprobar(e: EvaluacionDedos): void {
   if (e.pesoCorporalKg < PESO_MIN_KG || e.pesoCorporalKg > PESO_MAX_KG) {
     throw new Error(`pesoCorporalKg fuera de rango plausible (${PESO_MIN_KG}-${PESO_MAX_KG} kg): ${e.pesoCorporalKg}`)
   }
+  if (e.resistenciaS !== undefined && !(Number.isFinite(e.resistenciaS) && e.resistenciaS >= 1 && e.resistenciaS <= RESISTENCIA_MAX_S)) {
+    throw new Error(`resistenciaS debe estar entre 1 y ${RESISTENCIA_MAX_S} s: ${e.resistenciaS}`)
+  }
+  const { minimo, maximo } = VALORES['P-27']
+  if (e.tecnica !== undefined && !(Number.isInteger(e.tecnica) && e.tecnica >= minimo && e.tecnica <= maximo)) {
+    throw new Error(`tecnica debe ser un entero de ${minimo} a ${maximo}: ${e.tecnica}`)
+  }
   const min = LASTRE_MIN_FRACCION * e.pesoCorporalKg
   const max = LASTRE_MAX_FRACCION * e.pesoCorporalKg
   if (e.lastreKg < min || e.lastreKg > max) {
     throw new Error(`lastreKg fuera de rango plausible para ${e.pesoCorporalKg} kg (${min} a ${max} kg): ${e.lastreKg}`)
   }
 }
+
+export const validarEvaluacion = comprobar
 
 // Resultado del test en % del peso corporal (P-17): (peso + lastre) / peso × 100.
 export function fuerzaRelativa(e: EvaluacionDedos): number {

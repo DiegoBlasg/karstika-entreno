@@ -20,3 +20,9 @@ export type {
 export { planificarTemporada, semanaEnFecha, faseEnFecha, type SemanaPlan, type Temporada } from './temporada'
 export { descargar, FASES, FASE_RENDIMIENTO, FASE_RESISTENCIA, FASE_TRANSICION } from './fases'
 export type { FaseId } from './propuesta-tipos'
+export {
+  ajusteCiclo2, diagnosticar,
+  type AjusteCiclo2, type Diagnostico, type IntentoLimite, type Limitante, type MotivoCaida, type Progreso, type Tendencia,
+} from './diagnostico'
+export { validarEvaluacion } from './evaluacion'
+export type { OpcionesTemporada } from './temporada'

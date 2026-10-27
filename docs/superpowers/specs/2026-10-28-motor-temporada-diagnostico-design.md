@@ -140,3 +140,35 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
 - La resistencia de fuerza en multipresa tiene progresión propia (vuelve a empezar al 70 %, P-11) y su
   explicación aclara que la carga viene de P-06.
 - El mínimo de 6 sesiones de base no cuenta los `descanso`. Las fases constantes están congeladas.
+
+## Parte 2 implementada
+
+- `EvaluacionDedos` con `resistenciaS` (P-24, 1-600 s) y `tecnica` (P-27, entero 1-7), validados.
+- El test de dedos, con 45 min o más, añade 10 min de descanso y el test intermitente 7 s : 3 s al 60 % hasta el
+  fallo, y pide la autoevaluación técnica; con 30-44 min, solo el test máximo.
+- `diagnosticar(evaluaciones, intentos, fecha)`: progreso (primera frente a última evaluación anterior a la fecha;
+  < 5 % = sin cambio, diseño) y limitantes (con ≥ 10 caídas con motivo en 8 semanas manda el registro; si no, P-23;
+  empates por P-23). `IntentoLimite { fecha, encadenado, motivoCaida? }`: bombeo → resistencia, paso de fuerza →
+  fuerza de dedos, técnica o lectura → técnica, cabeza → cabeza.
+- `ajusteCiclo2(diagnostico)`: fuerza de dedos → 10 + 4; resistencia → 6 + 8; técnica → 8 + 6 con un cupo más de
+  técnica por semana (se usa cuando hay hueco); cabeza → 8 + 6 (el trabajo mental, en los consejos del tramo 2d). Rangos de P-31.
+- `planificarTemporada(inicio, objetivo, { ciclo2, refuerzoTecnica })` aplica el ajuste sin cambiar la fecha
+  objetivo (las 14 semanas se reparten; error claro fuera de P-31 o si no suman 14).
+
+### Correcciones tras la revisión de la parte 2
+
+- **P-08**: las fases de fuerza o resistencia de más de 8 semanas (y los rendimientos de más de 6) llevan test a
+  mitad de fase; con cualquiera de los 4 repartos nunca pasan más de 10 semanas entre tests (probado).
+- **Progreso (P-19)**: hacen falta 3 tests y que los 2 últimos confirmen el cambio frente al primero (≥ 5 %, o 1 punto
+  en la técnica, que se muestra en puntos y no en %). Dos evaluaciones el mismo día se rechazan.
+- **Test de resistencia**: la carga se da en kg con la fórmula `0,6 × (peso + lastre de hoy) − peso` (negativo =
+  descarga con polea o banda) y un ejemplo con el último test; si hace falta descarga y no hay polea, en el rocódromo.
+- **Refuerzo de técnica**: es un cupo más de técnica que se usa cuando hay hueco (días suaves, descargas, rendimiento);
+  no desplaza a la fuerza, y la explicación lo dice así.
+- `planificarTemporada(..., { ajuste })` acepta directamente el resultado de `ajusteCiclo2`.
+- **P-08 en cualquier longitud de temporada**: tras construir el calendario, una pasada final garantiza que nunca pasan
+  más de 10 semanas entre tests (contando la transición, que en temporadas de 51-53 semanas sube a 3) y quita los que
+  quedarían a menos de 3 semanas del anterior. La temporada de 48 semanas no cambia. Una prueba recorre todas las
+  longitudes válidas (42-53) con los 4 repartos.
+- `planificarTemporada` lanza error si se pasa `ajuste` junto con `ciclo2` o `refuerzoTecnica`.
+- La explicación del progreso dice «sin datos suficientes», da el número de tests y usa «1 punto» en singular.

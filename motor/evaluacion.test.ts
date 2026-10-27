@@ -79,3 +79,16 @@ describe('lastreRepeaters con fracción', () => {
     expect(() => lastreRepeaters(ev(), Number.NaN)).toThrow(/fracción/)
   })
 })
+
+describe('campos del diagnóstico en la evaluación', () => {
+  it('acepta resistencia en segundos y técnica de 1 a 7', () => {
+    expect(() => fuerzaRelativa(ev({ resistenciaS: 85, tecnica: 4 }))).not.toThrow()
+  })
+  it('rechaza valores imposibles', () => {
+    expect(() => fuerzaRelativa(ev({ resistenciaS: 0 }))).toThrow(/resistenciaS/)
+    expect(() => fuerzaRelativa(ev({ resistenciaS: 900 }))).toThrow(/resistenciaS/)
+    expect(() => fuerzaRelativa(ev({ tecnica: 0 }))).toThrow(/tecnica/)
+    expect(() => fuerzaRelativa(ev({ tecnica: 8 }))).toThrow(/tecnica/)
+    expect(() => fuerzaRelativa(ev({ tecnica: 4.5 }))).toThrow(/tecnica/)
+  })
+})
