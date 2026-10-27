@@ -125,8 +125,8 @@ function ultimaSesion(p: Peticion): Sesion | undefined {
 
 // P-39: dominadas lastradas como complemento opcional, solo en la fuerza fuera de la descarga, con todas las zonas de
 // carga en verde, y si la sesión resultante no rompe ninguna regla de dominadas (día de dedos, 1 en 7 días).
-function dominadasPermitidas(sesion: Sesion, p: Peticion, posibles: ReadonlySet<TipoSesion>): boolean {
-  if (p.fase.id !== 'fuerza' || p.fase.descarga || !posibles.has('dominadas')) return false
+function dominadasPermitidas(sesion: Sesion, p: Peticion, posibles: ReadonlySet<TipoSesion>, enDiaDeDescanso: boolean): boolean {
+  if (enDiaDeDescanso || p.fase.id !== 'fuerza' || p.fase.descarga || !posibles.has('dominadas')) return false
   if (p.estado && restriccionesDe(p.estado).sinDominadas) return false
   if (esIntensaDedos(sesion) || conDominadas(sesion)) return false
   const con: Sesion = { ...sesion, incluye: [...(sesion.incluye ?? []), 'dominadas'] }
@@ -135,7 +135,12 @@ function dominadasPermitidas(sesion: Sesion, p: Peticion, posibles: ReadonlySet<
 
 // Rellena el tiempo libre con complementos cuyo cupo de la fase sigue pendiente, volumen suave y, en la fuerza,
 // dominadas opcionales.
-function completar(plan: SesionPlan, p: Peticion, posibles: ReadonlySet<TipoSesion>): { plan: SesionPlan; anadidos: TipoComplemento[] } {
+function completar(
+  plan: SesionPlan,
+  p: Peticion,
+  posibles: ReadonlySet<TipoSesion>,
+  enDiaDeDescanso = false,
+): { plan: SesionPlan; anadidos: TipoComplemento[] } {
   // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás (sí las
   // dominadas, que no son escalada).
   const soloDominadas = plan.sesion.tipo === 'hombro'
@@ -156,7 +161,7 @@ function completar(plan: SesionPlan, p: Peticion, posibles: ReadonlySet<TipoSesi
     for (const t of PRIORIDAD_COMPLEMENTOS) anadir(t, true)
     for (const t of RELLENO_SUAVE) anadir(t, false)
   }
-  if (dominadasPermitidas(plan.sesion, p, posibles)) {
+  if (dominadasPermitidas(plan.sesion, p, posibles, enDiaDeDescanso)) {
     const bloque = construirComplemento('dominadas', p, libres)
     if (bloque) {
       elegidos.set('dominadas', bloque)
@@ -305,11 +310,17 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
       return { ...c, hechas7d, puntuacion: pendiente + prioridad - repetir }
     })
     .sort((a, b) => b.puntuacion - a.puntuacion || comparar(a.plan.sesion.tipo, b.plan.sesion.tipo))
+  // Fuera de casa, si hay alguna escalada posible, la principal no es una sesión de hombro: el hombro entra como
+  // complemento (decisión de diseño; antes, con la carga alta quitada por el estado o por una descarga, el día de
+  // rocódromo podía quedarse en 40 min de hombro).
+  if (p.contexto.lugar !== 'casa' && validos.some((v) => v.plan.sesion.tipo !== 'hombro')) {
+    validos.sort((a, b) => Number(a.plan.sesion.tipo === 'hombro') - Number(b.plan.sesion.tipo === 'hombro'))
+  }
 
   const elegidos = elegidosDe(validos, 3)
 
-  const terminar = (v: Valido): SesionPlan => {
-    const { plan, anadidos } = completar(v.plan, p, posibles)
+  const terminar = (v: Valido, enDiaDeDescanso = false): SesionPlan => {
+    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso)
     return { ...plan, explicaciones: [explicacionEleccion(v, p, anadidos), ...plan.explicaciones] }
   }
   const conEstado = (prop: Propuesta): Propuesta => {
@@ -374,10 +385,10 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
   let alternativas: SesionPlan[]
   if (descanso?.regla === 'generador.descanso-recomendado') {
     principal = null
-    alternativas = elegidosDe(validos.filter((v) => !esCargaAlta(v.plan.sesion)), 2).map(terminar)
+    alternativas = elegidosDe(validos.filter((v) => !esCargaAlta(v.plan.sesion)), 2).map((v) => terminar(v, true))
   } else {
     principal = elegidos[0] ? terminar(elegidos[0]) : null
-    alternativas = elegidos.slice(1).map(terminar)
+    alternativas = elegidos.slice(1).map((v) => terminar(v))
   }
   return conEstado({
     principal,

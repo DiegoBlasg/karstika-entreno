@@ -141,12 +141,16 @@ export function elegirConsejos(p: Peticion, propuesta: Propuesta): Consejo[] {
   }
   return CONSEJOS.map((c, i) => ({ c, i, ultima: ultimaVez.get(c.id) }))
     .filter(({ c, ultima }) => c.aplica(p, propuesta) && (c.grupo === 'seguridad' || ultima === undefined || hoy - ultima >= diasSinRepetir))
-    .sort(
-      (a, b) =>
-        ORDEN_GRUPO[a.c.grupo] - ORDEN_GRUPO[b.c.grupo] ||
-        (a.c.grupo === 'seguridad' ? 0 : (a.ultima ?? -Infinity) - (b.ultima ?? -Infinity)) ||
-        a.i - b.i,
-    )
+    .sort((a, b) => {
+      if (a.c.grupo !== b.c.grupo) return ORDEN_GRUPO[a.c.grupo] - ORDEN_GRUPO[b.c.grupo]
+      // Fuera de la seguridad, primero el que nunca se ha mostrado y después el que hace más que no se ve.
+      if (a.c.grupo !== 'seguridad' && a.ultima !== b.ultima) {
+        if (a.ultima === undefined) return -1
+        if (b.ultima === undefined) return 1
+        return a.ultima - b.ultima
+      }
+      return a.i - b.i
+    })
     .slice(0, maxConsejos)
     .map(({ c }) => {
       const texto = c.texto(p)

@@ -175,3 +175,63 @@ describe('dominadas como complemento (P-39)', () => {
     expect(r.principal!.sesion.incluye ?? []).not.toContain('dominadas')
   })
 })
+
+describe('arreglos de la revisión', () => {
+  const tecnica = (id: string, fecha: string) => ses(id, fecha, 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 })
+  it('freno P-11: una sesión de técnica por encima del objetivo impide pasar a 2 bloques', () => {
+    const cuatro = ['2026-11-09', '2026-11-12', '2026-11-16', '2026-11-19'].map((f, i) => multipresa(`q${i}`, f))
+    const t = tecnica('t', '2026-11-21')
+    const historial = [...cuatro, t]
+    const conFreno = proponerSesion(pet('2026-11-23', CASA, { historial, seguimiento: seg({ registros: [...cuatro.map((s) => reg(s, 7)), reg(t, 9)] }) }))
+    expect(repeaters(conFreno).bloques).toBe(1)
+    const plan = planes(conFreno).find((x) => x.sesion.tipo === 'multipresa-resistencia')!
+    expect(plan.bloques.find((b) => b.nombre.startsWith('Bloque'))!.explicacion.motivo).toMatch(/Hoy no sube/)
+    const sinFreno = proponerSesion(pet('2026-11-23', CASA, { historial, seguimiento: seg({ registros: [...cuatro.map((s) => reg(s, 7)), reg(t, 4)] }) }))
+    expect(repeaters(sinFreno).bloques).toBe(2)
+  })
+  it('P-46 encadenado: dos molestias seguidas bajan dos escalones desde donde estabas', () => {
+    const diez = ['2026-11-02', '2026-11-05', '2026-11-09', '2026-11-12', '2026-11-16', '2026-11-19', '2026-11-23', '2026-11-26', '2026-11-30', '2026-12-03']
+      .map((f, i) => multipresa(`d${i}`, f))
+    const dos = [multipresa('e0', '2026-12-07'), multipresa('e1', '2026-12-10')]
+    const historial = [...diez, ...dos]
+    const seguimiento = seg({
+      registros: historial.map((s) => reg(s, 7)),
+      chequeos: [
+        chq('2026-12-04', 4, [{ zona: 'dedos', dolor: 2 }]), chq('2026-12-05', 4),
+        chq('2026-12-12', 4, [{ zona: 'dedos', dolor: 2 }]), chq('2026-12-13', 4),
+      ],
+    })
+    const r = proponerSesion(pet('2026-12-14', CASA, { historial, seguimiento }))
+    expect(repeaters(r).bloques).toBe(1)
+    expect(repeaters(r).notas).toMatch(/70 %/)
+  })
+  it('las sesiones hechas en descarga no cuentan para subir', () => {
+    const conDescarga = ocho.map((s, i) => (i % 2 === 0 ? { ...s, descarga: true } : s))
+    const r = proponerSesion(pet('2026-12-10', CASA, { historial: conDescarga, seguimiento: seg({ registros: conDescarga.map((s) => reg(s, 7)) }) }))
+    expect(repeaters(r).bloques).toBe(2)
+    expect(repeaters(r).notas).toMatch(/70 %/)
+    const sinSeguimiento = proponerSesion(pet('2026-12-10', CASA, { historial: conDescarga }))
+    expect(repeaters(sinSeguimiento).notas).toMatch(/70 %/)
+  })
+  it('las propuestas hechas en descarga quedan marcadas', () => {
+    const r = proponerSesion(pet('2026-11-10', CASA, { fase: descargar(FASE_FUERZA) }))
+    expect(r.principal!.sesion.descarga).toBe(true)
+    expect(proponerSesion(pet('2026-11-10', CASA)).principal!.sesion.descarga).toBeUndefined()
+  })
+  it('sin registros, la explicación lo dice', () => {
+    const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento: seg() }))
+    const plan = planes(r).find((x) => x.sesion.tipo === 'multipresa-resistencia')!
+    expect(plan.bloques.find((b) => b.nombre.startsWith('Bloque'))!.explicacion.motivo).toMatch(/8 sesiones de multipresa sin registro no cuentan/)
+  })
+  it('en el rocódromo, con el chequeo bajo, la principal es escalada suave y no hombro', () => {
+    for (const contexto of [MARTES, JUEVES]) {
+      const r = proponerSesion(pet('2026-11-10', contexto, { seguimiento: seg({ chequeos: [chq('2026-11-10', 1)] }) }))
+      expect(r.principal!.sesion.tipo, contexto.compania).not.toBe('hombro')
+      expect(esCargaAlta(r.principal!.sesion)).toBe(false)
+    }
+  })
+  it('con ámbar en codo, el hombro también va sin carga', () => {
+    const r = proponerSesion(pet('2026-11-10', { ...CASA, minutosDisponibles: 40 }, { seguimiento: seg({ chequeos: [chq('2026-11-10', 4, [{ zona: 'codo', dolor: 2 }])] }) }))
+    expect(planes(r).find((x) => x.sesion.tipo === 'hombro')!.sesion.detalle?.conCarga).toBe(false)
+  })
+})

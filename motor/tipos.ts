@@ -40,6 +40,7 @@ export interface Sesion {
   duracionMin: number
   detalle?: { regletaMm?: number; agarre?: Agarre; conCarga?: boolean }
   incluye?: TipoComplemento[]   // complementos suaves añadidos a la sesión (cuentan para los cupos de la fase)
+  descarga?: boolean            // hecha en semana de descarga: no cuenta para subir la multipresa
 }
 
 export interface Violacion {

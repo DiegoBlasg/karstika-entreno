@@ -46,6 +46,7 @@ export function validarEntrada(sesiones: readonly Sesion[]): void {
     if (s.intensidad !== 'alta' && s.intensidad !== 'suave') {
       throw new Error(`intensidad desconocida en ${s.id}: ${s.intensidad}`)
     }
+    if (s.descarga !== undefined && typeof s.descarga !== 'boolean') throw new Error(`descarga debe ser booleano en ${s.id}: ${String(s.descarga)}`)
     validarDetalle(s)
     validarIncluye(s)
   }

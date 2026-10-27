@@ -82,8 +82,8 @@ function nivelDe(m: Molestia | undefined): Semaforo {
 
 interface Evento {
   dia: number
-  orden: number              // registros por hora de inicio de su sesión; el chequeo, al final del día
-  fuente: 'registro' | 'chequeo'
+  orden: number              // el alta y el chequeo al empezar el día (se hacen al pedir la sesión); los registros, por hora
+  fuente: 'registro' | 'chequeo' | 'alta'
   molestias: readonly Molestia[]
 }
 
@@ -92,8 +92,9 @@ interface EstadoZona {
   porPersistencia: boolean   // el rojo vino de P-45
 }
 
-// Semáforo de una zona (P-43 a P-46) recorriendo los eventos en orden.
-function semaforoZona(zona: Zona, eventos: readonly Evento[], altas: readonly number[], hoy: number): EstadoZona {
+// Semáforo de una zona (P-43 a P-46) recorriendo los eventos en orden. Un alta posterior al último rojo lo levanta;
+// si la zona seguía en ámbar, la cuenta de P-45 vuelve a empezar desde el alta.
+function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): EstadoZona {
   const { registrosAmbarSeguidos, diasAmbarMax } = VALORES['P-45']
   let ultimoRojo: number | undefined
   let porPersistencia = false
@@ -106,7 +107,20 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], altas: readonly nu
     ambarDesde = undefined
     ambarRegistros = 0
   }
+  const persistente = (dia: number): boolean => ultimo === 'ambar' && ambarDesde !== undefined && dia - ambarDesde > diasAmbarMax
   for (const e of eventos) {
+    if (e.fuente === 'alta') {
+      if (e.molestias[0]?.zona !== zona) continue
+      if (persistente(e.dia)) rojo(ambarDesde! + diasAmbarMax + 1, true)
+      if (ultimoRojo !== undefined && e.dia > ultimoRojo) {
+        ultimoRojo = undefined
+        porPersistencia = false
+        if (ultimo === 'rojo') ultimo = 'verde'
+        ambarDesde = ultimo === 'ambar' ? e.dia : undefined
+        ambarRegistros = 0
+      }
+      continue
+    }
     const nivel = nivelDe(e.molestias.find((m) => m.zona === zona))
     ultimo = nivel
     if (nivel === 'rojo') {
@@ -120,10 +134,9 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], altas: readonly nu
       ambarRegistros = 0
     }
   }
-  if (ultimo === 'ambar' && ambarDesde !== undefined && hoy - ambarDesde > diasAmbarMax) rojo(ambarDesde + diasAmbarMax + 1, true)
-  if (ultimoRojo !== undefined && !altas.some((a) => a > ultimoRojo!)) return { nivel: 'rojo', porPersistencia }
-  // Con alta, la zona vuelve al nivel de su último dato (si el rojo vino del último dato, ya está levantado).
-  return { nivel: ultimo === 'rojo' ? 'verde' : ultimo, porPersistencia: false }
+  if (persistente(hoy)) rojo(ambarDesde! + diasAmbarMax + 1, true)
+  if (ultimoRojo !== undefined) return { nivel: 'rojo', porPersistencia }
+  return { nivel: ultimo, porPersistencia: false }
 }
 
 export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha: string): EstadoAtleta {
@@ -136,22 +149,31 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
 
   const eventos: Evento[] = [
     ...registros.map((r): Evento => ({ dia: diaNumero(r.fecha), orden: sesiones.get(r.sesionId)!.horaInicio, fuente: 'registro', molestias: r.molestias })),
-    ...chequeos.map((c): Evento => ({ dia: diaNumero(c.fecha), orden: 24, fuente: 'chequeo', molestias: c.molestias })),
+    ...chequeos.map((c): Evento => ({ dia: diaNumero(c.fecha), orden: -1, fuente: 'chequeo', molestias: c.molestias })),
+  ].sort((a, b) => a.dia - b.dia || a.orden - b.orden)
+  // Las altas van al principio de su día: un rojo de ese mismo día no queda levantado (tiene que ser posterior).
+  const conAltas: Evento[] = [
+    ...s.altas
+      .filter((a) => diaNumero(a.fecha) <= hoy)
+      .map((a): Evento => ({ dia: diaNumero(a.fecha), orden: -2, fuente: 'alta', molestias: [{ zona: a.zona, dolor: 0 }] })),
+    ...eventos,
   ].sort((a, b) => a.dia - b.dia || a.orden - b.orden)
 
-  const estadosZona = Object.fromEntries(
-    ZONAS.map((z) => [z, semaforoZona(z, eventos, s.altas.filter((a) => a.zona === z && diaNumero(a.fecha) <= hoy).map((a) => diaNumero(a.fecha)), hoy)]),
-  ) as Record<Zona, EstadoZona>
+  const estadosZona = Object.fromEntries(ZONAS.map((z) => [z, semaforoZona(z, conAltas, hoy)])) as Record<Zona, EstadoZona>
   const zonas = Object.fromEntries(ZONAS.map((z) => [z, estadosZona[z].nivel])) as Record<Zona, Semaforo>
 
   // Sesiones pasadas con objetivo y registro, en orden.
   const pasadas = historial
     .filter((h) => diaNumero(h.fecha) <= hoy)
     .sort((a, b) => inicioHoras(a) - inicioHoras(b) || (a.id < b.id ? -1 : 1))
+  // P-63: por encima si el RPE pasa del máximo o si la carga (RPE × minutos reales) pasa de la prevista.
   const porEncima = (h: Sesion): boolean => {
     const r = registroDe.get(h.id)!
-    return r.rpe * r.duracionMin > objetivoRpe(h)! * h.duracionMin
+    const max = objetivoRpe(h)!
+    return r.rpe > max || r.rpe * r.duracionMin > max * h.duracionMin
   }
+  // P-11: para subir, la sesión tiene que haberse completado (al menos P-63.fraccionCompletada de lo previsto).
+  const incompleta = (h: Sesion): boolean => registroDe.get(h.id)!.duracionMin < VALORES['P-63'].fraccionCompletada * h.duracionMin
   const conObjetivo = pasadas.filter((h) => objetivoRpe(h) !== undefined && registroDe.has(h.id))
   const molestiaP46 = (ms: readonly Molestia[]): boolean => ms.some((m) => ZONAS_P46.includes(m.zona) && nivelDe(m) !== 'verde')
 
@@ -160,12 +182,21 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
       const r = registroDe.get(h.id)
       if (!r) return true
       if (objetivoRpe(h) !== undefined && porEncima(h)) return true
+      if (incompleta(h)) return true
       return molestiaP46(r.molestias)
     })
     .map((h) => h.id)
+  const sesionesSinRegistro = pasadas.filter((h) => !registroDe.has(h.id)).map((h) => h.id)
 
-  const conMolestia = eventos.filter((e) => molestiaP46(e.molestias)).at(-1)
-  const retornoP46 = conMolestia ? { fecha: fechaDesdeDia(conMolestia.dia) } : undefined
+  // P-46: cada episodio de molestia en dedos o muñeca (racha de datos con dolor 2 o más, o alarma) cuenta una vez,
+  // en la fecha en que aparece.
+  const molestiasP46: string[] = []
+  let enEpisodio = false
+  for (const e of eventos) {
+    const con = molestiaP46(e.molestias)
+    if (con && !enEpisodio) molestiasP46.push(fechaDesdeDia(e.dia))
+    enEpisodio = con
+  }
 
   const ultimaConObjetivo = conObjetivo.at(-1)
   const frenoRpe = ultimaConObjetivo !== undefined && porEncima(ultimaConObjetivo)
@@ -257,7 +288,8 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
     ...(descargaAdelantada ? { descargaAdelantada } : {}),
     chequeoBajoHoy,
     sesionesNoValidas,
-    ...(retornoP46 ? { retornoP46 } : {}),
+    sesionesSinRegistro,
+    molestiasP46,
     explicaciones,
   }
 }
@@ -273,7 +305,7 @@ export function restriccionesDe(e: EstadoAtleta): Restricciones {
     sinLimite: z.otra === 'ambar',
     soloHombro,
     soloDescanso,
-    hombroSinCarga: z.hombro === 'ambar' || soloHombro,
+    hombroSinCarga: z.hombro === 'ambar' || z.codo === 'ambar' || soloHombro,
     sinDominadas: ZONAS_CARGA.some((x) => z[x] !== 'verde') || ZONAS.some((x) => z[x] === 'rojo') || e.chequeoBajoHoy,
   }
 }

@@ -47,8 +47,9 @@ export interface EstadoAtleta {
   sinSubida: boolean                 // P-11 / P-43: última sesión por encima del objetivo, o alguna zona en ámbar
   descargaAdelantada?: { desde: string; hasta: string; motivo: 'rpe' | 'bienestar' }   // P-50
   chequeoBajoHoy: boolean            // P-65
-  sesionesNoValidas: string[]        // no cuentan para progresar (P-11): sin registro, por encima o con dolor en dedos o muñeca
-  retornoP46?: { fecha: string }     // última molestia (dolor 2 o más, o alarma) en dedos o muñeca
+  sesionesNoValidas: string[]        // no cuentan para progresar (P-11): sin registro, por encima, incompletas o con dolor en dedos o muñeca
+  sesionesSinRegistro: string[]      // sesiones pasadas sin registro (para explicarlo)
+  molestiasP46: string[]             // fecha en que empieza cada episodio de molestia en dedos o muñeca (P-46)
   explicaciones: Explicacion[]
 }
 
@@ -58,6 +59,6 @@ export interface Restricciones {
   sinLimite: boolean         // ámbar en otra: sin sesiones al límite
   soloHombro: boolean        // rojo en dedos, muñeca o codo: quedan descanso y hombro sin carga
   soloDescanso: boolean      // rojo en hombro u otra
-  hombroSinCarga: boolean    // ámbar en hombro, o soloHombro
+  hombroSinCarga: boolean    // ámbar en hombro o codo, o soloHombro
   sinDominadas: boolean      // alguna de dedos, muñeca, codo u hombro no está en verde, algún rojo o chequeo de hoy bajo
 }

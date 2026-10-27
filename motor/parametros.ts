@@ -39,7 +39,7 @@ export const VALORES = {
   'P-43': { verdeMax: 1, ambarMax: 3 },
   'P-45': { registrosAmbarSeguidos: 2, diasAmbarMax: 7 },
   'P-50': { sesionesPorEncimaSeguidas: 2, chequeosBajos: 3, ventanaDias: 7 },
-  'P-63': { rpeMaxAlta: 8, rpeMaxSuave: 5 },
+  'P-63': { rpeMaxAlta: 8, rpeMaxSuave: 5, fraccionCompletada: 0.9 },
   'P-65': { escalaMin: 1, escalaMax: 5, umbralBajo: 2, diasDescarga: 7 },
   'P-66': { maxConsejos: 2, diasSinRepetir: 7 },
   'P-57': { gramosPorKg: 1.6 },

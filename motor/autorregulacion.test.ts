@@ -32,9 +32,10 @@ describe('semáforo de dolor (P-43, P-44)', () => {
     expect(Object.values(e.zonas).every((z) => z === 'verde')).toBe(true)
     expect(e.explicaciones).toEqual([])
   })
-  it('el chequeo de hoy manda sobre el registro de hoy, y lo de fechas futuras no cuenta', () => {
+  it('el chequeo de un día va antes que sus registros (se hace al pedir la sesión), y lo futuro no cuenta', () => {
     const s = suave('a', HOY, 10)
-    expect(estadoAtleta([s], seg({ registros: [reg(s, 4, [dedos(3)])], chequeos: [chq(HOY, 4, [dedos(0)])] }), HOY).zonas.dedos).toBe('verde')
+    expect(estadoAtleta([s], seg({ registros: [reg(s, 4, [dedos(3)])], chequeos: [chq(HOY, 4, [dedos(0)])] }), HOY).zonas.dedos).toBe('ambar')
+    expect(estadoAtleta([s], seg({ registros: [reg(s, 4, [dedos(0)])], chequeos: [chq(HOY, 4, [dedos(3)])] }), HOY).zonas.dedos).toBe('verde')
     const futura = suave('f', '2026-11-25')
     expect(estadoAtleta([futura], seg({ registros: [reg(futura, 4, [dedos(6)])] }), HOY).zonas.dedos).toBe('verde')
   })
@@ -54,6 +55,16 @@ describe('molestia persistente y alta (P-45, P-46)', () => {
     expect(e.zonas.dedos).toBe('rojo')
     expect(e.explicaciones[0]!.motivo).toMatch(/P-45/)
     expect(e.explicaciones[0]!.motivo).toMatch(/no diagnostica/)
+  })
+  it('un chequeo en ámbar entre dos registros en ámbar no corta la racha de P-45', () => {
+    const jueves = suave('j', hace(3), 19)
+    const sabado = suave('s', hace(1), 11)
+    const e = estadoAtleta(
+      [jueves, sabado],
+      seg({ registros: [reg(jueves, 4, [dedos(2)]), reg(sabado, 4, [dedos(2)])], chequeos: [chq(hace(1), 4, [dedos(2)])] }),
+      HOY,
+    )
+    expect(e.zonas.dedos).toBe('rojo')
   })
   it('ámbar, verde y ámbar no escala', () => {
     const [a, b, c] = [suave('a', hace(5)), suave('b', hace(3)), suave('c', hace(1))]
@@ -152,11 +163,36 @@ describe('descarga adelantada (P-50, P-65)', () => {
 })
 
 describe('retorno tras una molestia (P-46)', () => {
-  it('apunta a la última molestia en dedos o muñeca, de registro o de chequeo', () => {
+  it('da la fecha de inicio de cada episodio de molestia en dedos o muñeca, de registro o de chequeo', () => {
     const a = suave('a', hace(9))
-    const s = seg({ registros: [reg(a, 4, [dedos(2)])], chequeos: [chq(hace(4), 4, [{ zona: 'muneca', dolor: 3 }]), chq(hace(1), 4)] })
-    expect(estadoAtleta([a], s, HOY).retornoP46).toEqual({ fecha: hace(4) })
-    expect(estadoAtleta([], seg({ chequeos: [chq(hace(4), 4, [{ zona: 'codo', dolor: 3 }])] }), HOY).retornoP46).toBeUndefined()
+    const s = seg({
+      registros: [reg(a, 4, [dedos(2)])],
+      chequeos: [chq(hace(8), 4, [dedos(2)]), chq(hace(6), 4), chq(hace(4), 4, [{ zona: 'muneca', dolor: 3 }]), chq(hace(1), 4)],
+    })
+    expect(estadoAtleta([a], s, HOY).molestiasP46).toEqual([hace(9), hace(4)])
+    expect(estadoAtleta([], seg({ chequeos: [chq(hace(4), 4, [{ zona: 'codo', dolor: 3 }])] }), HOY).molestiasP46).toEqual([])
+  })
+})
+
+describe('sesiones válidas: RPE por encima del máximo e incompletas (P-11, P-63)', () => {
+  it('un RPE por encima del máximo es por encima aunque la sesión fuera corta; menos del 90 % no está completada', () => {
+    const s = alta('a', hace(1))
+    expect(estadoAtleta([s], seg({ registros: [reg(s, 10, [], 40)] }), HOY).sinSubida).toBe(true)
+    const e = estadoAtleta([s], seg({ registros: [reg(s, 6, [], 53)] }), HOY)
+    expect(e.sinSubida).toBe(false)
+    expect(e.sesionesNoValidas).toEqual(['a'])
+    expect(estadoAtleta([s], seg({ registros: [reg(s, 6, [], 54)] }), HOY).sesionesNoValidas).toEqual([])
+  })
+  it('las sesiones sin registro se listan aparte para poder explicarlo', () => {
+    expect(estadoAtleta([suave('a', hace(1))], seg(), HOY).sesionesSinRegistro).toEqual(['a'])
+  })
+})
+
+describe('alta y ámbar persistente', () => {
+  it('tras un alta con la zona aún en ámbar, la cuenta de 7 días vuelve a empezar desde el alta', () => {
+    const base = { chequeos: [chq(hace(20), 4, [dedos(2)])], altas: [{ zona: 'dedos' as const, fecha: hace(10) }] }
+    expect(estadoAtleta([], seg(base), fechaDesdeDia(diaNumero(HOY) - 3)).zonas.dedos).toBe('ambar')
+    expect(estadoAtleta([], seg(base), HOY).zonas.dedos).toBe('rojo')
   })
 })
 
@@ -167,7 +203,8 @@ describe('restricciones (P-64)', () => {
       expect(con([{ zona, dolor: 2 }]), zona).toMatchObject({ sinCargaAlta: true, sinDominadas: true, soloHombro: false, soloDescanso: false })
     }
     expect(con([{ zona: 'hombro', dolor: 2 }]).hombroSinCarga).toBe(true)
-    expect(con([{ zona: 'codo', dolor: 2 }]).hombroSinCarga).toBe(false)
+    expect(con([{ zona: 'codo', dolor: 2 }]).hombroSinCarga).toBe(true)
+    expect(con([{ zona: 'muneca', dolor: 2 }]).hombroSinCarga).toBe(false)
   })
   it('ámbar en otra: solo sin sesiones al límite', () => {
     expect(con([{ zona: 'otra', dolor: 3 }])).toEqual({
