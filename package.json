@@ -3,13 +3,31 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "vitest run",
     "tsc": "tsc --noEmit",
-    "metadatos": "node scripts/generar-metadatos.ts"
+    "metadatos": "node scripts/generar-metadatos.ts",
+    "migrar": "node --env-file-if-exists=.env.local scripts/migrar.ts",
+    "migrar:pruebas": "node --env-file-if-exists=.env.local scripts/migrar.ts --pruebas",
+    "probar-bd": "node --env-file-if-exists=.env.local scripts/probar-bd.ts",
+    "e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }
