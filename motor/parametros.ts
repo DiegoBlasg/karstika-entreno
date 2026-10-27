@@ -35,4 +35,11 @@ export const VALORES = {
   'P-41': { minutos: 15 },
   'P-49': { minutos: 10 },
   'P-53': { minutosPrevisualizacion: 3 },
+  'P-39': { minutos: 15, series: 4, repeticiones: 4, repeticionesEnReserva: 2, descansoMin: 3, max7Dias: 1 },
+  'P-43': { verdeMax: 1, ambarMax: 3 },
+  'P-45': { registrosAmbarSeguidos: 2, diasAmbarMax: 7 },
+  'P-50': { sesionesPorEncimaSeguidas: 2, chequeosBajos: 3, ventanaDias: 7 },
+  'P-63': { rpeMaxAlta: 8, rpeMaxSuave: 5 },
+  'P-65': { escalaMin: 1, escalaMax: 5, umbralBajo: 2, diasDescarga: 7 },
+  'P-66': { maxConsejos: 2, diasSinRepetir: 7 },
 } as const satisfies Partial<Record<ParametroId, object>>
