@@ -50,6 +50,17 @@ function FormularioRegistro({ sesion }: { sesion: Sesion }) {
   )
 }
 
+function BotonNoLaHice({ id }: { id: string }) {
+  const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(noLaHice, null)
+  return (
+    <form action={accion} onSubmit={(e) => { if (!confirm('¿Borrar esta sesión?')) e.preventDefault() }}>
+      <input type="hidden" name="sesion_id" value={id} />
+      <button className="text-red-700" disabled={pendiente}>No la hice</button>
+      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+    </form>
+  )
+}
+
 function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(otraCosa, null)
   return (
@@ -109,10 +120,7 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
         <>
           {pasada && !cambiando && <FormularioRegistro sesion={s} />}
           <div className="flex gap-4 text-sm">
-            <form action={noLaHice} onSubmit={(e) => { if (!confirm('¿Borrar esta sesión?')) e.preventDefault() }}>
-              <input type="hidden" name="sesion_id" value={s.id} />
-              <button className="text-red-700">No la hice</button>
-            </form>
+            <BotonNoLaHice id={s.id} />
             {pasada && (
               <button type="button" onClick={() => setCambiando(!cambiando)} className="underline">
                 {cambiando ? 'Cancelar' : 'Hice otra cosa'}

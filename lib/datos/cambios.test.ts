@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SesionPlan } from '../../motor'
 import { datosVacios, sesionFila, uuid } from './_fabrica'
-import { conChequeo, conRegistro, conSesion, filaSesionAceptada, filaSesionLibre, sinSesion } from './cambios'
+import { conAlta, conChequeo, conRegistro, conSesion, filaSesionAceptada, filaSesionLibre, sinSesion } from './cambios'
 
 const plan: SesionPlan = {
   sesion: { id: 'propuesta-tecnica', tipo: 'tecnica', intensidad: 'suave', fecha: '2026-11-03', horaInicio: 19, duracionMin: 60 },
@@ -42,5 +42,11 @@ describe('cambios', () => {
     expect(() => conRegistro(datosVacios(), registro(uuid(1)), [])).toThrow('Esa sesión ya no existe.')
     const d = conRegistro(conSesion(datosVacios(), sesionFila(uuid(1), '2026-11-03')), registro(uuid(1)), [])
     expect(() => conRegistro(d, registro(uuid(1)), [])).toThrow('Esa sesión ya está registrada.')
+  })
+  it('conAlta añade el alta sin tocar los datos originales', () => {
+    const d = datosVacios()
+    const nuevo = conAlta(d, { id: uuid(9), zona: 'hombro', fecha: '2026-11-04' })
+    expect(nuevo.altas).toEqual([{ id: uuid(9), zona: 'hombro', fecha: '2026-11-04' }])
+    expect(d.altas).toEqual([])
   })
 })

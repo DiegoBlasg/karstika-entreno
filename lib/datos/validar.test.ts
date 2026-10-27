@@ -29,4 +29,12 @@ describe('validarDatos', () => {
       `El intento ${uuid(3)} no tiene la fecha de su sesión`,
     )
   })
+  it('rechaza sesiones solapadas, acepta las contiguas y detecta solapes al cruzar la medianoche', () => {
+    const solapa = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 19.5, duracionMin: 30 })] })
+    expect(() => validarDatos(solapa)).toThrow('La sesión del 2026-11-03 a las 19:30 se solapa con otra sesión de ese día.')
+    const contiguas = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 20, duracionMin: 30 })] })
+    expect(() => validarDatos(contiguas)).not.toThrow()
+    const medianoche = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 23, duracionMin: 120 }), sesionFila(uuid(2), '2026-11-04', { horaInicio: 0.5, duracionMin: 30 })] })
+    expect(() => validarDatos(medianoche)).toThrow('La sesión del 2026-11-04 a las 00:30 se solapa')
+  })
 })

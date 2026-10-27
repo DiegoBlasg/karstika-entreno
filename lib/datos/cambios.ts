@@ -1,7 +1,7 @@
 // Cómo quedan los datos tras cada acción, antes de escribirla: se validan con validarDatos y solo entonces se
 // guardan. Puro.
 import type { Intensidad, Sesion, SesionPlan, TipoSesion } from '../../motor'
-import type { DatosAtleta, FilaChequeo, FilaEvaluacion, FilaIntento, FilaRegistro, FilaSesion } from './filas'
+import type { DatosAtleta, FilaAlta, FilaChequeo, FilaEvaluacion, FilaIntento, FilaRegistro, FilaSesion } from './filas'
 
 // El motor devuelve ids reservados («propuesta-…»); al aceptar, la sesión recibe su id propio.
 export function filaSesionAceptada(plan: SesionPlan, id: string): FilaSesion {
@@ -49,4 +49,8 @@ export function conRegistro(d: DatosAtleta, r: FilaRegistro, intentos: FilaInten
 
 export function conEvaluacion(d: DatosAtleta, e: FilaEvaluacion): DatosAtleta {
   return { ...d, evaluaciones: [...d.evaluaciones, e].sort((a, b) => a.fecha.localeCompare(b.fecha)) }
+}
+
+export function conAlta(d: DatosAtleta, a: FilaAlta): DatosAtleta {
+  return { ...d, altas: [...d.altas, a] }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { datosVacios, sesionFila, uuid } from './_fabrica'
+import { conAlta } from './cambios'
 import { vistaHoy } from './hoy'
 
 describe('vistaHoy', () => {
@@ -19,5 +20,12 @@ describe('vistaHoy', () => {
       datosVacios({ chequeos: [{ fecha: '2026-11-03', sueno: 4, fatiga: 4, ganas: 4, molestias: [{ zona, dolor }] }] })
     expect(vistaHoy(conDolor('hombro', 6), '2026-11-03')).toMatchObject({ zonasRojo: ['hombro'], zonasAmbar: [] })
     expect(vistaHoy(conDolor('dedos', 2), '2026-11-03')).toMatchObject({ zonasRojo: [], zonasAmbar: ['dedos'] })
+  })
+  it('un alta del mismo día del dolor no levanta el rojo; la del día siguiente sí', () => {
+    const d = datosVacios({ chequeos: [{ fecha: '2026-11-03', sueno: 4, fatiga: 4, ganas: 4, molestias: [{ zona: 'hombro', dolor: 6 }] }] })
+    const mismoDia = conAlta(d, { id: uuid(1), zona: 'hombro', fecha: '2026-11-03' })
+    expect(vistaHoy(mismoDia, '2026-11-03').zonasRojo).toEqual(['hombro'])
+    const diaSiguiente = conAlta(d, { id: uuid(2), zona: 'hombro', fecha: '2026-11-04' })
+    expect(vistaHoy(diaSiguiente, '2026-11-04').zonasRojo).toEqual([])
   })
 })
