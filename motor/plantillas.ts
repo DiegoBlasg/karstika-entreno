@@ -88,24 +88,27 @@ function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_
   const noValidas = new Set(p.estado?.sesionesNoValidas ?? [])
   const sinRegistro = new Set(p.estado?.sesionesSinRegistro ?? [])
   const pasadas = p.historial.filter((s) => tipos.includes(s.tipo) && diaNumero(s.fecha) < hoy)
-  const lista = pasadas.filter((s) => !s.descarga && !noValidas.has(s.id))
+  const sinDescarga = pasadas.filter((s) => !s.descarga)
+  const lista = sinDescarga.filter((s) => !noValidas.has(s.id))
   const sinApuntar = pasadas.filter((s) => sinRegistro.has(s.id)).length
   const S = VALORES['P-04'].semanasConUnBloque * VALORES['P-07'].sesionesPorSemana
   const escalon = (n: number): number => (n < S ? 0 : n < 2 * S ? 1 : 2)
-  // Recorrido en orden: el mismo día, la molestia (de un chequeo, hecho al pedir la sesión) va antes que la sesión.
+  // Recorrido en orden (día y hora; la molestia de un chequeo va al principio del día). Toda multipresa fuera de
+  // descarga marca el escalón «de la última», pero solo las válidas suben: así una sola sesión mala no baja la carga.
+  const validas = new Set(lista.map((s) => s.id))
   const eventos = [
-    ...(p.estado?.molestiasP46 ?? []).map((f) => ({ dia: diaNumero(f), molestia: true })),
-    ...lista.map((s) => ({ dia: diaNumero(s.fecha), molestia: false })),
+    ...(p.estado?.molestiasP46 ?? []).map((m) => ({ dia: diaNumero(m.fecha), orden: m.orden, molestia: true, valida: false })),
+    ...sinDescarga.map((s) => ({ dia: diaNumero(s.fecha), orden: s.horaInicio, molestia: false, valida: validas.has(s.id) })),
   ]
     .filter((e) => e.dia < hoy)
-    .sort((x, y) => x.dia - y.dia || Number(y.molestia) - Number(x.molestia))
+    .sort((x, y) => x.dia - y.dia || x.orden - y.orden || Number(y.molestia) - Number(x.molestia))
   let previas = 0
   let antesDeLaUltima = 0
   for (const e of eventos) {
     if (e.molestia) previas = Math.min(previas, Math.max(0, escalon(previas) - 1) * S)
     else {
       antesDeLaUltima = previas
-      previas++
+      if (e.valida) previas++
     }
   }
   const retornoP46 = escalon(previas) < escalon(lista.length)

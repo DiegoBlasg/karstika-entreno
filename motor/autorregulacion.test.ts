@@ -169,7 +169,7 @@ describe('retorno tras una molestia (P-46)', () => {
       registros: [reg(a, 4, [dedos(2)])],
       chequeos: [chq(hace(8), 4, [dedos(2)]), chq(hace(6), 4), chq(hace(4), 4, [{ zona: 'muneca', dolor: 3 }]), chq(hace(1), 4)],
     })
-    expect(estadoAtleta([a], s, HOY).molestiasP46).toEqual([hace(9), hace(4)])
+    expect(estadoAtleta([a], s, HOY).molestiasP46).toEqual([{ fecha: hace(9), orden: 18 }, { fecha: hace(4), orden: -1 }])
     expect(estadoAtleta([], seg({ chequeos: [chq(hace(4), 4, [{ zona: 'codo', dolor: 3 }])] }), HOY).molestiasP46).toEqual([])
   })
 })

@@ -189,6 +189,12 @@ describe('arreglos de la revisión', () => {
     const sinFreno = proponerSesion(pet('2026-11-23', CASA, { historial, seguimiento: seg({ registros: [...cuatro.map((s) => reg(s, 7)), reg(t, 4)] }) }))
     expect(repeaters(sinFreno).bloques).toBe(2)
   })
+  it('freno P-11: una sola multipresa por encima del objetivo repite el escalón, no lo baja', () => {
+    const cinco = ['2026-11-09', '2026-11-12', '2026-11-16', '2026-11-19', '2026-11-23'].map((f, i) => multipresa(`c${i}`, f))
+    const registros = cinco.map((s, i) => reg(s, i === 4 ? 9 : 7))
+    const r = proponerSesion(pet('2026-11-26', CASA, { historial: cinco, seguimiento: seg({ registros }) }))
+    expect(repeaters(r).bloques).toBe(2)
+  })
   it('P-46 encadenado: dos molestias seguidas bajan dos escalones desde donde estabas', () => {
     const diez = ['2026-11-02', '2026-11-05', '2026-11-09', '2026-11-12', '2026-11-16', '2026-11-19', '2026-11-23', '2026-11-26', '2026-11-30', '2026-12-03']
       .map((f, i) => multipresa(`d${i}`, f))

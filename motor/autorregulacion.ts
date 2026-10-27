@@ -111,6 +111,8 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
   for (const e of eventos) {
     if (e.fuente === 'alta') {
       if (e.molestias[0]?.zona !== zona) continue
+      // Si el ámbar ya pasa a rojo justo el día del alta, ese rojo es del mismo día y el alta no lo levanta (hace
+      // falta una posterior). Decisión conservadora, coherente con la regla general del alta.
       if (persistente(e.dia)) rojo(ambarDesde! + diasAmbarMax + 1, true)
       if (ultimoRojo !== undefined && e.dia > ultimoRojo) {
         ultimoRojo = undefined
@@ -190,11 +192,11 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
 
   // P-46: cada episodio de molestia en dedos o muñeca (racha de datos con dolor 2 o más, o alarma) cuenta una vez,
   // en la fecha en que aparece.
-  const molestiasP46: string[] = []
+  const molestiasP46: { fecha: string; orden: number }[] = []
   let enEpisodio = false
   for (const e of eventos) {
     const con = molestiaP46(e.molestias)
-    if (con && !enEpisodio) molestiasP46.push(fechaDesdeDia(e.dia))
+    if (con && !enEpisodio) molestiasP46.push({ fecha: fechaDesdeDia(e.dia), orden: e.orden })
     enEpisodio = con
   }
 

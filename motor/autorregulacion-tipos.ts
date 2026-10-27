@@ -49,7 +49,7 @@ export interface EstadoAtleta {
   chequeoBajoHoy: boolean            // P-65
   sesionesNoValidas: string[]        // no cuentan para progresar (P-11): sin registro, por encima, incompletas o con dolor en dedos o muñeca
   sesionesSinRegistro: string[]      // sesiones pasadas sin registro (para explicarlo)
-  molestiasP46: string[]             // fecha en que empieza cada episodio de molestia en dedos o muñeca (P-46)
+  molestiasP46: { fecha: string; orden: number }[]   // inicio de cada episodio de molestia en dedos o muñeca (P-46); orden = hora del registro, -1 si fue un chequeo
   explicaciones: Explicacion[]
 }
 
