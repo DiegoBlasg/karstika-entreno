@@ -274,11 +274,18 @@ function construirPegues(p: Peticion): SesionPlan | null {
   return plan(sesionDe('pegues-proyecto', p, total(n), 'alta'), bloques)
 }
 
+// Tras el test máximo, si hay tiempo: 10 min de descanso y el test de resistencia intermitente (P-24). Las duraciones
+// de los bloques son decisión de diseño.
+const DESCANSO_ENTRE_TESTS_MIN = 10
+const TEST_RESISTENCIA_MIN = 5
+
 function construirEvaluacion(p: Peticion): SesionPlan | null {
   const subidaMin = 5
   const testMin = 15
-  const total = CALENTAMIENTO_MIN + subidaMin + testMin
-  if (total > p.contexto.minutosDisponibles) return null
+  const soloMaximo = CALENTAMIENTO_MIN + subidaMin + testMin
+  if (soloMaximo > p.contexto.minutosDisponibles) return null
+  const conResistencia = soloMaximo + DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN <= p.contexto.minutosDisponibles
+  const total = conResistencia ? soloMaximo + DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN : soloMaximo
   const { duracionS, intentos, descansoS } = VALORES['P-18']
   const bloques: Bloque[] = [
     bloqueCalentamiento(),
@@ -314,6 +321,35 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
       ),
     },
   ]
+  if (conResistencia) {
+    const { trabajoS, descansoS, fraccion } = VALORES['P-24']
+    bloques.push(
+      {
+        nombre: 'Descanso entre tests',
+        minutos: DESCANSO_ENTRE_TESTS_MIN,
+        ejercicios: [{ nombre: 'Descanso suave, sin colgarte', cargaTexto: 'Sin esfuerzo' }],
+        explicacion: explicar('plantilla.descanso-tests', ['P-24'], 'Se descansa antes del test de resistencia para no mezclar la fatiga del máximo.'),
+      },
+      {
+        nombre: 'Test de resistencia intermitente',
+        minutos: TEST_RESISTENCIA_MIN,
+        ejercicios: [
+          {
+            nombre: `Suspensiones ${trabajoS} s : ${descansoS} s al ${Math.round(fraccion * 100)} % de tu máximo de hoy, hasta el fallo`,
+            trabajoS,
+            descansoS,
+            cargaTexto: `${Math.round(fraccion * 100)} % de la carga máxima que acabas de medir`,
+            notas: 'Apunta los segundos totales hasta no poder completar una repetición. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.',
+          },
+        ],
+        explicacion: explicar(
+          'plantilla.test-resistencia',
+          ['P-24', 'P-27'],
+          'Test intermitente 7 s : 3 s al 60 % de la fuerza máxima hasta el fallo (resultado en segundos) y autoevaluación técnica de 1 a 7.',
+        ),
+      },
+    )
+  }
   const sesion = sesionDe('evaluacion-dedos', p, total, 'alta', {
     regletaMm: REGLETA_MM,
     agarre: 'semiarqueado',

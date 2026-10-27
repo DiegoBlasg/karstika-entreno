@@ -140,3 +140,17 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
 - La resistencia de fuerza en multipresa tiene progresión propia (vuelve a empezar al 70 %, P-11) y su
   explicación aclara que la carga viene de P-06.
 - El mínimo de 6 sesiones de base no cuenta los `descanso`. Las fases constantes están congeladas.
+
+## Parte 2 implementada (2026-10-29)
+
+- `EvaluacionDedos` con `resistenciaS` (P-24, 1-600 s) y `tecnica` (P-27, entero 1-7), validados.
+- El test de dedos, con 45 min o más, añade 10 min de descanso y el test intermitente 7 s : 3 s al 60 % hasta el
+  fallo, y pide la autoevaluación técnica; con 30-44 min, solo el test máximo.
+- `diagnosticar(evaluaciones, intentos, fecha)`: progreso (primera frente a última evaluación anterior a la fecha;
+  < 5 % = sin cambio, diseño) y limitantes (con ≥ 10 caídas con motivo en 8 semanas manda el registro; si no, P-23;
+  empates por P-23). `IntentoLimite { fecha, encadenado, motivoCaida? }`: bombeo → resistencia, paso de fuerza →
+  fuerza de dedos, técnica o lectura → técnica, cabeza → cabeza.
+- `ajusteCiclo2(diagnostico)`: fuerza de dedos → 10 + 4; resistencia → 6 + 8; técnica → 8 + 6 con una sesión más de
+  técnica por semana; cabeza → 8 + 6 (el trabajo mental, en los consejos del tramo 2d). Rangos de P-31.
+- `planificarTemporada(inicio, objetivo, { ciclo2, refuerzoTecnica })` aplica el ajuste sin cambiar la fecha
+  objetivo (las 14 semanas se reparten; error claro fuera de P-31 o si no suman 14).

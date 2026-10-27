@@ -17,6 +17,8 @@ export interface EvaluacionDedos {
   fecha: string                                   // 'AAAA-MM-DD'
   pesoCorporalKg: number
   lastreKg: number                                // mejor intento de 10 s; negativo si fue con descarga
+  resistenciaS?: number                           // test intermitente 7 s : 3 s al 60 % hasta el fallo (P-24)
+  tecnica?: number                                // autoevaluación técnica de 1 a 7 sobre un vídeo (P-27)
 }
 
 export interface Ejercicio {

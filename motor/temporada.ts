@@ -1,4 +1,5 @@
 import { descargar, FASE_OBJETIVO, FASES } from './fases'
+import { VALORES } from './parametros'
 import type { Fase, FaseId } from './propuesta-tipos'
 import { diaNumero, fechaDesdeDia } from './tiempo'
 
@@ -15,6 +16,14 @@ export interface Temporada {
   inicio: string
   objetivo: string              // lunes de la semana objetivo
   semanas: SemanaPlan[]
+  refuerzoTecnica: boolean      // ciclo 2 con una sesión más de técnica por semana (diagnóstico)
+}
+
+// Ajuste del ciclo 2 que sale del diagnóstico (ajusteCiclo2). Las 14 semanas de fuerza + resistencia se reparten
+// dentro de los rangos de P-31 sin cambiar la duración total de la temporada.
+export interface OpcionesTemporada {
+  ciclo2?: { fuerza: number; resistencia: number }
+  refuerzoTecnica?: boolean
 }
 
 interface Tramo {
@@ -53,7 +62,7 @@ const SEMANAS_TRAS_OBJETIVO = 2
 // 1970-01-01 fue jueves: el día 4 fue lunes.
 const desdeLunes = (dia: number): number => (((dia - 4) % 7) + 7) % 7
 
-export function planificarTemporada(inicio: string, objetivo: string): Temporada {
+export function planificarTemporada(inicio: string, objetivo: string, opciones: OpcionesTemporada = {}): Temporada {
   const di = diaNumero(inicio)
   if (desdeLunes(di) !== 0) throw new Error(`El inicio de la temporada debe ser un lunes: ${inicio}`)
   const dObjetivo = diaNumero(objetivo)
@@ -67,6 +76,23 @@ export function planificarTemporada(inicio: string, objetivo: string): Temporada
     throw new Error(
       `La fecha objetivo deja ${n} semanas desde el inicio; con dos ciclos caben entre ${minimo} y ${maximo}.`,
     )
+  }
+  if (opciones.ciclo2) {
+    const { fuerza, resistencia } = opciones.ciclo2
+    const r = VALORES['P-31']
+    const fuerzaC2 = tramos[5]!
+    const resistenciaC2 = tramos[6]!
+    if (!Number.isInteger(fuerza) || fuerza < r.fuerzaMin || fuerza > r.fuerzaMax) {
+      throw new Error(`La fuerza del ciclo 2 debe durar de ${r.fuerzaMin} a ${r.fuerzaMax} semanas (P-31): ${fuerza}`)
+    }
+    if (!Number.isInteger(resistencia) || resistencia < r.resistenciaMin || resistencia > r.resistenciaMax) {
+      throw new Error(`La resistencia del ciclo 2 debe durar de ${r.resistenciaMin} a ${r.resistenciaMax} semanas (P-31): ${resistencia}`)
+    }
+    if (fuerza + resistencia !== fuerzaC2.semanas + resistenciaC2.semanas) {
+      throw new Error(`Fuerza y resistencia del ciclo 2 deben sumar ${fuerzaC2.semanas + resistenciaC2.semanas} semanas: ${fuerza} + ${resistencia}`)
+    }
+    fuerzaC2.semanas = fuerzaC2.min = fuerzaC2.max = fuerza
+    resistenciaC2.semanas = resistenciaC2.min = resistenciaC2.max = resistencia
   }
   let diferencia = n - base
   for (const i of ORDEN_AJUSTE) {
@@ -103,7 +129,7 @@ export function planificarTemporada(inicio: string, objetivo: string): Temporada
   const ultima = semanas[semanas.length - 1]!
   ultima.descarga = true
   ultima.reevaluar = false
-  return { inicio, objetivo: fechaDesdeDia(lunesObjetivo), semanas }
+  return { inicio, objetivo: fechaDesdeDia(lunesObjetivo), semanas, refuerzoTecnica: opciones.refuerzoTecnica ?? false }
 }
 
 export function semanaEnFecha(t: Temporada, fecha: string): SemanaPlan | undefined {
@@ -121,6 +147,9 @@ export function faseEnFecha(t: Temporada, fecha: string): Fase {
   if (!s && desdeObjetivo >= 7 && desdeObjetivo < 7 * SEMANAS_TRAS_OBJETIVO) return FASES.rendimiento
   if (!s) throw new Error(`La fecha ${fecha} está fuera de la temporada (${t.inicio} a ${t.objetivo}).`)
   let fase = FASES[s.faseId]
+  if (t.refuerzoTecnica && s.ciclo === 2 && fase.prioridad.includes('tecnica')) {
+    fase = { ...fase, cupos: { ...fase.cupos, tecnica: (fase.cupos.tecnica ?? 0) + 1 } }
+  }
   if (s.descarga) fase = descargar(fase)
   if (s.reevaluar) {
     fase = {

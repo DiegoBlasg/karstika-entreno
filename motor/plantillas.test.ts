@@ -108,12 +108,22 @@ describe('multipresa-resistencia', () => {
 describe('evaluacion-dedos', () => {
   const base = () => peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } })
 
-  it('dura 30 min: calentamiento 10, subida progresiva 5 y test 15', () => {
+  it('con 45 min o más: calentamiento 10, subida 5, test máximo 15, descanso 10 y test de resistencia 5', () => {
     const plan = construirSesion('evaluacion-dedos', base())!
     expect(plan.sesion).toMatchObject({
-      id: 'propuesta-evaluacion-dedos', tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 30,
+      id: 'propuesta-evaluacion-dedos', tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 45,
       detalle: { regletaMm: 20, agarre: 'semiarqueado', conCarga: true },
     })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 5, 15, 10, 5])
+    expect(suma(plan)).toBe(45)
+    const resistencia = plan.bloques[4]!
+    expect(resistencia.ejercicios[0]).toMatchObject({ trabajoS: 7, descansoS: 3 })
+    expect(resistencia.ejercicios[0]!.nombre).toMatch(/60 %/)
+    expect(resistencia.ejercicios[0]!.notas).toMatch(/segundos.*técnica de 1 a 7/)
+    expect(resistencia.explicacion.parametros).toEqual(['P-24', 'P-27'])
+  })
+  it('con 30-44 min solo el test máximo: 10 + 5 + 15 = 30', () => {
+    const plan = construirSesion('evaluacion-dedos', { ...base(), contexto: { ...base().contexto, minutosDisponibles: 44 } })!
     expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 5, 15])
     expect(suma(plan)).toBe(30)
   })
