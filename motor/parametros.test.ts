@@ -134,5 +134,7 @@ describe('VALORES de la autorregulación', () => {
     expect(VALORES['P-65']).toEqual({ escalaMin: 1, escalaMax: 5, umbralBajo: 2, diasDescarga: 7 })
     expect(columnas('P-66')[2]).toMatch(/^Como mucho 2 por sesión; un consejo mostrado en los últimos 7 días no se repite/)
     expect(VALORES['P-66']).toEqual({ maxConsejos: 2, diasSinRepetir: 7 })
+    expect(columnas('P-57')[2]).toMatch(/unos 1,6 g\/kg\/día de proteína total/)
+    expect(VALORES['P-57'].gramosPorKg).toBe(1.6)
   })
 })

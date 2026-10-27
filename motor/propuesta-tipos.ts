@@ -1,4 +1,5 @@
 import type { EstadoAtleta, Seguimiento } from './autorregulacion-tipos'
+import type { Limitante } from './diagnostico'
 import type { Explicacion } from './explicacion'
 import type { Contexto, Perfil, Sesion, TipoSesion } from './tipos'
 
@@ -58,6 +59,8 @@ export interface Peticion {
   seguimiento?: Seguimiento                       // registros, chequeos y altas (tramo 2d)
   // Lo calcula proponerSesion a partir de `seguimiento` para cada fecha que evalúa; no lo pases tú.
   estado?: EstadoAtleta
+  limitantePrincipal?: Limitante                  // de diagnosticar (activa el consejo de miedo a caer)
+  consejosMostrados?: { id: string; fecha: string }[]   // para no repetir consejos en 7 días (P-66)
 }
 
 export interface Propuesta {
