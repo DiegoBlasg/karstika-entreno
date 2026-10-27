@@ -8,7 +8,7 @@ export type FaseId = 'base' | 'fuerza' | 'resistencia' | 'rendimiento' | 'transi
 export interface Fase {
   id: FaseId
   nombre: string
-  cupos: Partial<Record<TipoSesion, number>>      // sesiones deseadas por cada 7 días
+  cupos: Partial<Record<TipoSesion, number>>      // sesiones deseadas por semana natural (lunes a domingo)
   prioridad: TipoSesion[]                         // de más a menos preferida
   prohibidos: TipoSesion[]
   descarga?: boolean                              // semana de descarga (P-47, P-48): mitad de volumen, nada al límite

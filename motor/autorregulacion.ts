@@ -1,5 +1,5 @@
 import {
-  ZONAS, type Chequeo, type EstadoAtleta, type Molestia, type Restricciones, type Seguimiento, type Semaforo, type Zona,
+  ZONAS, type Chequeo, type EstadoAtleta, type Molestia, type RegistroSesion, type Restricciones, type Seguimiento, type Semaforo, type Zona,
 } from './autorregulacion-tipos'
 import { explicar, type Explicacion } from './explicacion'
 import { VALORES } from './parametros'
@@ -100,7 +100,8 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
   let ultimoRojo: number | undefined
   let porPersistencia = false
   let ambarDesde: number | undefined
-  let ambarRegistros = 0
+  let ambarRegistros = 0             // días distintos con un registro en ámbar (P-45)
+  let diaRegistroAmbar: number | undefined
   let ultimo: Semaforo = 'verde'
   let levantado: number | undefined
   let verdeDesde: number | undefined   // primer dato sin dolor tras un rojo por persistencia
@@ -111,6 +112,7 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
     ultimoRojo = dia
     ambarDesde = undefined
     ambarRegistros = 0
+    diaRegistroAmbar = undefined
     verdeDesde = undefined
   }
   const persistente = (dia: number): boolean => ultimo === 'ambar' && ambarDesde !== undefined && dia - ambarDesde > diasAmbarMax
@@ -138,6 +140,9 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
         if (ultimo === 'rojo') ultimo = 'verde'
         ambarDesde = ultimo === 'ambar' ? e.dia : undefined
         ambarRegistros = 0
+      diaRegistroAmbar = undefined
+        diaRegistroAmbar = undefined
+    diaRegistroAmbar = undefined
       }
       continue
     }
@@ -147,11 +152,17 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
       rojo(e.dia, false)
     } else if (nivel === 'ambar') {
       ambarDesde ??= e.dia
-      if (e.fuente === 'registro') ambarRegistros++
+      // Con dos sesiones el mismo día, un ámbar en las dos no cuenta doble: P-45 pide ámbar en 2 días distintos.
+      if (e.fuente === 'registro' && e.dia !== diaRegistroAmbar) {
+        ambarRegistros++
+        diaRegistroAmbar = e.dia
+      }
       if (ambarRegistros >= registrosAmbarSeguidos || e.dia - ambarDesde > diasAmbarMax) rojo(e.dia, true)
     } else {
       ambarDesde = undefined
       ambarRegistros = 0
+      diaRegistroAmbar = undefined
+    diaRegistroAmbar = undefined
       if (ultimoRojo !== undefined && porPersistencia) {
         verdeDesde ??= e.dia
         levantarSiSinDolor(e.dia)
@@ -172,9 +183,18 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
   const registros = s.registros.filter((r) => diaNumero(r.fecha) <= hoy)
   const chequeos = s.chequeos.filter((c) => diaNumero(c.fecha) <= hoy).sort((a, b) => diaNumero(a.fecha) - diaNumero(b.fecha))
   const registroDe = new Map(registros.map((r) => [r.sesionId, r]))
+  // Una zona que no aparece en un registro toma el valor del chequeo de ese día (decisión del usuario del 2026-10-27):
+  // con dos sesiones el mismo día, la de la mañana sin apuntar los dedos no pone en verde un ámbar.
+  const chequeoDe = new Map(chequeos.map((c) => [c.fecha, c]))
+  const molestiasDe = (r: RegistroSesion): readonly Molestia[] => {
+    const c = chequeoDe.get(r.fecha)
+    if (!c) return r.molestias
+    const listadas = new Set(r.molestias.map((m) => m.zona))
+    return [...r.molestias, ...c.molestias.filter((m) => !listadas.has(m.zona))]
+  }
 
   const eventos: Evento[] = [
-    ...registros.map((r): Evento => ({ dia: diaNumero(r.fecha), orden: sesiones.get(r.sesionId)!.horaInicio, fuente: 'registro', molestias: r.molestias })),
+    ...registros.map((r): Evento => ({ dia: diaNumero(r.fecha), orden: sesiones.get(r.sesionId)!.horaInicio, fuente: 'registro', molestias: molestiasDe(r) })),
     ...chequeos.map((c): Evento => ({ dia: diaNumero(c.fecha), orden: -1, fuente: 'chequeo', molestias: c.molestias })),
   ].sort((a, b) => a.dia - b.dia || a.orden - b.orden)
   // Las altas van al principio de su día: un rojo de ese mismo día no queda levantado (tiene que ser posterior).
@@ -209,7 +229,7 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
       if (!r) return true
       if (objetivoRpe(h) !== undefined && porEncima(h)) return true
       if (incompleta(h)) return true
-      return molestiaP46(r.molestias)
+      return molestiaP46(molestiasDe(r))
     })
     .map((h) => h.id)
   const sesionesSinRegistro = pasadas.filter((h) => !registroDe.has(h.id)).map((h) => h.id)
