@@ -43,5 +43,7 @@ export const VALORES = {
   'P-63': { rpeMaxAlta: 8, rpeMaxSuave: 5, fraccionCompletada: 0.9 },
   'P-65': { escalaMin: 1, escalaMax: 5, umbralBajo: 2, diasDescarga: 7 },
   'P-66': { maxConsejos: 2, diasSinRepetir: 7 },
+  'P-67': { maxHuecos: 8 },
+  'P-68': { maxCargaAltaPorDia: 1 },
   'P-57': { gramosPorKg: 1.6 },
 } as const satisfies Partial<Record<ParametroId, object>>

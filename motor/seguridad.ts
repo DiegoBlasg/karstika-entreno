@@ -315,8 +315,23 @@ function reglaDominadas7Dias(propuesta: Sesion, historial: readonly Sesion[]): V
   return []
 }
 
+// P-68: como mucho una sesión de carga alta por día natural (con mañana y tarde, una de las dos es suave).
+function reglaCargaAltaMismoDia(propuesta: Sesion, historial: readonly Sesion[]): Violacion[] {
+  if (!esCargaAlta(propuesta)) return []
+  const otras = historial.filter((h) => h.id !== propuesta.id && h.fecha === propuesta.fecha && esCargaAlta(h))
+  if (otras.length < VALORES['P-68'].maxCargaAltaPorDia) return []
+  return [
+    {
+      regla: 'seguridad.carga-alta-mismo-dia',
+      sesionIds: [propuesta.id, ...otras.map((s) => s.id)].sort(),
+      mensaje: 'Ya hay una sesión de carga alta ese día: la otra tiene que ser suave.',
+      explicacion: explicar('seguridad.carga-alta-mismo-dia', ['P-68'], 'Como mucho una sesión de carga alta por día; con mañana y tarde, una de las dos es suave.'),
+    },
+  ]
+}
+
 const REGLAS: Regla[] = [
-  reglaDedosDiaDescanso, reglaCargaAltaSeguida, reglaCampus, reglaMaximaNovel,
+  reglaDedosDiaDescanso, reglaCargaAltaSeguida, reglaCargaAltaMismoDia, reglaCampus, reglaMaximaNovel,
   reglaMultipresa7Dias, reglaDedos7Dias, reglaRegleta, reglaArqueado, reglaEvaluacionPrematura,
   reglaDominadasDiaDedos, reglaDominadas7Dias,
 ]

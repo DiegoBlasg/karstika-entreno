@@ -138,6 +138,12 @@ describe('VALORES de la autorregulación', () => {
     expect(VALORES['P-65']).toEqual({ escalaMin: 1, escalaMax: 5, umbralBajo: 2, diasDescarga: 7 })
     expect(columnas('P-66')[2]).toMatch(/^Como mucho 2 por sesión; un consejo mostrado en los últimos 7 días no se repite/)
     expect(VALORES['P-66']).toEqual({ maxConsejos: 2, diasSinRepetir: 7 })
+  })
+  it('P-67 y P-68 coinciden con el documento', () => {
+    expect(columnas('P-67')[2]).toMatch(/^Con los huecos que quedan hasta el domingo \(como mucho 8\)/)
+    expect(VALORES['P-67']).toEqual({ maxHuecos: 8 })
+    expect(columnas('P-68')[2]).toMatch(/^Como mucho 1 sesión de carga alta por día natural/)
+    expect(VALORES['P-68']).toEqual({ maxCargaAltaPorDia: 1 })
     expect(columnas('P-57')[2]).toMatch(/unos 1,6 g\/kg\/día de proteína total/)
     expect(VALORES['P-57'].gramosPorKg).toBe(1.6)
   })
