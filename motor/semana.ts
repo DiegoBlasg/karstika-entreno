@@ -99,7 +99,7 @@ function esMejor(a: Candidata, b: Candidata): boolean {
 // propone ahí). Si el generador recomienda descanso (principal nula), el hueco queda vacío.
 export function planificarSemana(
   p: Peticion,
-  proponerEn: (q: Peticion) => Propuesta,
+  proponerEn: (q: Peticion, sinDominadas: boolean) => Propuesta,
 ): { ranuras: Hueco[]; elegidas: (SesionPlan | null)[] } {
   const { huecos = [], ...base } = p
   const ranuras: Hueco[] = [
@@ -114,12 +114,19 @@ export function planificarSemana(
       return
     }
     const h = ranuras[i]!
-    const r = proponerEn({ ...base, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial })
+    const q: Peticion = { ...base, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial }
+    const r = proponerEn(q, false)
     const opciones = r.principal ? [r.principal, ...r.alternativas] : []
     const alta = opciones.find((o) => esCargaAlta(o.sesion))
     const suave = opciones.find((o) => !esCargaAlta(o.sesion))
+    // Las dominadas son un complemento opcional que no puede ir el día de una sesión intensa de dedos (P-39): si la
+    // opción suave las lleva, se prueba también sin ellas, por si estorban a otro hueco del mismo día.
+    const sinDominadas =
+      suave && (suave.sesion.incluye ?? []).includes('dominadas')
+        ? [r.principal ? proponerEn(q, true) : r].flatMap((x) => [x.principal, ...x.alternativas]).find((o) => o !== null && !esCargaAlta(o.sesion))
+        : undefined
     const ramas: (SesionPlan | null)[] =
-      opciones.length === 0 ? [null] : [alta, suave].filter((o): o is SesionPlan => o !== undefined)
+      opciones.length === 0 ? [null] : [alta, suave, sinDominadas ?? undefined].filter((o): o is SesionPlan => o !== undefined && o !== null)
     for (const o of ramas) {
       visitar(i + 1, [...elegidas, o], o ? [...historial, { ...o.sesion, id: `semana-${i}` }] : historial)
     }

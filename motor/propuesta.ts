@@ -141,6 +141,7 @@ function completar(
   p: Peticion,
   posibles: ReadonlySet<TipoSesion>,
   enDiaDeDescanso = false,
+  sinDominadas = false,
 ): { plan: SesionPlan; anadidos: TipoComplemento[] } {
   // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás (sí las
   // dominadas, que no son escalada).
@@ -162,7 +163,7 @@ function completar(
     for (const t of PRIORIDAD_COMPLEMENTOS) anadir(t, true)
     for (const t of RELLENO_SUAVE) anadir(t, false)
   }
-  if (dominadasPermitidas(plan.sesion, p, posibles, enDiaDeDescanso)) {
+  if (!sinDominadas && dominadasPermitidas(plan.sesion, p, posibles, enDiaDeDescanso)) {
     const bloque = construirComplemento('dominadas', p, libres)
     if (bloque) {
       elegidos.set('dominadas', bloque)
@@ -256,7 +257,7 @@ export function proponerSesion(p: Peticion): Propuesta {
   if (!huecos || huecos.length === 0) return proponer(sinHuecos, true)
   // Tramo 2e (P-67): se planifica la semana con los huecos y la sesión de hoy es la del mejor reparto.
   validarHuecos(p)
-  const { ranuras, elegidas } = planificarSemana(p, (q) => proponer(q, false))
+  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas) => proponer(q, false, sinDominadas))
   const r0 = proponer(sinHuecos, true)
   const semana = ranuras.slice(1).map((hueco, i) => {
     const o = elegidas[i + 1]
@@ -276,7 +277,9 @@ export function proponerSesion(p: Peticion): Propuesta {
   }
 }
 
-function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
+// `sinDominadas`: el plan semanal pide la misma propuesta sin el complemento opcional de dominadas (P-39), que no
+// puede ir el día de una sesión intensa de dedos y podría quitarle sitio a otra del mismo día.
+function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false): Propuesta {
   // Tramo 2d: el estado se recalcula para cada fecha (el chequeo de hoy no vale para mañana) y puede adelantar
   // la descarga (P-50).
   const estado = recibida.seguimiento ? estadoAtleta(recibida.historial, recibida.seguimiento, recibida.fecha) : undefined
@@ -351,7 +354,7 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
   const elegidos = elegidosDe(validos, 3)
 
   const terminar = (v: Valido, enDiaDeDescanso = false): SesionPlan => {
-    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso)
+    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso, sinDominadas)
     return { ...plan, explicaciones: [explicacionEleccion(v, p, anadidos), ...plan.explicaciones] }
   }
   const conEstado = (prop: Propuesta): Propuesta => {
