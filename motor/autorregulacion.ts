@@ -274,6 +274,6 @@ export function restriccionesDe(e: EstadoAtleta): Restricciones {
     soloHombro,
     soloDescanso,
     hombroSinCarga: z.hombro === 'ambar' || soloHombro,
-    sinDominadas: ZONAS_CARGA.some((x) => z[x] !== 'verde') || ZONAS.some((x) => z[x] === 'rojo'),
+    sinDominadas: ZONAS_CARGA.some((x) => z[x] !== 'verde') || ZONAS.some((x) => z[x] === 'rojo') || e.chequeoBajoHoy,
   }
 }

@@ -59,5 +59,5 @@ export interface Restricciones {
   soloHombro: boolean        // rojo en dedos, muñeca o codo: quedan descanso y hombro sin carga
   soloDescanso: boolean      // rojo en hombro u otra
   hombroSinCarga: boolean    // ámbar en hombro, o soloHombro
-  sinDominadas: boolean      // alguna de dedos, muñeca, codo u hombro no está en verde, o hay algún rojo
+  sinDominadas: boolean      // alguna de dedos, muñeca, codo u hombro no está en verde, algún rojo o chequeo de hoy bajo
 }

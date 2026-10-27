@@ -180,8 +180,8 @@ describe('restricciones (P-64)', () => {
     expect(con([{ zona: 'otra', dolor: 5 }])).toMatchObject({ soloDescanso: true, sinDominadas: true })
     expect(con([dedos(5), { zona: 'otra', dolor: 6 }])).toMatchObject({ soloHombro: false, soloDescanso: true })
   })
-  it('chequeo de hoy bajo: sin carga alta, pero sí dominadas', () => {
-    expect(con([], 1)).toMatchObject({ sinCargaAlta: true, sinDominadas: false })
+  it('chequeo de hoy bajo: sin carga alta ni dominadas', () => {
+    expect(con([], 1)).toMatchObject({ sinCargaAlta: true, sinDominadas: true, soloHombro: false })
   })
 })
 

@@ -180,3 +180,18 @@ P-39 se actualiza con el complemento de 15 min.
 ## Fuera de este tramo
 
 Interfaz y persistencia (subproyecto 3). `Perfil.lesiones` sigue como texto informativo que el motor no lee.
+
+## Implementado (rama `motor-autorregulacion`)
+
+- **Cambio de interfaz**: `Peticion.seguimiento` (registros, chequeos, altas) en lugar de un `estado` ya calculado.
+  `proponerSesion` calcula `estadoAtleta` para cada fecha que evalúa (también al buscar la ventana intensa: el
+  chequeo de hoy no vale para mañana) y lo devuelve en `Propuesta.estado`, con sus explicaciones. Pasar `estado`
+  a mano es un error. Las explicaciones de cada plan no cambian (una por bloque más la de la elección).
+- **Progresión de multipresa**: `EstadoAtleta.sesionesNoValidas` y `retornoP46`; la plantilla recalcula el escalón.
+  Con `seguimiento`, una sesión pasada sin registro no cuenta para subir (falla cerrado).
+- **Dominadas**: sin cupo de fase (seguirían prohibidas como principal); el generador las añade como complemento en
+  la fuerza fuera de la descarga, también detrás de una sesión de hombro. Un chequeo bajo también las quita (lo
+  destapó la simulación: proponía dominadas lastradas el día de cansancio).
+- **Consejos**: entre los no de seguridad, primero el que hace más que no ves (rotación real); la proteína se da
+  también en gramos con el peso del perfil (P-57).
+
