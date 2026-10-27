@@ -45,7 +45,9 @@ export type Semaforo = 'verde' | 'ambar' | 'rojo'
 export interface EstadoAtleta {
   zonas: Record<Zona, Semaforo>
   sinSubida: boolean                 // P-11 / P-43: última sesión por encima del objetivo, o alguna zona en ámbar
-  descargaAdelantada?: { desde: string; hasta: string; motivo: 'rpe' | 'bienestar' }   // P-50
+  descargaAdelantada?: { desde: string; hasta: string; motivo: 'rpe' | 'bienestar' }   // P-50, la vigente hoy
+  descargasAdelantadas: { desde: string; hasta: string; motivo: 'rpe' | 'bienestar' }[]   // todas hasta hoy (para faseEnFecha)
+  retestDesde?: string               // P-46: tras levantar un rojo en dedos, muñeca o codo, los tests anteriores no valen
   chequeoBajoHoy: boolean            // P-65
   sesionesNoValidas: string[]        // no cuentan para progresar (P-11): sin registro, por encima, incompletas o con dolor en dedos o muñeca
   sesionesSinRegistro: string[]      // sesiones pasadas sin registro (para explicarlo)

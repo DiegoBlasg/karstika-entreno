@@ -25,7 +25,7 @@ export {
   type AjusteCiclo2, type Diagnostico, type IntentoLimite, type Limitante, type MotivoCaida, type Progreso, type Tendencia,
 } from './diagnostico'
 export { validarEvaluacion } from './evaluacion'
-export type { OpcionesTemporada } from './temporada'
+export type { OpcionesFase, OpcionesTemporada } from './temporada'
 export { estadoAtleta, objetivoRpe, restriccionesDe, validarSeguimiento } from './autorregulacion'
 export {
   ZONAS,

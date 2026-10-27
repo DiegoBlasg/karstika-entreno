@@ -90,6 +90,7 @@ interface Evento {
 interface EstadoZona {
   nivel: Semaforo
   porPersistencia: boolean   // el rojo vino de P-45
+  levantado?: number         // último día en que se levantó un rojo (alta o 7 días sin dolor)
 }
 
 // Semáforo de una zona (P-43 a P-46) recorriendo los eventos en orden. Un alta posterior al último rojo lo levanta;
@@ -101,20 +102,35 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
   let ambarDesde: number | undefined
   let ambarRegistros = 0
   let ultimo: Semaforo = 'verde'
+  let levantado: number | undefined
+  let verdeDesde: number | undefined   // primer dato sin dolor tras un rojo por persistencia
   const rojo = (dia: number, persistencia: boolean): void => {
     ultimoRojo = dia
     porPersistencia = persistencia
     ambarDesde = undefined
     ambarRegistros = 0
+    verdeDesde = undefined
   }
   const persistente = (dia: number): boolean => ultimo === 'ambar' && ambarDesde !== undefined && dia - ambarDesde > diasAmbarMax
+  // P-46: un rojo que vino de un ámbar persistente se levanta solo tras 7 días seguidos con dolor 0-1.
+  const sinDolor = VALORES['P-46'].diasSinDolorTrasPersistencia
+  const levantarSiSinDolor = (dia: number): void => {
+    if (ultimoRojo !== undefined && porPersistencia && verdeDesde !== undefined && dia - verdeDesde >= sinDolor) {
+      levantado = verdeDesde + sinDolor
+      ultimoRojo = undefined
+      porPersistencia = false
+      verdeDesde = undefined
+    }
+  }
   for (const e of eventos) {
+    levantarSiSinDolor(e.dia)
     if (e.fuente === 'alta') {
       if (e.molestias[0]?.zona !== zona) continue
       // Si el ámbar ya pasa a rojo justo el día del alta, ese rojo es del mismo día y el alta no lo levanta (hace
       // falta una posterior). Decisión conservadora, coherente con la regla general del alta.
       if (persistente(e.dia)) rojo(ambarDesde! + diasAmbarMax + 1, true)
       if (ultimoRojo !== undefined && e.dia > ultimoRojo) {
+        levantado = e.dia
         ultimoRojo = undefined
         porPersistencia = false
         if (ultimo === 'rojo') ultimo = 'verde'
@@ -134,11 +150,15 @@ function semaforoZona(zona: Zona, eventos: readonly Evento[], hoy: number): Esta
     } else {
       ambarDesde = undefined
       ambarRegistros = 0
+      if (ultimoRojo !== undefined && porPersistencia) verdeDesde ??= e.dia
     }
+    if (nivel !== 'verde') verdeDesde = undefined
   }
   if (persistente(hoy)) rojo(ambarDesde! + diasAmbarMax + 1, true)
-  if (ultimoRojo !== undefined) return { nivel: 'rojo', porPersistencia }
-  return { nivel: ultimo, porPersistencia: false }
+  levantarSiSinDolor(hoy)
+  const extra = levantado !== undefined ? { levantado } : {}
+  if (ultimoRojo !== undefined) return { nivel: 'rojo', porPersistencia, ...extra }
+  return { nivel: ultimo, porPersistencia: false, ...extra }
 }
 
 export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha: string): EstadoAtleta {
@@ -222,12 +242,18 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
     const dentro = diaNumero(grupo.at(-1)!.fecha) - diaNumero(grupo[0]!.fecha) <= ventanaDias - 1
     if (dentro && grupo.every(chequeoBajo)) disparos.push({ desde: diaNumero(grupo.at(-1)!.fecha), motivo: 'bienestar' })
   }
+  const descargasAdelantadas = [...disparos]
+    .sort((a, b) => a.desde - b.desde)
+    .map((d) => ({ desde: fechaDesdeDia(d.desde), hasta: fechaDesdeDia(d.desde + duracion - 1), motivo: d.motivo }))
   const activo = disparos
     .filter((d) => hoy >= d.desde && hoy <= d.desde + duracion - 1)
     .sort((a, b) => b.desde - a.desde || (a.motivo < b.motivo ? 1 : -1))[0]
   const descargaAdelantada = activo
     ? { desde: fechaDesdeDia(activo.desde), hasta: fechaDesdeDia(activo.desde + duracion - 1), motivo: activo.motivo }
     : undefined
+
+  const levantados = (['dedos', 'muneca', 'codo'] as const).flatMap((z) => (estadosZona[z].levantado !== undefined ? [estadosZona[z].levantado!] : []))
+  const retestDesde = levantados.length > 0 ? fechaDesdeDia(Math.max(...levantados)) : undefined
 
   const chequeoHoy = chequeos.find((c) => diaNumero(c.fecha) === hoy)
   const chequeoBajoHoy = chequeoHoy !== undefined && chequeoBajo(chequeoHoy)
@@ -249,6 +275,16 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
             ? 'Con un rojo se bloquea la carga de la zona hasta que un fisioterapeuta te dé el alta; consulta con uno.'
             : 'En ámbar no sube la carga y se quita la intensidad que carga la zona; si se repite en 2 sesiones o dura más de 7 días, pasa a rojo.'
         } Los umbrales y lo que bloquea cada zona son decisión de diseño, en la dirección segura. El motor no diagnostica.`,
+      ),
+    )
+  }
+  const testDespues = historial.some((h) => h.tipo === 'evaluacion-dedos' && retestDesde !== undefined && h.fecha >= retestDesde && diaNumero(h.fecha) <= hoy)
+  if (retestDesde && !testDespues) {
+    explicaciones.push(
+      explicar(
+        'autorregulacion.retest',
+        ['P-46'],
+        `Desde el ${retestDesde} se levantó un rojo en dedos, muñeca o codo: los tests de dedos anteriores ya no valen para fijar la carga. Repite el test antes de volver a cargar por porcentaje; mientras, la multipresa va por esfuerzo percibido.`,
       ),
     )
   }
@@ -288,6 +324,8 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
     zonas,
     sinSubida: frenoRpe || hayAmbar,
     ...(descargaAdelantada ? { descargaAdelantada } : {}),
+    descargasAdelantadas,
+    ...(retestDesde ? { retestDesde } : {}),
     chequeoBajoHoy,
     sesionesNoValidas,
     sesionesSinRegistro,

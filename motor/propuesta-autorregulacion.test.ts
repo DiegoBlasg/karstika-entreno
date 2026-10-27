@@ -241,3 +241,14 @@ describe('arreglos de la revisión', () => {
     expect(planes(r).find((x) => x.sesion.tipo === 'hombro')!.sesion.detalle?.conCarga).toBe(false)
   })
 })
+
+describe('test caducado tras un rojo (P-46)', () => {
+  it('con un rojo levantado, el test anterior no fija la carga: la multipresa va por esfuerzo', () => {
+    const viejo = ses('v', '2026-10-20', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 })
+    const seguimiento = seg({ registros: [reg(viejo, 4, [{ zona: 'dedos', dolor: 5 }])], altas: [{ zona: 'dedos', fecha: '2026-11-05' }] })
+    const r = proponerSesion(pet('2026-11-10', CASA, { historial: [viejo], seguimiento }))
+    const plan = planes(r).find((x) => x.sesion.tipo === 'multipresa-resistencia')!
+    expect(plan.bloques.find((b) => b.nombre.startsWith('Bloque'))!.ejercicios[0]!.cargaKg).toBeUndefined()
+    expect(r.estado?.retestDesde).toBe('2026-11-05')
+  })
+})

@@ -13,6 +13,7 @@ export interface Fase {
   prohibidos: TipoSesion[]
   descarga?: boolean                              // semana de descarga (P-47, P-48): mitad de volumen, nada al límite
   reevaluar?: boolean                             // última semana de fase: toca repetir los tests (P-26)
+  descargaSustituida?: boolean                    // la descarga programada de esta semana la cubrió una adelantada (P-50)
 }
 
 export interface EvaluacionDedos {

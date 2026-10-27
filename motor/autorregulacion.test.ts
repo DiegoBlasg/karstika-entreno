@@ -246,3 +246,47 @@ describe('validación del seguimiento', () => {
     expect(datos).toEqual(antes)
   })
 })
+
+describe('salir de un rojo (P-46, decisión del usuario)', () => {
+  const persistente = (diasVerde: number[]) => {
+    const [a, b] = [suave('a', hace(20)), suave('b', hace(18))]
+    return estadoAtleta(
+      [a, b],
+      seg({ registros: [reg(a, 4, [dedos(2)]), reg(b, 4, [dedos(2)])], chequeos: diasVerde.map((n) => chq(hace(n), 4)) }),
+      HOY,
+    )
+  }
+  it('un rojo por persistencia se levanta tras 7 días seguidos sin dolor, contados desde el primer dato sin dolor', () => {
+    expect(persistente([7]).zonas.dedos).toBe('verde')
+    expect(persistente([6]).zonas.dedos).toBe('rojo')
+    expect(persistente([]).zonas.dedos).toBe('rojo')
+  })
+  it('un dato con dolor en medio vuelve a empezar la cuenta', () => {
+    const [a, b] = [suave('a', hace(20)), suave('b', hace(18))]
+    const e = estadoAtleta(
+      [a, b],
+      seg({ registros: [reg(a, 4, [dedos(2)]), reg(b, 4, [dedos(2)])], chequeos: [chq(hace(10), 4), chq(hace(5), 4, [dedos(2)]), chq(hace(4), 4)] }),
+      HOY,
+    )
+    expect(e.zonas.dedos).toBe('rojo')
+  })
+  it('un rojo por dolor 4 o más no se levanta solo, aunque pasen semanas sin dolor', () => {
+    const a = suave('a', hace(30))
+    expect(estadoAtleta([a], seg({ registros: [reg(a, 4, [dedos(5)])], chequeos: [chq(hace(25), 4)] }), HOY).zonas.dedos).toBe('rojo')
+  })
+  it('tras levantar un rojo en dedos se pide repetir el test, hasta que se hace', () => {
+    const e = persistente([7])
+    expect(e.retestDesde).toBe(hace(0))
+    expect(e.explicaciones.map((x) => x.regla)).toContain('autorregulacion.retest')
+    const a = suave('a', hace(30))
+    const conAlta = estadoAtleta([a], seg({ registros: [reg(a, 4, [dedos(5)])], altas: [{ zona: 'dedos', fecha: hace(10) }] }), HOY)
+    expect(conAlta.retestDesde).toBe(hace(10))
+    const test = ses('t', hace(3), 18, { tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 45 })
+    const despues = estadoAtleta([a, test], seg({ registros: [reg(a, 4, [dedos(5)])], altas: [{ zona: 'dedos', fecha: hace(10) }] }), HOY)
+    expect(despues.explicaciones.map((x) => x.regla)).not.toContain('autorregulacion.retest')
+  })
+  it('un rojo en «otra» no pide repetir el test de dedos', () => {
+    const a = suave('a', hace(30))
+    expect(estadoAtleta([a], seg({ registros: [reg(a, 4, [{ zona: 'otra', dolor: 5 }])], altas: [{ zona: 'otra', fecha: hace(10) }] }), HOY).retestDesde).toBeUndefined()
+  })
+})

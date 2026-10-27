@@ -195,3 +195,24 @@ Interfaz y persistencia (subproyecto 3). `Perfil.lesiones` sigue como texto info
 - **Consejos**: entre los no de seguridad, primero el que hace más que no ves (rotación real); la proteína se da
   también en gramos con el peso del perfil (P-57).
 
+### Tras las revisiones (dos revisores Opus independientes)
+
+- **Freno P-11 aplicado**: con `sinSubida`, la multipresa no pasa del escalón de la última; una sola sesión mala
+  repite el escalón, no lo baja. Por encima también si el RPE pasa del máximo; una sesión con menos del 90 % de los
+  minutos previstos no está completada y no cuenta para subir (P-63).
+- **P-46 encadenado**: cada episodio de molestia en dedos o muñeca (`molestiasP46`, con fecha y hora) baja un
+  escalón desde donde estabas en ese momento.
+- **Orden del día**: el alta y el chequeo van al principio del día (se hacen al pedir la sesión) y los registros
+  después, por hora. Antes, un chequeo sin dolor borraba el dolor apuntado después de la sesión.
+- **Sesiones de descarga**: la propuesta lleva `descarga: true` y esas sesiones no cuentan para subir la
+  multipresa. Esto cambia también el modo sin seguimiento (2a-2c) si el historial guarda la marca: es intencionado
+  (con media sesión no se gana un escalón); los historiales antiguos no la tienen.
+- **Codo en ámbar**: el trabajo de hombro va sin carga (P-64). Fuera de casa, el hombro no es la principal si hay
+  escalada posible. Sin dominadas en las alternativas de un día de descanso recomendado.
+- **Decisiones del usuario (2026-10-27)**: un rojo que vino de un ámbar persistente se levanta solo tras 7 días
+  seguidos sin dolor; tras levantar un rojo en dedos, muñeca o codo, los tests anteriores no valen y se pide
+  repetirlo (P-46, `retestDesde`). La descarga adelantada sustituye a la programada si esta empieza en las 2 semanas
+  siguientes (`faseEnFecha(t, fecha, { descargasAdelantadas })`, P-50). No se desplazan las descargas siguientes.
+- Sin cambios (decisión de alcance): consejos de calentamiento y pegues siguen rotando; el test puede caer en el
+  día con amigos; en roca con ámbar no se propone qué hacer con el resto del día.
+

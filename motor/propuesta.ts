@@ -198,10 +198,13 @@ function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComp
           : `Sustituye a ${c.tipoPlan}, que hoy no cumple una regla de seguridad.`,
     )
   }
+  if (p.fase.descargaSustituida) {
+    partes.push('Esta semana tocaba descarga, pero ya hiciste una adelantada hace poco: se sustituye (P-50).')
+  }
   if (anadidos.length > 0) {
     partes.push(`Se completa con ${anadidos.join(', ')} (cupos pendientes de la fase y volumen suave para aprovechar el tiempo).`)
   }
-  return explicar('generador.eleccion', ['P-30'], partes.join(' '))
+  return explicar('generador.eleccion', p.fase.descargaSustituida ? ['P-30', 'P-50'] : ['P-30'], partes.join(' '))
 }
 
 // Primer día a partir de mañana en que el propio generador, con el mismo contexto, historial y fase, propondría
@@ -227,7 +230,9 @@ function testReciente(p: Peticion): boolean {
   const maximo = VALORES['P-08'].semanasMaximasSinReevaluar * 7
   const hace = [
     ...(p.evaluacion && evaluacionVigente(p.evaluacion, p.fecha) ? [d - diaNumero(p.evaluacion.fecha)] : []),
-    ...p.historial.filter((s) => s.tipo === 'evaluacion-dedos').map((s) => d - diaNumero(s.fecha)),
+    ...p.historial
+      .filter((s) => s.tipo === 'evaluacion-dedos' && (p.estado?.retestDesde === undefined || s.fecha >= p.estado.retestDesde))
+      .map((s) => d - diaNumero(s.fecha)),
   ].filter((x) => x >= 0 && x <= maximo)
   if (hace.length === 0) return false
   return !(p.fase.reevaluar && Math.min(...hace) >= DIAS_MIN_REEVALUAR)
@@ -255,7 +260,11 @@ function proponer(recibida: Peticion, conVentana: boolean): Propuesta {
   const estado = recibida.seguimiento ? estadoAtleta(recibida.historial, recibida.seguimiento, recibida.fecha) : undefined
   const r = estado ? restriccionesDe(estado) : undefined
   const fase = estado?.descargaAdelantada && !recibida.fase.descarga ? descargar(recibida.fase) : recibida.fase
-  const p: Peticion = { ...recibida, fase, ...(estado ? { estado } : {}) }
+  // P-46: tras levantar un rojo en dedos, muñeca o codo, un test anterior ya no sirve para fijar la carga.
+  const retest = estado?.retestDesde
+  const testCaducado = retest !== undefined && recibida.evaluacion !== undefined && recibida.evaluacion.fecha < retest
+  const { evaluacion: _evaluacion, ...sinEvaluacion } = recibida
+  const p: Peticion = { ...(testCaducado ? sinEvaluacion : recibida), fase, ...(estado ? { estado } : {}) }
   const posibles = new Set(tiposPosibles(p.contexto))
   const vigente = testReciente(p)
   const tipos = p.fase.prioridad.filter(

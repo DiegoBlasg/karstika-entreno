@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  diaNumero, elegirConsejos, esCargaAlta, faseEnFecha, fechaDesdeDia, objetivoRpe, planificarTemporada, proponerSesion,
+  diaNumero, elegirConsejos, esCargaAlta, estadoAtleta, faseEnFecha, fechaDesdeDia, objetivoRpe, planificarTemporada, proponerSesion,
   validarContexto, validarSesion,
 } from './index'
 import type { Chequeo, Contexto, EvaluacionDedos, Molestia, Propuesta, RegistroSesion, Sesion, SesionPlan } from './index'
@@ -37,9 +37,12 @@ for (const s of semanas) {
     const fecha = fechaDesdeDia(diaNumero(s.lunes) + x.off)
     const molestiaHoy: Molestia[] = fecha === SABADO_MOLESTIA ? [{ zona: 'dedos', dolor: 2 }] : []
     chequeos.push({ fecha, sueno: BAJOS.has(fecha) ? 2 : 4, fatiga: BAJOS.has(fecha) ? 2 : 4, ganas: BAJOS.has(fecha) ? 2 : 4, molestias: molestiaHoy })
+    // Como lo hará la app: las descargas adelantadas que ya hubo entran en faseEnFecha (P-50).
+    const seguimiento = { registros: [...registros], chequeos: [...chequeos], altas: [] }
+    const { descargasAdelantadas } = estadoAtleta(historial, seguimiento, fecha)
     const peticion = {
-      fecha, horaInicio: x.hora, contexto: x.ctx, perfil, historial: [...historial], fase: faseEnFecha(temporada, fecha),
-      seguimiento: { registros: [...registros], chequeos: [...chequeos], altas: [] },
+      fecha, horaInicio: x.hora, contexto: x.ctx, perfil, historial: [...historial], fase: faseEnFecha(temporada, fecha, { descargasAdelantadas }),
+      seguimiento,
       consejosMostrados: [...mostrados],
       ...(evaluacion ? { evaluacion } : {}),
     }
