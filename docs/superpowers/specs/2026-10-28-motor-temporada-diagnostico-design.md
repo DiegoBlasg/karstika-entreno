@@ -141,7 +141,7 @@ final de cada fase (el primero tras 4 semanas y 6 sesiones de base, ninguno en e
   explicación aclara que la carga viene de P-06.
 - El mínimo de 6 sesiones de base no cuenta los `descanso`. Las fases constantes están congeladas.
 
-## Parte 2 implementada (2026-10-29)
+## Parte 2 implementada
 
 - `EvaluacionDedos` con `resistenciaS` (P-24, 1-600 s) y `tecnica` (P-27, entero 1-7), validados.
 - El test de dedos, con 45 min o más, añade 10 min de descanso y el test intermitente 7 s : 3 s al 60 % hasta el
