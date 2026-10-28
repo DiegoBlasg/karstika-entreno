@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { construirSesion, FASES } from '../../motor'
-import { pasosDeSesion } from './pasos'
+import { pasosDeSesion, type Paso } from './pasos'
 import { intentoAbierto, lastre73, leerDatosTest, mejorLastre, textoLastre } from './test'
 
 describe('mejorLastre', () => {
@@ -9,6 +9,10 @@ describe('mejorLastre', () => {
     expect(mejorLastre([{ lastreKg: -5, completado: true }, null])).toBe(-5)
     expect(mejorLastre([{ lastreKg: 15, completado: false }, null])).toBeNull()
     expect(mejorLastre([])).toBeNull()
+  })
+  it('un intento sin decidir (ni Sí ni No) no cuenta, aunque tenga más carga', () => {
+    expect(mejorLastre([{ lastreKg: 10, completado: true }, { lastreKg: 20, completado: null }])).toBe(10)
+    expect(mejorLastre([{ lastreKg: 20, completado: null }])).toBeNull()
   })
 })
 
@@ -42,12 +46,28 @@ describe('intentoAbierto', () => {
       null, null, 1, null, 2, null, 3, 3, null, null,
     ])
   })
+  it('sin 7:3, al terminar se abre el último intento (el último paso es su colgado)', () => {
+    const cortos: Paso[] = [
+      { tipo: 'preparate', bloque: 'Test', segundos: 10, titulo: 'Suspensión máxima' },
+      { tipo: 'colgado', bloque: 'Test', segundos: 10, titulo: 'Suspensión máxima', intento: { n: 1, de: 2 } },
+      { tipo: 'descanso', bloque: 'Test', segundos: 180, titulo: 'Descanso entre series' },
+      { tipo: 'colgado', bloque: 'Test', segundos: 10, titulo: 'Suspensión máxima', intento: { n: 2, de: 2 } },
+    ]
+    expect(intentoAbierto(cortos, 3)).toBeNull()
+    expect(intentoAbierto(cortos, cortos.length)).toEqual({ n: 2, de: 2 })
+  })
+  it('con 7:3, al terminar no se abre ningún intento', () => {
+    expect(intentoAbierto(pasos, pasos.length)).toBeNull()
+  })
 })
 
 describe('leerDatosTest', () => {
   it('acepta lo bien formado y descarta lo demás', () => {
     const ok = { pesoKg: 72, intentos: [{ lastreKg: 10, completado: true }, null] }
     expect(leerDatosTest(JSON.parse(JSON.stringify(ok)), 3)).toEqual(ok)
+    const sinDecidir = { pesoKg: 72, intentos: [{ lastreKg: 10, completado: null }] }
+    expect(leerDatosTest(JSON.parse(JSON.stringify(sinDecidir)), 3)).toEqual(sinDecidir)
+    expect(leerDatosTest({ pesoKg: 72, intentos: [{ lastreKg: 10, completado: 'si' }] }, 3)).toBeNull()
     expect(leerDatosTest(null, 3)).toBeNull()
     expect(leerDatosTest({ pesoKg: 10, intentos: [] }, 3)).toBeNull()
     expect(leerDatosTest({ pesoKg: 72, intentos: [null, null, null, null] }, 3)).toBeNull()

@@ -125,12 +125,16 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
   await page.getByRole('button', { name: 'Empezar', exact: true }).click()
   await page.getByRole('button', { name: 'Saltar' }).click() // prepárate
   await page.getByRole('button', { name: 'Saltar' }).click() // intento 1
+  // Ya en el Prepárate del 7:3 (10 s): en pausa, para no depender de lo que se tarde en rellenar.
+  await page.getByRole('button', { name: 'Pausa' }).click()
+  await expect(page.getByText('En pausa')).toBeVisible()
   await page.getByLabel('Kilos').fill('10')
   await page.getByRole('button', { name: 'Sí', exact: true }).click()
   await expect(page.getByText('Mejor hasta ahora: +10 kg de lastre')).toBeVisible()
   // 60 % de (70 + 10) − 70 = −22 kg.
   await expect(page.getByText('Lastre para el 7:3: descarga de 22 kg')).toBeVisible()
-  await page.getByRole('button', { name: 'Saltar' }).click() // prepárate del 7:3
+  await page.getByRole('button', { name: 'Saltar' }).click() // prepárate del 7:3 (el 7:3 sigue en pausa)
+  await page.getByRole('button', { name: 'Seguir' }).click()
   await page.getByRole('button', { name: 'No puedo más' }).click()
   await expect(page.getByText('Resultado del test')).toBeVisible()
   await page.getByRole('button', { name: 'Guardar resultado' }).click()

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
@@ -66,8 +67,13 @@ function escribirTest(clave: string, t: DatosTest | null): void {
 
 const PESO = { min: 30, max: 200 } as const // los mismos rangos que guardarEvaluacion
 
-export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial }: {
-  plan: SesionPlan; pasos: Paso[]; molestiasChequeo: Molestia[]; hoy: string; pesoInicial: number
+const pesoValido = (texto: string): number | null => {
+  const v = Number(texto.replace(',', '.'))
+  return texto.trim() !== '' && Number.isFinite(v) && v >= PESO.min && v <= PESO.max ? v : null
+}
+
+export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy }: {
+  plan: SesionPlan; pasos: Paso[]; molestiasChequeo: Molestia[]; hoy: string; pesoInicial: number; evaluacionHoy: boolean
 }) {
   const router = useRouter()
   const clave = `cronometro:${plan.sesion.id}`
@@ -92,6 +98,10 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial }: 
   // Tras registrar no se vuelve a guardar nada.
   const registrado = useRef(false)
   const [hayRegistro, setHayRegistro] = useState(false)
+  // El resultado del test guardado desde aquí: 'en pantalla' mientras su formulario sigue montado (con el texto de
+  // guardado), 'antes' si después se ha vuelto a la sesión. Así no se ofrece guardar otra evaluación el mismo día.
+  const [resultadoTest, setResultadoTest] = useState<'no' | 'en pantalla' | 'antes'>('no')
+  const alGuardarResultado = useCallback(() => setResultadoTest('en pantalla'), [])
 
   // Lo guardado se lee tras montar (en el servidor no hay localStorage). Si la sesión ya estaba terminada, se vuelve
   // directamente al formulario de registro.
@@ -235,6 +245,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial }: 
   const volverALaSesion = (): void => {
     pitidos.desbloquear()
     reinicios.current += 1
+    setResultadoTest((r) => (r === 'en pantalla' ? 'antes' : r))
     setEstado((e) => reabrir(pasos, e))
   }
 
@@ -270,13 +281,14 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial }: 
               onChange={(e) => {
                 const texto = e.target.value
                 setPesoTexto(texto)
-                const v = Number(texto.replace(',', '.'))
-                if (texto.trim() !== '' && Number.isFinite(v) && v >= PESO.min && v <= PESO.max) {
-                  setTest((t) => ({ ...t, pesoKg: v }))
-                }
+                const v = pesoValido(texto)
+                if (v !== null) setTest((t) => ({ ...t, pesoKg: v }))
               }}
               className={CAMPO}
             />
+            {pesoValido(pesoTexto) === null && (
+              <span className="mt-1 block text-sm text-red-700">El peso tiene que estar entre 30 y 200 kg.</span>
+            )}
           </label>
         )}
         {guardado ? (
@@ -306,12 +318,32 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial }: 
   const mejor = esTest ? mejorLastre(test.intentos) : null
 
   if (estado.terminado || !paso) {
+    // Ya hay evaluación de hoy (de antes, o guardada aquí y luego se volvió a la sesión): no se ofrece otra.
+    const yaEvaluado = (evaluacionHoy || resultadoTest === 'antes') && resultadoTest !== 'en pantalla'
+    // Sin 7:3 la sesión acaba en el colgado del último intento: se apunta aquí.
+    const ultimo = esTest && !yaEvaluado && resultadoTest === 'no' ? intentoAbierto(pasos, pasos.length) : null
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Sesión terminada</h1>
+        {ultimo && (
+          <FormularioIntento
+            key={ultimo.n}
+            n={ultimo.n}
+            de={ultimo.de}
+            valor={test.intentos[ultimo.n - 1] ?? null}
+            alCambiar={(i) => apuntarIntento(ultimo.n, i)}
+          />
+        )}
         {esTest ? (
-          mejor !== null ? (
+          yaEvaluado ? (
+            <p className="rounded bg-sky-50 p-3 text-sm">
+              Ya tienes la evaluación de hoy guardada. Si quieres cambiarla, hazlo en <Link href="/evaluacion" className="underline">Evaluación</Link>.
+            </p>
+          ) : mejor !== null ? (
             <FormularioResultadoTest
+              // Con otro mejor intento o peso, el formulario se monta de nuevo con esos valores por defecto.
+              key={`${mejor}:${test.pesoKg}`}
+              alGuardar={alGuardarResultado}
               hoy={hoy}
               pesoKg={test.pesoKg}
               lastreKg={mejor}
@@ -378,7 +410,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial }: 
         />
       )}
       {mejor !== null && <p className="text-sm">Mejor hasta ahora: {textoLastre(mejor)}</p>}
-      {siguientePaso &&<p className="text-sm text-stone-500">Después: {siguientePaso.titulo}</p>}
+      {siguientePaso && <p className="text-sm text-stone-500">Después: {siguientePaso.titulo}</p>}
       {sinPantalla && (
         <p className="text-xs text-amber-700">
           Tu navegador no puede mantener la pantalla encendida: sube el tiempo de bloqueo automático del iPhone (Ajustes ›

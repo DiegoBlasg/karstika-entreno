@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
 import type { EstadoAccion } from '@/lib/estado'
@@ -8,10 +8,13 @@ import { guardarEvaluacion } from '../../evaluacion/acciones'
 
 // Guarda la evaluación de hoy con la misma acción (y las mismas validaciones) que la pantalla Evaluación.
 // El lastre es texto normal, no decimal, para que en iPhone se pueda escribir el signo menos al corregirlo.
-export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS }: {
-  hoy: string; pesoKg: number; lastreKg: number; resistenciaS: number | null
+export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS, alGuardar }: {
+  hoy: string; pesoKg: number; lastreKg: number; resistenciaS: number | null; alGuardar: () => void
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarEvaluacion, null)
+  useEffect(() => {
+    if (estado?.ok) alGuardar()
+  }, [estado, alGuardar])
   const fmt = (n: number): string => String(n).replace('.', ',')
   return (
     <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 rounded border border-sky-200 bg-sky-50 p-4">

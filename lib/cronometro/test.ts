@@ -4,7 +4,7 @@ import type { Paso } from './pasos'
 
 export interface Intento {
   lastreKg: number            // negativo = descarga
-  completado: boolean         // aguantó los 10 s
+  completado: boolean | null  // aguantó los 10 s; null = aún sin decidir (ni «Sí» ni «No»), no cuenta
 }
 
 export interface DatosTest {
@@ -16,7 +16,7 @@ const PESO = { min: 30, max: 200 } as const       // los mismos rangos que guard
 const LASTRE = { min: -100, max: 150 } as const
 
 export function mejorLastre(intentos: readonly (Intento | null)[]): number | null {
-  const completados = intentos.filter((i): i is Intento => i !== null && i.completado).map((i) => i.lastreKg)
+  const completados = intentos.filter((i): i is Intento => i !== null && i.completado === true).map((i) => i.lastreKg)
   return completados.length > 0 ? Math.max(...completados) : null
 }
 
@@ -39,7 +39,8 @@ export function textoLastre(kg: number): string {
 }
 
 // El intento cuyo formulario se muestra en el paso `indice`: el último intento ya hecho, hasta que empiece otro
-// colgado o el fallo.
+// colgado o el fallo. Con `indice === pasos.length` (sesión terminada) da el último intento si la sesión acaba en él
+// (test sin 7:3).
 export function intentoAbierto(pasos: readonly Paso[], indice: number): { n: number; de: number } | null {
   const actual = pasos[indice]
   if (actual?.tipo === 'colgado' || actual?.tipo === 'fallo') return null
@@ -65,7 +66,7 @@ export function leerDatosTest(x: unknown, nIntentos: number): DatosTest | null {
     }
     if (typeof i !== 'object') return null
     const { lastreKg, completado } = i as Record<string, unknown>
-    if (!enRango(lastreKg, LASTRE) || typeof completado !== 'boolean') return null
+    if (!enRango(lastreKg, LASTRE) || (completado !== null && typeof completado !== 'boolean')) return null
     intentos.push({ lastreKg, completado })
   }
   return { pesoKg: o.pesoKg, intentos }

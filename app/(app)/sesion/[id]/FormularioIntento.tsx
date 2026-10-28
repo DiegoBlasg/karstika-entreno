@@ -7,6 +7,7 @@ const fmt = (n: number): string => String(n).replace('.', ',')
 
 // Lo apuntado en un intento de fuerza máxima. El signo se elige con «Lastre / Descarga»: en iPhone el teclado decimal
 // no tiene signo menos. Se monta uno por intento (key = n), así que el texto y el signo locales empiezan de cero.
+// Escribir los kilos o cambiar el signo no decide nada: el intento solo cuenta tras pulsar «Sí» (y no tras «No»).
 export function FormularioIntento({ n, de, valor, alCambiar }: {
   n: number; de: number; valor: Intento | null; alCambiar: (i: Intento) => void
 }) {
@@ -21,7 +22,7 @@ export function FormularioIntento({ n, de, valor, alCambiar }: {
     const pedido = cambios.kg ?? kg
     const k = Math.min(pedido, tope)
     if (k < pedido) setTexto(fmt(k))
-    alCambiar({ lastreKg: d && k > 0 ? -k : k, completado: cambios.completado ?? valor?.completado ?? true })
+    alCambiar({ lastreKg: d && k > 0 ? -k : k, completado: cambios.completado ?? valor?.completado ?? null })
   }
   return (
     <fieldset className="space-y-2 rounded border border-stone-200 bg-white p-3">
