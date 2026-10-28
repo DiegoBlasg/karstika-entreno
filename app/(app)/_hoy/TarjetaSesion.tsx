@@ -1,73 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState, useEffect, useState } from 'react'
-import { TIPOS_SESION, type Molestia, type Sesion, type TipoSesion } from '@/motor'
-import { CamposMolestias } from '@/components/CamposMolestias'
+import { useActionState, useState } from 'react'
+import { TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
-import type { FilaIntento, FilaRegistro } from '@/lib/datos/filas'
+import type { FilaRegistro } from '@/lib/datos/filas'
 import { corregible, type Tarjeta } from '@/lib/datos/hoy'
 import type { EstadoAccion } from '@/lib/estado'
 import { fechaLarga } from '@/lib/fecha'
-import { MAX_INTENTOS, REGLETA_MM } from '@/lib/formulario'
+import { REGLETA_MM } from '@/lib/formulario'
 import {
-  AGARRES, ETIQUETA_RPE, MOTIVOS_CAIDA, NOMBRE_AGARRE, NOMBRE_MOTIVO, NOMBRE_TIPO, NOMBRE_ZONA, TIPOS_CON_INTENTOS, TIPOS_CON_REGLETA,
+  AGARRES, NOMBRE_AGARRE, NOMBRE_TIPO, NOMBRE_ZONA, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
-import { corregirRegistro, noLaHice, otraCosa, registrar } from './acciones'
+import { FormularioRegistro } from './FormularioRegistro'
+import { noLaHice, otraCosa } from './acciones'
 
 const hhmm = (h: number): string => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`
-
-// Registrar o, con `previo`, corregir lo ya registrado (precargado). Los campos no se vacían si la acción falla.
-function FormularioRegistro({
-  sesion, previo, iniciales, alTerminar,
-}: { sesion: Sesion; previo?: { registro: FilaRegistro; intentos: FilaIntento[] }; iniciales?: readonly Molestia[]; alTerminar?: () => void }) {
-  const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(previo ? corregirRegistro : registrar, null)
-  useEffect(() => {
-    if (estado?.ok) alTerminar?.()
-  }, [estado, alTerminar])
-  const intentoPrevio = (i: number): string => {
-    const p = previo?.intentos[i]
-    return p === undefined ? '' : p.encadenado ? 'encadenado' : (p.motivo_caida ?? '')
-  }
-  return (
-    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 border-t border-stone-100 pt-3">
-      <input type="hidden" name="sesion_id" value={sesion.id} />
-      <label className="block">
-        Esfuerzo (RPE 0-10)
-        <select name="rpe" defaultValue={previo ? String(previo.registro.rpe) : ''} required className={CAMPO}>
-          <option value="" disabled>Elige</option>
-          {ETIQUETA_RPE.map((t, n) => <option key={n} value={n}>{n} · {t}</option>)}
-        </select>
-      </label>
-      <label className="block">
-        Minutos reales
-        <input type="number" name="minutos" min={1} max={1440} defaultValue={previo?.registro.duracion_min ?? sesion.duracionMin} required className={CAMPO} />
-      </label>
-      <CamposMolestias iniciales={previo?.registro.molestias ?? iniciales} />
-      {TIPOS_CON_INTENTOS.includes(sesion.tipo) && (
-        <fieldset className="space-y-2">
-          <legend className="font-medium">Intentos al límite</legend>
-          {Array.from({ length: MAX_INTENTOS }, (_, i) => (
-            <label key={i} className="flex items-center gap-3 text-sm">
-              <span className="w-20">Intento {i + 1}</span>
-              <select name={`intento_${i}`} defaultValue={intentoPrevio(i)} className="flex-1 rounded border border-stone-300 px-2 py-1">
-                <option value="">—</option>
-                <option value="encadenado">Encadenado</option>
-                {MOTIVOS_CAIDA.map((m) => <option key={m} value={m}>{NOMBRE_MOTIVO[m]}</option>)}
-              </select>
-            </label>
-          ))}
-        </fieldset>
-      )}
-      <button className={BOTON} disabled={pendiente}>
-        {pendiente ? 'Guardando…' : previo ? 'Guardar la corrección' : 'Registrar'}
-      </button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
-    </form>
-  )
-}
 
 function BotonNoLaHice({ id }: { id: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(noLaHice, null)
@@ -177,6 +127,11 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
         <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
       ) : (
         <>
+          {fila.fecha === hoy && fila.propuesta && (
+            <Link href={`/sesion/${fila.id}`} className="inline-block rounded bg-emerald-700 px-3 py-2 text-sm font-medium text-white">
+              Empezar con cronómetro
+            </Link>
+          )}
           {pasada && !cambiando && <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} />}
           <div className="flex gap-4 text-sm">
             <BotonNoLaHice id={s.id} />
