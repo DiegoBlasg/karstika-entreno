@@ -5,7 +5,7 @@ import { CamposMolestias } from '@/components/CamposMolestias'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
 import { fechaLarga } from '@/lib/fecha'
-import { MINUTOS_DISPONIBLES } from '@/lib/formulario'
+import { MINUTOS_DISPONIBLES, type InicialEntrenar } from '@/lib/formulario'
 import { proponer, type EstadoProponer } from './acciones'
 import { ResultadoPropuesta } from './ResultadoPropuesta'
 
@@ -25,11 +25,11 @@ function Radio({ nombre, valor, texto, marcado = false }: { nombre: string; valo
 
 // Se envía sin vaciar los campos (enviarSinVaciar): tras proponer, el formulario conserva lo rellenado, así que volver
 // a preparar no sustituye el chequeo de hoy por uno sin molestias.
-export function FormularioEntrenar({ hoy, hora, inicioTemporada }: { hoy: string; hora: string; inicioTemporada: string }) {
+export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }: { hoy: string; hora: string; inicioTemporada: string; inicial?: InicialEntrenar }) {
   const [estado, accion, pendiente] = useActionState<EstadoProponer, FormData>(proponer, null)
   const antesDeTemporada = hoy < inicioTemporada
   const primerDia = antesDeTemporada ? inicioTemporada : hoy
-  const [dia, setDia] = useState(primerDia)
+  const [dia, setDia] = useState(inicial.fecha && inicial.fecha >= primerDia ? inicial.fecha : primerDia)
   const resultado = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (estado) resultado.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -44,20 +44,20 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada }: { hoy: string
       <form onSubmit={enviarSinVaciar(accion)} className="space-y-4">
         <div className="flex gap-3">
           <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} value={dia} onChange={(e) => setDia(e.target.value)} required className={CAMPO} /></label>
-          <label className="block w-32">Hora<input type="time" name="hora" defaultValue={hora} required className={CAMPO} /></label>
+          <label className="block w-32">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
         </div>
         <fieldset>
           <legend className="font-medium">¿Con quién?</legend>
-          <Radio nombre="compania" valor="con-gente" texto="Con gente" marcado />
-          <Radio nombre="compania" valor="solo" texto="Solo" />
+          <Radio nombre="compania" valor="con-gente" texto="Con gente" marcado={(inicial.compania ?? 'con-gente') === 'con-gente'} />
+          <Radio nombre="compania" valor="solo" texto="Solo" marcado={inicial.compania === 'solo'} />
         </fieldset>
         <fieldset>
           <legend className="font-medium">¿Dónde?</legend>
-          <Radio nombre="lugar" valor="rocodromo" texto="Rocódromo" marcado />
-          <Radio nombre="lugar" valor="roca" texto="Roca" />
-          <Radio nombre="lugar" valor="casa" texto="Casa" />
+          <Radio nombre="lugar" valor="rocodromo" texto="Rocódromo" marcado={(inicial.lugar ?? 'rocodromo') === 'rocodromo'} />
+          <Radio nombre="lugar" valor="roca" texto="Roca" marcado={inicial.lugar === 'roca'} />
+          <Radio nombre="lugar" valor="casa" texto="Casa" marcado={inicial.lugar === 'casa'} />
         </fieldset>
-        <label className="block">Minutos disponibles<input type="number" name="minutos" min={MINUTOS_DISPONIBLES.min} max={MINUTOS_DISPONIBLES.max} step={5} defaultValue={90} required className={CAMPO} /></label>
+        <label className="block">Minutos disponibles<input type="number" name="minutos" min={MINUTOS_DISPONIBLES.min} max={MINUTOS_DISPONIBLES.max} step={5} defaultValue={inicial.minutos ?? 90} required className={CAMPO} /></label>
         {dia === hoy && (
           <fieldset className="space-y-3">
             <legend className="font-medium">¿Cómo llegas hoy?</legend>
