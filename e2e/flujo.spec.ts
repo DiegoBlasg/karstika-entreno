@@ -66,3 +66,36 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
   await expect(page.getByText(/Aceptada/)).toBeVisible()
 })
+
+test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
+  const sql = await sqlPruebas()
+  const hoy = ahoraMadrid(new Date()).fecha
+  const id = '00000000-0000-4000-8000-00000000c001'
+  // A las 21:00, libre: la del primer test es a las 10:00 y dura 120 min.
+  const sesion = { id, tipo: 'tecnica', intensidad: 'suave', fecha: hoy, horaInicio: 21, duracionMin: 30 }
+  const explicacion = { regla: 'e2e.cronometro', parametros: [], evidencias: [], nivelMinimo: 'sinEvidencia', origen: 'diseno', motivo: 'e2e' }
+  const propuesta = {
+    sesion,
+    bloques: [{ nombre: 'Técnica', minutos: 30, ejercicios: [{ nombre: 'Pies precisos', cargaTexto: 'Suave' }], explicacion }],
+    explicaciones: [explicacion],
+  }
+  await sql`insert into sesiones (id, fecha, sesion, propuesta, origen)
+            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(propuesta)}::jsonb, 'propuesta')`
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByRole('link', { name: 'Empezar con cronómetro' }).click()
+  await expect(page).toHaveURL(new RegExp(`/sesion/${id}$`))
+  await page.getByRole('button', { name: 'Empezar', exact: true }).click()
+  await expect(page.getByText('Pies precisos · Suave')).toBeVisible()
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('button', { name: 'Terminar', exact: true }).click()
+  await expect(page.getByText('Sesión terminada')).toBeVisible()
+  await expect(page.getByLabel('Minutos reales')).toHaveValue('1')
+  await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('4')
+  await page.getByRole('button', { name: 'Registrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByText(/Hecha · RPE 4/)).toBeVisible()
+  // Lo guardado del cronómetro se borra al registrar.
+  expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}`)).toBeNull()
+})
