@@ -16,6 +16,14 @@ const plan = (tipo: TipoSesion, contexto: Contexto, fase = FASES.fuerza): Sesion
 const tipos = (ps: Paso[]) => ps.map((p) => p.tipo)
 
 describe('pasosDeSesion', () => {
+  it('los intentos del test llevan su número; las repeticiones de los repeaters, no', () => {
+    const ps = pasosDeSesion(plan('evaluacion-dedos', CASA))
+    expect(ps.filter((p) => p.tipo === 'colgado').map((p) => (p.tipo === 'colgado' ? p.intento : undefined))).toEqual([
+      { n: 1, de: 3 }, { n: 2, de: 3 }, { n: 3, de: 3 },
+    ])
+    const rep = pasosDeSesion(plan('multipresa-resistencia', CASA)).filter((p) => p.tipo === 'colgado')
+    expect(rep.every((p) => p.tipo === 'colgado' && p.intento === undefined)).toBe(true)
+  })
   it('repeaters: prepárate, colgado/descanso por repetición, sin descanso corto tras la última, descanso entre series', () => {
     const pl = plan('multipresa-resistencia', CASA)
     const ej = pl.bloques.flatMap((b) => b.ejercicios).find((e) => e.repeticiones !== undefined)!
