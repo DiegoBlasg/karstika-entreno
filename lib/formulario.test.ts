@@ -94,6 +94,10 @@ describe('formulario', () => {
 })
 
 describe('inicialEntrenar', () => {
+  it('reemplaza: solo un uuid', () => {
+    expect(inicialEntrenar({ reemplaza: '00000000-0000-4000-8000-000000000001' }).reemplaza).toBe('00000000-0000-4000-8000-000000000001')
+    expect(inicialEntrenar({ reemplaza: 'x; drop' }).reemplaza).toBeUndefined()
+  })
   it('toma los parámetros válidos', () => {
     expect(inicialEntrenar({ fecha: '2026-11-03', hora: '19:00', compania: 'con-gente', lugar: 'rocodromo', minutos: '120' })).toEqual({
       fecha: '2026-11-03', hora: '19:00', compania: 'con-gente', lugar: 'rocodromo', minutos: 120,

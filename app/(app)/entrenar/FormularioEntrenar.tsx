@@ -41,7 +41,13 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }:
           La temporada empieza el {fechaLarga(inicioTemporada)}. Puedes preparar sesiones desde ese día.
         </p>
       )}
+      {inicial.reemplaza && (
+        <p className="rounded bg-amber-50 p-3 text-sm">
+          Vas a cambiar la sesión de hoy a las {inicial.hora}: no se borrará hasta que aceptes la nueva.
+        </p>
+      )}
       <form onSubmit={enviarSinVaciar(accion)} className="space-y-4">
+        {inicial.reemplaza && <input type="hidden" name="reemplaza" value={inicial.reemplaza} />}
         <div className="flex gap-3">
           <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} value={dia} onChange={(e) => setDia(e.target.value)} required className={CAMPO} /></label>
           <label className="block w-32">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
@@ -86,7 +92,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }:
             )}
           </div>
         )}
-        {estado && 'prep' in estado && <ResultadoPropuesta entrada={estado.entrada} prep={estado.prep} />}
+        {estado && 'prep' in estado && <ResultadoPropuesta entrada={estado.entrada} prep={estado.prep} reemplaza={estado.reemplaza} />}
       </div>
     </div>
   )

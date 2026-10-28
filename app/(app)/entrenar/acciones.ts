@@ -2,17 +2,17 @@
 
 import { redirect } from 'next/navigation'
 import { validarSesion, type Consejo } from '@/motor'
-import { conChequeo, conSesion, filaSesionAceptada } from '@/lib/datos/cambios'
+import { conChequeo, conSesion, datosSinReemplazada, filaSesionAceptada } from '@/lib/datos/cambios'
 import type { FilaChequeo, FilaSesion } from '@/lib/datos/filas'
 import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { opcionElegida, prepararPropuesta, type EntradaPeticion, type Preparacion } from '@/lib/datos/peticion'
 import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
-import { contexto, entero, fecha, hora, leerEntradaPeticion, mensajeDe, molestias, texto } from '@/lib/formulario'
-import { guardarChequeo, insertarSesion, requerirDatos } from '@/lib/servidor/consultas'
+import { contexto, entero, fecha, hora, leerEntradaPeticion, mensajeDe, molestias, texto, textoOpcional } from '@/lib/formulario'
+import { guardarChequeo, insertarConsejos, insertarSesion, requerirDatos, sustituirSesion } from '@/lib/servidor/consultas'
 
-export type EstadoProponer = { error: string; detalle?: string } | { entrada: EntradaPeticion; prep: Preparacion } | null
+export type EstadoProponer = { error: string; detalle?: string } | { entrada: EntradaPeticion; prep: Preparacion; reemplaza?: string } | null
 
 export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<EstadoProponer> {
   const hoy = ahoraMadrid(new Date()).fecha
@@ -33,11 +33,20 @@ export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<E
   } catch (e) {
     return { error: mensajeDe(e) }
   }
+  const reemplaza = textoOpcional(fd, 'reemplaza')
   const { sql, datos } = await requerirDatos()
+  let base = datos
+  if (reemplaza) {
+    try {
+      base = datosSinReemplazada(datos, reemplaza, hoy)
+    } catch (e) {
+      return { error: mensajeDe(e) }
+    }
+  }
   let prep: Preparacion
   try {
     // El chequeo se valida con el resto de datos (dentro de prepararPropuesta) antes de guardarlo.
-    prep = prepararPropuesta(chequeo ? conChequeo(datos, chequeo) : datos, entrada)
+    prep = prepararPropuesta(chequeo ? conChequeo(base, chequeo) : base, entrada)
   } catch (e) {
     return { error: 'No se ha podido preparar la sesión.', detalle: mensajeDe(e) }
   }
@@ -49,7 +58,7 @@ export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<E
       return { error: `No se ha podido guardar el chequeo: ${mensajeDe(e)}` }
     }
   }
-  return { entrada, prep }
+  return { entrada, prep, ...(reemplaza ? { reemplaza } : {}) }
 }
 
 // Vuelve a ejecutar el motor con los datos actuales (no se fía de lo que manda el navegador) y guarda la opción
@@ -65,27 +74,38 @@ export async function aceptar(_previo: EstadoAccion, fd: FormData): Promise<Esta
   } catch {
     return { error: 'Petición no válida: vuelve a preparar la sesión.' }
   }
-  if (entrada.fecha < ahoraMadrid(new Date()).fecha) {
+  const hoy = ahoraMadrid(new Date()).fecha
+  if (entrada.fecha < hoy) {
     return { error: 'Solo puedes aceptar sesiones para hoy o para días futuros.' }
   }
+  const reemplaza = textoOpcional(fd, 'reemplaza')
   const { sql, datos } = await requerirDatos()
   let fila: FilaSesion
   let consejos: Consejo[]
   try {
-    const prep = prepararPropuesta(datos, entrada)
+    const base = reemplaza ? datosSinReemplazada(datos, reemplaza, hoy) : datos
+    const prep = prepararPropuesta(base, entrada)
     if (prep.tipo !== 'propuesta') return { error: prep.mensaje }
     const plan = opcionElegida(prep.propuesta, indice)
     if (!plan || plan.sesion.tipo !== tipo) return { error: 'La propuesta ha cambiado desde que la pediste: vuelve a prepararla.' }
     fila = filaSesionAceptada(plan, crypto.randomUUID())
-    const violaciones = validarSesion(fila.sesion, historialMotor(datos.sesiones), perfilMotor(datos.perfil))
+    const violaciones = validarSesion(fila.sesion, historialMotor(base.sesiones), perfilMotor(datos.perfil))
     if (violaciones.length > 0) return { error: `La sesión ya no es válida: ${violaciones.map((v) => v.mensaje).join(' ')}` }
-    validarDatos(conSesion(datos, fila))
+    validarDatos(conSesion(base, fila))
     consejos = prep.consejos
   } catch (e) {
     return { error: `No se ha podido aceptar la sesión: ${mensajeDe(e)}` }
   }
   try {
-    await insertarSesion(sql, fila, consejos.map((c) => ({ consejo_id: c.id, fecha: entrada.fecha })))
+    const filasConsejos = consejos.map((c) => ({ consejo_id: c.id, fecha: entrada.fecha }))
+    if (reemplaza) {
+      if (!(await sustituirSesion(sql, reemplaza, fila))) {
+        return { error: 'Esa sesión ya está registrada o ya no existe: no se ha cambiado nada.' }
+      }
+      await insertarConsejos(sql, filasConsejos)
+    } else {
+      await insertarSesion(sql, fila, filasConsejos)
+    }
   } catch (e) {
     return { error: `No se ha podido guardar la sesión: ${mensajeDe(e)}` }
   }
