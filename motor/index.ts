@@ -10,7 +10,7 @@ export {
   type Agarre, type Compania, type Contexto, type Intensidad, type Lugar,
   type Perfil, type Sesion, type TipoComplemento, type TipoSesion, type Violacion,
 } from './tipos'
-export { proponerSesion } from './propuesta'
+export { motivosNoEncaja, proponerSesion } from './propuesta'
 export { construirComplemento, construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
 export { FASE_BASE, FASE_FUERZA } from './fases'
 export { evaluacionVigente, fuerzaRelativa, lastreRepeaters } from './evaluacion'

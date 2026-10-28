@@ -6,10 +6,10 @@ import { TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
-import type { FilaRegistro } from '@/lib/datos/filas'
+import type { FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { corregible, type Tarjeta } from '@/lib/datos/hoy'
 import type { EstadoAccion } from '@/lib/estado'
-import { fechaLarga } from '@/lib/fecha'
+import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { REGLETA_MM } from '@/lib/formulario'
 import {
   AGARRES, NOMBRE_AGARRE, NOMBRE_TIPO, NOMBRE_ZONA, TIPOS_CON_REGLETA,
@@ -17,7 +17,12 @@ import {
 import { FormularioRegistro } from './FormularioRegistro'
 import { noLaHice, otraCosa } from './acciones'
 
-const hhmm = (h: number): string => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`
+// Hora decimal a HH:MM con dos dígitos (redondeando a minutos enteros, para que 9,9999 no dé «09:60»).
+const hhmm = (h: number): string => hhmmDeMinutos(Math.round(h * 60))
+
+// Entrenar con el mismo día, hora y minutos, para cambiar esta sesión por otra (no se borra hasta aceptar la nueva).
+const enlaceCambiar = (f: FilaSesion): string =>
+  `/entrenar?${new URLSearchParams({ fecha: f.fecha, hora: hhmm(f.sesion.horaInicio), minutos: String(f.sesion.duracionMin), reemplaza: f.id })}`
 
 function BotonNoLaHice({ id }: { id: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(noLaHice, null)
@@ -112,9 +117,18 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
   const s = fila.sesion
   const pasada = fila.fecha <= hoy
   const [cambiando, setCambiando] = useState(false)
+  const [terminando, setTerminando] = useState(false)
+  const cerrarRegistro = (): void => setTerminando(false)
   return (
     <article className={TARJETA}>
       {fila.fecha !== hoy && <p className="text-sm text-stone-500">{fechaLarga(fila.fecha)}</p>}
+      {tarjeta.noEncaja.length > 0 && (
+        <div className="space-y-1 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+          <p className="font-medium">Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:</p>
+          <ul className="list-disc pl-5">{tarjeta.noEncaja.map((m) => <li key={m}>{m}</li>)}</ul>
+          <Link href={enlaceCambiar(fila)} className="inline-block underline">Cambiarla por otra</Link>
+        </div>
+      )}
       {fila.propuesta ? (
         <PlanSesion plan={fila.propuesta} />
       ) : (
@@ -132,7 +146,15 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
               Empezar con cronómetro
             </Link>
           )}
-          {pasada && !cambiando && <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} />}
+          {pasada && !cambiando && !terminando && (
+            <button type="button" onClick={() => setTerminando(true)} className={BOTON}>Terminar</button>
+          )}
+          {pasada && !cambiando && terminando && (
+            <>
+              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} alTerminar={cerrarRegistro} />
+              <button type="button" onClick={cerrarRegistro} className="text-sm underline">Cancelar</button>
+            </>
+          )}
           <div className="flex gap-4 text-sm">
             <BotonNoLaHice id={s.id} />
             {pasada && (

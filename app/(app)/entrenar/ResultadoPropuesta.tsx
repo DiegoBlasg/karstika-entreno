@@ -12,7 +12,7 @@ import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { aceptar } from './acciones'
 
-function Opcion({ plan, indice, titulo, entrada }: { plan: SesionPlan; indice: number; titulo: string; entrada: EntradaPeticion }) {
+function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan; indice: number; titulo: string; entrada: EntradaPeticion; reemplaza?: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(aceptar, null)
   return (
     <section className={TARJETA}>
@@ -22,6 +22,7 @@ function Opcion({ plan, indice, titulo, entrada }: { plan: SesionPlan; indice: n
         <input type="hidden" name="entrada" value={JSON.stringify(entrada)} />
         <input type="hidden" name="indice" value={indice} />
         <input type="hidden" name="tipo" value={plan.sesion.tipo} />
+        {reemplaza && <input type="hidden" name="reemplaza" value={reemplaza} />}
         <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Aceptar esta sesión'}</button>
       </form>
       {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
@@ -29,7 +30,7 @@ function Opcion({ plan, indice, titulo, entrada }: { plan: SesionPlan; indice: n
   )
 }
 
-export function ResultadoPropuesta({ entrada, prep }: { entrada: EntradaPeticion; prep: Preparacion }) {
+export function ResultadoPropuesta({ entrada, prep, reemplaza }: { entrada: EntradaPeticion; prep: Preparacion; reemplaza?: string }) {
   if (prep.tipo === 'fuera-temporada') return <p className="rounded bg-amber-50 p-3">{prep.mensaje}</p>
   const { propuesta, consejos, fase } = prep
   const estado = propuesta.estado
@@ -65,7 +66,7 @@ export function ResultadoPropuesta({ entrada, prep }: { entrada: EntradaPeticion
       {opciones.length === 0 && !propuesta.descanso && (
         <p role="alert" className="rounded bg-red-50 p-3">El entrenador no encuentra ninguna sesión posible con este contexto.</p>
       )}
-      {opciones.map((o) => <Opcion key={o.indice} {...o} entrada={entrada} />)}
+      {opciones.map((o) => <Opcion key={o.indice} {...o} entrada={entrada} reemplaza={reemplaza} />)}
       {propuesta.semana && propuesta.semana.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-medium">Así queda tu semana</h2>

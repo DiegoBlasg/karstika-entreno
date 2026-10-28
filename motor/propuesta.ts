@@ -1,5 +1,5 @@
 import { estadoAtleta, restriccionesDe } from './autorregulacion'
-import type { Restricciones } from './autorregulacion-tipos'
+import type { EstadoAtleta, Restricciones } from './autorregulacion-tipos'
 import { tiposPosibles, validarContexto } from './contexto'
 import { evaluacionVigente, fuerzaRelativa } from './evaluacion'
 import { explicar, explicarContexto, type Explicacion } from './explicacion'
@@ -56,6 +56,21 @@ function bloqueadaPorEstado(s: Sesion, r: Restricciones | undefined): boolean {
   if (r.soloHombro) return s.tipo !== 'hombro'
   if (r.sinCargaAlta && esCargaAlta(s)) return true
   return r.sinLimite && AL_LIMITE.includes(s.tipo)
+}
+
+// Por qué una sesión ya aceptada no encajaría con el estado de hoy: la misma regla que `bloqueadaPorEstado` (P-65,
+// P-45) y además las dominadas incluidas cuando hoy no tocan (P-39). Vacía si encaja.
+export function motivosNoEncaja(s: Sesion, e: EstadoAtleta): string[] {
+  const r = restriccionesDe(e)
+  const out: string[] = []
+  if (r.soloDescanso) out.push('Tienes el hombro u otra zona en rojo: hoy toca descansar.')
+  else if (r.soloHombro && s.tipo !== 'hombro') out.push('Tienes dedos, muñeca o codo en rojo: hoy solo trabajo de hombro.')
+  if (r.sinCargaAlta && esCargaAlta(s)) {
+    out.push(e.chequeoBajoHoy ? 'Tu chequeo de hoy es bajo: hoy nada de carga alta.' : 'Tienes una zona de carga en ámbar: hoy nada de carga alta.')
+  }
+  if (r.sinLimite && AL_LIMITE.includes(s.tipo)) out.push('Tienes «otra zona» en ámbar: hoy nada al límite.')
+  if (r.sinDominadas && (s.incluye ?? []).includes('dominadas')) out.push('Hoy no tocan dominadas: sáltate ese complemento.')
+  return out
 }
 
 interface Valido extends Candidato {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { datosVacios, sesionFila, uuid } from './_fabrica'
 import { conAlta } from './cambios'
+import type { FilaSesion } from './filas'
 import { corregible, testsSinResultado, vistaHoy } from './hoy'
 
 describe('vistaHoy', () => {
@@ -70,5 +71,19 @@ describe('vistaHoy', () => {
     expect(testsSinResultado(d, '2026-12-10')).toEqual(['2026-12-01']) // la del 15-dic es futura
     expect(testsSinResultado(d, '2026-12-15')).toEqual(['2026-12-01', '2026-12-15'])
     expect(testsSinResultado(datosVacios(), '2026-12-15')).toEqual([])
+  })
+  it('noEncaja solo en las de hoy aceptadas sin registrar; pedirChequeo si hay una sin registrar y no hay chequeo', () => {
+    const aceptada = (n: number, fecha: string): FilaSesion => {
+      const f = sesionFila(uuid(n), fecha, { tipo: 'bloque-limite', intensidad: 'alta' })
+      return { ...f, origen: 'propuesta', propuesta: { sesion: f.sesion, bloques: [], explicaciones: [] } }
+    }
+    const bajo = { fecha: '2026-11-05', sueno: 1, fatiga: 1, ganas: 1, molestias: [] }
+    const d = datosVacios({ sesiones: [aceptada(1, '2026-11-05'), aceptada(2, '2026-11-06')], chequeos: [bajo] })
+    const v = vistaHoy(d, '2026-11-05')
+    expect(v.hoy[0]?.noEncaja).toEqual(['Tu chequeo de hoy es bajo: hoy nada de carga alta.'])
+    expect(v.proximas[0]?.noEncaja).toEqual([])
+    expect(v.pedirChequeo).toBe(false)
+    expect(vistaHoy(datosVacios({ sesiones: [aceptada(1, '2026-11-05')] }), '2026-11-05').pedirChequeo).toBe(true)
+    expect(vistaHoy(datosVacios(), '2026-11-05').pedirChequeo).toBe(false)
   })
 })

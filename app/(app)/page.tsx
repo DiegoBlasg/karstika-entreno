@@ -6,6 +6,8 @@ import { ahoraMadrid, fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonAlta } from './_hoy/BotonAlta'
+import { FormularioEntrenamientoLibre } from './_hoy/FormularioEntrenamientoLibre'
+import { TarjetaChequeo } from './_hoy/TarjetaChequeo'
 import { TarjetaSesion } from './_hoy/TarjetaSesion'
 
 export default async function PaginaHoy() {
@@ -18,6 +20,7 @@ export default async function PaginaHoy() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Hoy, {fechaLarga(hoy)}</h1>
+      {v.pedirChequeo && <TarjetaChequeo hoy={hoy} />}
       {proximo && (
         <p className="text-sm">
           Próximo hueco: {fechaLarga(proximo.fila.fecha)} {hhmmDeMinutos(proximo.fila.inicio_min)} ·{' '}
@@ -68,6 +71,7 @@ export default async function PaginaHoy() {
           {v.proximas.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} />)}
         </section>
       )}
+      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} />
     </div>
   )
 }

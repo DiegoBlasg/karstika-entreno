@@ -77,6 +77,11 @@ export async function insertarSesion(sql: Sql, f: FilaSesion, consejos: FilaCons
   ])
 }
 
+export async function insertarConsejos(sql: Sql, consejos: FilaConsejo[]): Promise<void> {
+  if (consejos.length === 0) return
+  await sql.transaction(consejos.map((c) => sql`insert into consejos_mostrados (consejo_id, fecha) values (${c.consejo_id}, ${c.fecha})`))
+}
+
 // Las guardas contra tocar una sesión registrada van en la propia sentencia (no solo en la foto leída antes), para que
 // un registro hecho entre medias en otra pestaña no se borre en cascada. Devuelven si se ha hecho el cambio.
 export async function borrarSesionBd(sql: Sql, id: string): Promise<boolean> {
@@ -101,6 +106,17 @@ export async function sustituirSesion(sql: Sql, idViejo: string, nueva: FilaSesi
 
 export async function insertarRegistro(sql: Sql, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
   await sql.transaction([
+    sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb)`,
+    ...intentos.map(
+      (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
+    ),
+  ])
+}
+
+// Un entrenamiento no planeado: la sesión, su registro y sus intentos en una transacción.
+export async function insertarSesionRegistrada(sql: Sql, f: FilaSesion, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
+  await sql.transaction([
+    consultaSesion(sql, f),
     sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb)`,
     ...intentos.map(
       (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,

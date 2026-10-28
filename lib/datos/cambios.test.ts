@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { validarSesion, type SesionPlan } from '../../motor'
 import { datosVacios, PERFIL, sesionFila, uuid } from './_fabrica'
 import { perfilMotor } from './mapeo'
-import { conAlta, conChequeo, conRegistro, conRegistroCorregido, conSesion, filaSesionAceptada, filaSesionLibre, sinSesion } from './cambios'
+import { conAlta, conChequeo, conRegistro, conRegistroCorregido, conSesion, filaSesionAceptada, datosSinReemplazada, filaSesionLibre, sinSesion } from './cambios'
 
 const plan: SesionPlan = {
   sesion: { id: 'propuesta-tecnica', tipo: 'tecnica', intensidad: 'suave', fecha: '2026-11-03', horaInicio: 19, duracionMin: 60 },
@@ -87,5 +87,22 @@ describe('cambios', () => {
     const r = conRegistro(d, registro(uuid(1)), [])
     const ajeno = { id: uuid(5), sesion_id: uuid(2), fecha: '2026-11-03', encadenado: true, motivo_caida: null }
     expect(() => conRegistroCorregido(r, registro(uuid(1)), [ajeno])).toThrow('Los intentos tienen que ser de la misma sesión.')
+  })
+})
+
+describe('datosSinReemplazada', () => {
+  const HOY = '2026-11-05'
+  it('quita la sesión de hoy sin registrar', () => {
+    const d = datosVacios({ sesiones: [sesionFila(uuid(1), HOY), sesionFila(uuid(2), HOY, { horaInicio: 9 })] })
+    expect(datosSinReemplazada(d, uuid(1), HOY).sesiones.map((s) => s.id)).toEqual([uuid(2)])
+  })
+  it('rechaza la que no existe, la de otro día y la registrada', () => {
+    const d = datosVacios({
+      sesiones: [sesionFila(uuid(1), HOY), sesionFila(uuid(2), '2026-11-06')],
+      registros: [{ sesion_id: uuid(1), rpe: 5, duracion_min: 60, molestias: [], registrado_en: 'x' }],
+    })
+    expect(() => datosSinReemplazada(d, uuid(9), HOY)).toThrow('La sesión que querías cambiar ya no existe.')
+    expect(() => datosSinReemplazada(d, uuid(2), HOY)).toThrow('Solo puedes cambiar sesiones de hoy.')
+    expect(() => datosSinReemplazada(d, uuid(1), HOY)).toThrow('Esa sesión ya está registrada: no se puede cambiar.')
   })
 })

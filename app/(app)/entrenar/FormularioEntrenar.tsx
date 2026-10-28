@@ -1,19 +1,13 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { CamposMolestias } from '@/components/CamposMolestias'
+import { CamposChequeo } from '@/components/CamposChequeo'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
 import { fechaLarga } from '@/lib/fecha'
-import { MINUTOS_DISPONIBLES, type InicialEntrenar } from '@/lib/formulario'
+import { MINUTOS_DISPONIBLES, type ChequeoInicial, type InicialEntrenar } from '@/lib/formulario'
 import { proponer, type EstadoProponer } from './acciones'
 import { ResultadoPropuesta } from './ResultadoPropuesta'
-
-const ESCALAS = [
-  { nombre: 'sueno', etiqueta: 'Sueño', bajo: 'muy mal', alto: 'muy bien' },
-  { nombre: 'fatiga', etiqueta: 'Fatiga', bajo: 'muy cansado', alto: 'nada cansado' },
-  { nombre: 'ganas', etiqueta: 'Ganas', bajo: 'ninguna', alto: 'muchas' },
-] as const
 
 function Radio({ nombre, valor, texto, marcado = false }: { nombre: string; valor: string; texto: string; marcado?: boolean }) {
   return (
@@ -23,9 +17,9 @@ function Radio({ nombre, valor, texto, marcado = false }: { nombre: string; valo
   )
 }
 
-// Se envía sin vaciar los campos (enviarSinVaciar): tras proponer, el formulario conserva lo rellenado, así que volver
-// a preparar no sustituye el chequeo de hoy por uno sin molestias.
-export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }: { hoy: string; hora: string; inicioTemporada: string; inicial?: InicialEntrenar }) {
+// Se envía sin vaciar los campos (enviarSinVaciar): tras proponer, el formulario conserva lo rellenado. Y si ya hay
+// chequeo de hoy guardado (`chequeoHoy`), los campos arrancan con él, así que preparar no lo pisa con 3/3/3 y sin molestias.
+export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, chequeoHoy }: { hoy: string; hora: string; inicioTemporada: string; inicial?: InicialEntrenar; chequeoHoy?: ChequeoInicial }) {
   const [estado, accion, pendiente] = useActionState<EstadoProponer, FormData>(proponer, null)
   const antesDeTemporada = hoy < inicioTemporada
   const primerDia = antesDeTemporada ? inicioTemporada : hoy
@@ -41,7 +35,13 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }:
           La temporada empieza el {fechaLarga(inicioTemporada)}. Puedes preparar sesiones desde ese día.
         </p>
       )}
+      {inicial.reemplaza && (
+        <p className="rounded bg-amber-50 p-3 text-sm">
+          Vas a cambiar la sesión de hoy a las {inicial.hora}: no se borrará hasta que aceptes la nueva.
+        </p>
+      )}
       <form onSubmit={enviarSinVaciar(accion)} className="space-y-4">
+        {inicial.reemplaza && <input type="hidden" name="reemplaza" value={inicial.reemplaza} />}
         <div className="flex gap-3">
           <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} value={dia} onChange={(e) => setDia(e.target.value)} required className={CAMPO} /></label>
           <label className="block w-32">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
@@ -61,15 +61,8 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }:
         {dia === hoy && (
           <fieldset className="space-y-3">
             <legend className="font-medium">¿Cómo llegas hoy?</legend>
-            {ESCALAS.map((e) => (
-              <label key={e.nombre} className="block">
-                {e.etiqueta} <span className="text-xs text-stone-500">(1 = {e.bajo}, 5 = {e.alto})</span>
-                <select name={e.nombre} defaultValue="3" className={CAMPO}>
-                  {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </label>
-            ))}
-            <CamposMolestias />
+            {chequeoHoy && <p className="text-sm text-stone-600">Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.</p>}
+            <CamposChequeo inicial={chequeoHoy} />
           </fieldset>
         )}
         <button className={BOTON} disabled={pendiente}>{pendiente ? 'Preparando…' : 'Preparar sesión'}</button>
@@ -86,7 +79,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }:
             )}
           </div>
         )}
-        {estado && 'prep' in estado && <ResultadoPropuesta entrada={estado.entrada} prep={estado.prep} />}
+        {estado && 'prep' in estado && <ResultadoPropuesta entrada={estado.entrada} prep={estado.prep} reemplaza={estado.reemplaza} />}
       </div>
     </div>
   )
