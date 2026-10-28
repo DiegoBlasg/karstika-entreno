@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
 import type {
-  DatosAtleta, FilaAlta, FilaChequeo, FilaConsejo, FilaEvaluacion, FilaIntento, FilaPerfil, FilaRegistro, FilaSesion, PerfilNuevo,
+  DatosAtleta, FilaAlta, FilaChequeo, FilaConsejo, FilaEvaluacion, FilaHueco, FilaIntento, FilaPerfil, FilaRegistro, FilaSesion, PerfilNuevo,
 } from '../datos/filas'
 import { bd, type Sql } from './bd'
 
 // Una sola transacción de lectura para tener una foto coherente. Fechas como texto 'AAAA-MM-DD'.
 export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
-  const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos] = await sql.transaction(
+  const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos, huecos] = await sql.transaction(
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
             objetivo_temporada::text as objetivo_temporada, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
@@ -17,6 +17,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
       sql`select id::text as id, zona, fecha::text as fecha from altas order by fecha, creada_en`,
       sql`select consejo_id, fecha::text as fecha from consejos_mostrados order by fecha`,
       sql`select id::text as id, sesion_id::text as sesion_id, fecha::text as fecha, encadenado, motivo_caida from intentos_limite order by fecha`,
+      sql`select id::text as id, fecha::text as fecha, inicio_min, compania, lugar, minutos from huecos order by fecha, inicio_min`,
     ],
     { readOnly: true },
   )
@@ -31,6 +32,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
     altas: altas as FilaAlta[],
     consejos: consejos as FilaConsejo[],
     intentos: intentos as FilaIntento[],
+    huecos: huecos as FilaHueco[],
   }
 }
 
@@ -120,4 +122,26 @@ export async function corregirRegistroBd(sql: Sql, r: FilaRegistro, intentos: Fi
 
 export async function insertarAlta(sql: Sql, a: Omit<FilaAlta, 'id'>): Promise<void> {
   await sql`insert into altas (zona, fecha) values (${a.zona}, ${a.fecha})`
+}
+
+// Una transacción con la tabla bloqueada frente a otras escrituras: los topes por semana y por día y el no solaparse
+// se comprueban en la propia sentencia, así dos envíos a la vez no se los saltan. Devuelve si se ha insertado.
+export async function insertarHueco(
+  sql: Sql, f: FilaHueco, lunes: string, topes: { semana: number; dia: number },
+): Promise<boolean> {
+  const [, filas] = await sql.transaction([
+    sql`lock table huecos in share row exclusive mode`,
+    sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos)
+      select ${f.id}::uuid, ${f.fecha}::date, ${f.inicio_min}::int, ${f.compania}::text, ${f.lugar}::text, ${f.minutos}::int
+      where (select count(*) from huecos where fecha between ${lunes}::date and ${lunes}::date + 6) < ${topes.semana}
+        and (select count(*) from huecos where fecha = ${f.fecha}::date) < ${topes.dia}
+        and not exists (select 1 from huecos where fecha = ${f.fecha}::date
+          and inicio_min < ${f.inicio_min + f.minutos}::int and ${f.inicio_min}::int < inicio_min + minutos)
+      returning id`,
+  ])
+  return (filas as unknown[]).length > 0
+}
+
+export async function borrarHuecoBd(sql: Sql, id: string): Promise<void> {
+  await sql`delete from huecos where id = ${id}`
 }

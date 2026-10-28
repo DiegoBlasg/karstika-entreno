@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  contexto, detalleRegleta, entero, ErrorFormulario, fecha, hora, intentos, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
+  contexto, detalleRegleta, entero, ErrorFormulario, fecha, hora, inicialEntrenar, intentos, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
 } from './formulario'
 
 const fd = (campos: Record<string, string>): FormData => {
@@ -90,5 +90,18 @@ describe('formulario', () => {
         expect(() => leerEntradaPeticion(con({}, { minutosDisponibles: m }))).toThrow('Minutos disponibles')
       }
     })
+  })
+})
+
+describe('inicialEntrenar', () => {
+  it('toma los parámetros válidos', () => {
+    expect(inicialEntrenar({ fecha: '2026-11-03', hora: '19:00', compania: 'con-gente', lugar: 'rocodromo', minutos: '120' })).toEqual({
+      fecha: '2026-11-03', hora: '19:00', compania: 'con-gente', lugar: 'rocodromo', minutos: 120,
+    })
+  })
+  it('ignora los que no valen, uno a uno', () => {
+    expect(inicialEntrenar({ fecha: '2026-02-30', hora: '25:00', compania: 'pareja', lugar: ['casa', 'roca'], minutos: '5' })).toEqual({})
+    expect(inicialEntrenar({ minutos: '90.5', lugar: 'casa' })).toEqual({ lugar: 'casa' })
+    expect(inicialEntrenar({})).toEqual({})
   })
 })

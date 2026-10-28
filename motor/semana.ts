@@ -13,7 +13,7 @@ import { diaNumero, fechaDesdeDia } from './tiempo'
 import type { Sesion, TipoSesion } from './tipos'
 
 const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
-const MAX_POR_DIA = 2
+export const MAX_POR_DIA = 2
 const franja = (h: Hueco): string => `el ${DIAS[desdeLunes(diaNumero(h.fecha))]} por la ${h.horaInicio < 14 ? 'mañana' : 'tarde'}`
 const inicioMin = (h: Hueco): number => diaNumero(h.fecha) * 1440 + Math.round(h.horaInicio * 60)
 

@@ -1,5 +1,5 @@
 // Filas tal como las devuelven las consultas de lib/servidor/consultas.ts (fechas como 'AAAA-MM-DD').
-import type { MotivoCaida, Molestia, Sesion, SesionPlan, Zona } from '../../motor'
+import type { Compania, Lugar, MotivoCaida, Molestia, Sesion, SesionPlan, Zona } from '../../motor'
 
 export interface FilaPerfil {
   peso_kg: number
@@ -65,6 +65,15 @@ export interface FilaIntento {
   motivo_caida: MotivoCaida | null
 }
 
+export interface FilaHueco {
+  id: string
+  fecha: string
+  inicio_min: number             // minutos desde las 00:00
+  compania: Compania
+  lugar: Lugar
+  minutos: number
+}
+
 export interface DatosAtleta {
   perfil: FilaPerfil
   evaluaciones: FilaEvaluacion[]
@@ -74,4 +83,5 @@ export interface DatosAtleta {
   altas: FilaAlta[]
   consejos: FilaConsejo[]
   intentos: FilaIntento[]
+  huecos: FilaHueco[]
 }

@@ -1,15 +1,15 @@
 'use client'
 
 import { useActionState } from 'react'
-import { ZONAS, type SesionPlan } from '@/motor'
+import { esCargaAlta, ZONAS, type SesionPlan } from '@/motor'
 import { AvisoMedico } from '@/components/AvisoMedico'
 import { BOTON, TARJETA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
 import { PorQue } from '@/components/PorQue'
 import type { EntradaPeticion, Preparacion } from '@/lib/datos/peticion'
 import type { EstadoAccion } from '@/lib/estado'
-import { fechaLarga } from '@/lib/fecha'
-import { NOMBRE_ZONA } from '@/lib/nombres'
+import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
+import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { aceptar } from './acciones'
 
 function Opcion({ plan, indice, titulo, entrada }: { plan: SesionPlan; indice: number; titulo: string; entrada: EntradaPeticion }) {
@@ -66,6 +66,20 @@ export function ResultadoPropuesta({ entrada, prep }: { entrada: EntradaPeticion
         <p role="alert" className="rounded bg-red-50 p-3">El entrenador no encuentra ninguna sesión posible con este contexto.</p>
       )}
       {opciones.map((o) => <Opcion key={o.indice} {...o} entrada={entrada} />)}
+      {propuesta.semana && propuesta.semana.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-medium">Así queda tu semana</h2>
+          <ul className="space-y-1 text-sm">
+            {propuesta.semana.map(({ hueco, sesion }) => (
+              <li key={`${hueco.fecha}-${hueco.horaInicio}`} className="rounded border border-stone-200 bg-white px-3 py-2">
+                {fechaLarga(hueco.fecha)} · {hhmmDeMinutos(Math.round(hueco.horaInicio * 60))} ·{' '}
+                {sesion ? `${nombreSesion(sesion)}${esCargaAlta(sesion) ? ' ★' : ''}` : 'Libre'}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-stone-500">★ = carga alta. El plan se recalcula cada vez que preparas una sesión.</p>
+        </section>
+      )}
       {consejos.length > 0 && (
         <section className="space-y-2">
           <h2 className="font-medium">Consejos</h2>

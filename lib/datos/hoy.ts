@@ -1,5 +1,5 @@
 // Lo que muestra la pantalla Hoy. Puro.
-import { estadoAtleta, ZONAS, type Zona } from '../../motor'
+import { estadoAtleta, ZONAS, type Molestia, type Zona } from '../../motor'
 import { sumarDias } from '../fecha'
 import type { DatosAtleta, FilaIntento, FilaRegistro, FilaSesion } from './filas'
 import { historialMotor, seguimientoMotor } from './mapeo'
@@ -8,6 +8,7 @@ export interface Tarjeta {
   fila: FilaSesion
   registro?: FilaRegistro
   intentos: FilaIntento[]
+  molestiasChequeo: Molestia[]   // las del chequeo de su día: el registro sale con ellas
 }
 
 export interface VistaHoy {
@@ -30,11 +31,13 @@ export function vistaHoy(d: DatosAtleta, fecha: string): VistaHoy {
   const registros = new Map(d.registros.map((r) => [r.sesion_id, r]))
   const historial = historialMotor(d.sesiones)
   const porId = new Map(d.sesiones.map((s) => [s.id, s]))
+  const chequeo = new Map(d.chequeos.map((c) => [c.fecha, c.molestias]))
   const tarjetas: Tarjeta[] = historial.map((s) => {
     const fila = porId.get(s.id)!
     const registro = registros.get(s.id)
     const intentos = d.intentos.filter((i) => i.sesion_id === s.id)
-    return registro ? { fila, registro, intentos } : { fila, intentos }
+    const molestiasChequeo = chequeo.get(s.fecha) ?? []
+    return registro ? { fila, registro, intentos, molestiasChequeo } : { fila, intentos, molestiasChequeo }
   })
   const estado = estadoAtleta(historial, seguimientoMotor(d), fecha)
   const desde = sumarDias(fecha, -DIAS_CORRECCION)

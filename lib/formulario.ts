@@ -72,6 +72,26 @@ export function contexto(fd: FormData): Contexto {
   }
 }
 
+// Valores iniciales del formulario de Entrenar desde la URL (botón «Preparar» de Mi semana). Lo que no vale se ignora.
+export interface InicialEntrenar { fecha?: string; hora?: string; compania?: Compania; lugar?: Lugar; minutos?: number }
+
+export function inicialEntrenar(p: Record<string, string | string[] | undefined>): InicialEntrenar {
+  const v = (k: string): string | undefined => (typeof p[k] === 'string' ? (p[k] as string) : undefined)
+  const out: InicialEntrenar = {}
+  const f = v('fecha')
+  if (f !== undefined && esFechaValida(f)) out.fecha = f
+  const h = v('hora')
+  const m = h === undefined ? null : /^(\d{2}):(\d{2})$/.exec(h)
+  if (h !== undefined && m && Number(m[1]) <= 23 && Number(m[2]) <= 59) out.hora = h
+  const c = v('compania')
+  if (c !== undefined && (COMPANIAS as readonly string[]).includes(c)) out.compania = c as Compania
+  const l = v('lugar')
+  if (l !== undefined && (LUGARES as readonly string[]).includes(l)) out.lugar = l as Lugar
+  const n = Number(v('minutos'))
+  if (Number.isInteger(n) && n >= MINUTOS_DISPONIBLES.min && n <= MINUTOS_DISPONIBLES.max) out.minutos = n
+  return out
+}
+
 // La petición que viaja oculta en el formulario de aceptar (JSON.parse ya hecho): se comprueba con las mismas reglas
 // que el formulario de Entrenar antes de pasarla al motor.
 export function leerEntradaPeticion(valor: unknown): EntradaPeticion {

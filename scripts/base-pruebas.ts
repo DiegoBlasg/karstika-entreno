@@ -12,5 +12,5 @@ export async function sqlPruebas() {
 }
 
 export async function vaciar(sql: Awaited<ReturnType<typeof sqlPruebas>>): Promise<void> {
-  await sql`truncate perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos_mostrados, intentos_limite`
+  await sql`truncate perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos_mostrados, intentos_limite, huecos`
 }
