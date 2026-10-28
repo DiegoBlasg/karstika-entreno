@@ -3,7 +3,7 @@ import type { Ejercicio, SesionPlan } from '../../motor'
 
 export type Paso = (
   | { tipo: 'preparate'; segundos: number; titulo: string; carga?: string }
-  | { tipo: 'colgado'; segundos: number; titulo: string; carga?: string }
+  | { tipo: 'colgado'; segundos: number; titulo: string; carga?: string; intento?: { n: number; de: number } }
   | { tipo: 'descanso'; segundos: number; titulo: string }
   | { tipo: 'manual'; titulo: string; carga?: string; notas?: string }
   | { tipo: 'bloque'; segundos: number; titulo: string; detalle: string[] }
@@ -62,7 +62,7 @@ function pasosDeEjercicio(bloque: string, e: Ejercicio): Paso[] {
         if (r < repeticiones && descansoS !== undefined) out.push({ tipo: 'descanso', bloque, segundos: descansoS, titulo: 'Descanso' })
       }
     } else {
-      out.push({ tipo: 'colgado', bloque, segundos: trabajoS, titulo: `Intento ${s} de ${series}`, carga })
+      out.push({ tipo: 'colgado', bloque, segundos: trabajoS, titulo: `Intento ${s} de ${series}`, carga, intento: { n: s, de: series } })
     }
     entreSeries(s)
   }

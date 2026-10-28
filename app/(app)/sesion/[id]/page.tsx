@@ -28,5 +28,8 @@ export default async function PaginaSesion({ params }: { params: Promise<{ id: s
     )
   }
   const molestias = datos.chequeos.find((c) => c.fecha === hoy)?.molestias ?? []
-  return <Cronometro plan={fila.propuesta} pasos={pasosDeSesion(fila.propuesta)} molestiasChequeo={molestias} />
+  // Peso del test: el de la última evaluación o, si no hay, el del perfil.
+  const pesoInicial = datos.evaluaciones.at(-1)?.peso_corporal_kg ?? datos.perfil.peso_kg
+  return <Cronometro plan={fila.propuesta} pasos={pasosDeSesion(fila.propuesta)} molestiasChequeo={molestias} hoy={hoy} pesoInicial={pesoInicial}
+    evaluacionHoy={datos.evaluaciones.some((e) => e.fecha === hoy)} />
 }

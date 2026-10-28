@@ -99,3 +99,49 @@ test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla',
   // Lo guardado del cronómetro se borra al registrar.
   expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}`)).toBeNull()
 })
+
+test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resultado', async ({ page }) => {
+  const sql = await sqlPruebas()
+  const hoy = ahoraMadrid(new Date()).fecha
+  const id = '00000000-0000-4000-8000-00000000c002'
+  // A las 22:00, libre: la del cronómetro es a las 21:00 y dura 30 min.
+  const sesion = { id, tipo: 'evaluacion-dedos', intensidad: 'alta', fecha: hoy, horaInicio: 22, duracionMin: 10 }
+  const explicacion = { regla: 'e2e.test', parametros: [], evidencias: [], nivelMinimo: 'C', origen: 'diseno', motivo: 'e2e' }
+  const propuesta = {
+    sesion,
+    bloques: [
+      { nombre: 'Test máx', minutos: 5, explicacion, ejercicios: [{ nombre: 'Suspensión máxima', series: 1, trabajoS: 10, descansoSeriesS: 180, cargaTexto: 'Máximo' }] },
+      { nombre: 'Resistencia', minutos: 5, explicacion, ejercicios: [{ nombre: '7:3', trabajoS: 7, descansoS: 3, cargaTexto: 'Al 60 %' }] },
+    ],
+    explicaciones: [explicacion],
+  }
+  await sql`insert into sesiones (id, fecha, sesion, propuesta, origen)
+            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(propuesta)}::jsonb, 'propuesta')`
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.goto(`/sesion/${id}`)
+  await page.getByLabel('Peso hoy (kg)').fill('70')
+  await page.getByRole('button', { name: 'Empezar', exact: true }).click()
+  await page.getByRole('button', { name: 'Saltar' }).click() // prepárate
+  await page.getByRole('button', { name: 'Saltar' }).click() // intento 1
+  // Ya en el Prepárate del 7:3 (10 s): en pausa, para no depender de lo que se tarde en rellenar.
+  await page.getByRole('button', { name: 'Pausa' }).click()
+  await expect(page.getByText('En pausa')).toBeVisible()
+  await page.getByLabel('Kilos').fill('10')
+  await page.getByRole('button', { name: 'Sí', exact: true }).click()
+  await expect(page.getByText('Mejor hasta ahora: +10 kg de lastre')).toBeVisible()
+  // 60 % de (70 + 10) − 70 = −22 kg.
+  await expect(page.getByText('Lastre para el 7:3: descarga de 22 kg')).toBeVisible()
+  await page.getByRole('button', { name: 'Saltar' }).click() // prepárate del 7:3 (el 7:3 sigue en pausa)
+  await page.getByRole('button', { name: 'Seguir' }).click()
+  await page.getByRole('button', { name: 'No puedo más' }).click()
+  await expect(page.getByText('Resultado del test')).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar resultado' }).click()
+  await expect(page.getByText('Evaluación guardada.')).toBeVisible()
+  await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('8')
+  await page.getByRole('button', { name: 'Registrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  // Lo apuntado del test se borra al registrar.
+  expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}:test`)).toBeNull()
+})
