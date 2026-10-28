@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Paso } from './pasos'
 import {
-  atras, empezar, ESTADO_INICIAL, faseFallo, leerGuardado, minutosReales, noPuedoMas, pausar, restanteS, siguiente, terminar,
-  tick, transcurridoMs,
+  atras, empezar, ESTADO_INICIAL, faseFallo, leerGuardado, minutosReales, noPuedoMas, pausar, reabrir, restanteS, siguiente,
+  terminar, tick, transcurridoMs,
 } from './reloj'
 
 const B = { bloque: 'b' }
@@ -78,5 +78,35 @@ describe('reloj', () => {
     expect(leerGuardado({ ...guardado, indice: 99 }, PASOS.length)).toBeNull()
     expect(leerGuardado({ ...guardado, totalMs: 'x' }, PASOS.length)).toBeNull()
     expect(leerGuardado({ ...guardado, enMarcha: true, desdeMs: T0 }, PASOS.length)).toMatchObject({ enMarcha: false, desdeMs: null })
+  })
+  it('lo guardado al final sin terminar se descarta; terminado a mitad vale', () => {
+    const base = { indice: PASOS.length, enMarcha: false, desdeMs: null, acumuladoMs: 0, totalMs: 1_000, colgadoFalloS: null }
+    expect(leerGuardado({ ...base, terminado: false }, PASOS.length)).toBeNull()
+    expect(leerGuardado({ ...base, terminado: true }, PASOS.length)).toMatchObject({ terminado: true })
+    expect(leerGuardado({ ...base, indice: 2, terminado: true }, PASOS.length)).toMatchObject({ indice: 2, terminado: true })
+  })
+  it('reabrir tras llegar al final por tiempo vuelve al último paso en pausa y conserva el tiempo', () => {
+    const cortos: Paso[] = [PASOS[0]!, PASOS[1]!]
+    const e = tick(cortos, empezar(ESTADO_INICIAL, T0), T0 + 30_000)
+    expect(e).toMatchObject({ terminado: true, indice: 2, totalMs: 17_000 })
+    expect(reabrir(cortos, e)).toEqual({
+      indice: 1, enMarcha: false, desdeMs: null, acumuladoMs: 0, totalMs: 17_000, colgadoFalloS: null, terminado: false,
+    })
+  })
+  it('reabrir tras «Terminar» a mitad vuelve a ese paso', () => {
+    const e = terminar(siguiente(PASOS, empezar(ESTADO_INICIAL, T0), T0 + 2_000), T0 + 5_000)
+    const r = reabrir(PASOS, e)
+    expect(r).toMatchObject({ indice: 1, terminado: false, enMarcha: false, desdeMs: null, acumuladoMs: 0, totalMs: 5_000 })
+  })
+  it('reabrir en un fallo borra los segundos colgado (se vuelven a medir); fuera de un fallo los conserva', () => {
+    const e = noPuedoMas(PASOS, { ...empezar(ESTADO_INICIAL, T0), indice: 4 }, T0 + 24_500)
+    expect(e.colgadoFalloS).toBe(18)
+    expect(reabrir(PASOS, e)).toMatchObject({ indice: 4, colgadoFalloS: null, terminado: false })
+    const m = terminar({ ...empezar(ESTADO_INICIAL, T0), indice: 3, colgadoFalloS: 9 }, T0 + 1_000)
+    expect(reabrir(PASOS, m)).toMatchObject({ indice: 3, colgadoFalloS: 9 })
+  })
+  it('reabrir no hace nada si no está terminado', () => {
+    const e = empezar(ESTADO_INICIAL, T0)
+    expect(reabrir(PASOS, e)).toBe(e)
   })
 })

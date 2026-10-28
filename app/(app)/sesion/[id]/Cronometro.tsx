@@ -7,8 +7,8 @@ import { BOTON } from '@/components/estilos'
 import type { Paso } from '@/lib/cronometro/pasos'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
 import {
-  atras, empezar, ESTADO_INICIAL, faseFallo, leerGuardado, minutosReales, noPuedoMas, pausar, restanteS, siguiente, terminar,
-  tick, transcurridoMs, type EstadoReloj,
+  atras, empezar, ESTADO_INICIAL, faseFallo, leerGuardado, minutosReales, noPuedoMas, pausar, reabrir, restanteS, siguiente,
+  terminar, tick, transcurridoMs, type EstadoReloj,
 } from '@/lib/cronometro/reloj'
 import { NOMBRE_TIPO } from '@/lib/nombres'
 import { FormularioRegistro } from '../../_hoy/FormularioRegistro'
@@ -52,11 +52,14 @@ export function Cronometro({ plan, pasos, molestiasChequeo }: { plan: SesionPlan
   const [empezado, setEmpezado] = useState(false)
   const [silencio, setSilencio] = useState(false)
   const [ahora, setAhora] = useState(() => Date.now())
+  // El navegador no da (o ha negado) el bloqueo de pantalla encendida.
+  const [sinPantalla, setSinPantalla] = useState(false)
   // Qué fase y qué pitido corto ya sonaron; `reinicios` distingue volver a empezar el mismo paso con «Atrás».
   const sonado = useRef({ fase: '', corto: '' })
   const reinicios = useRef(0)
   // Tras registrar no se vuelve a guardar nada.
   const registrado = useRef(false)
+  const [hayRegistro, setHayRegistro] = useState(false)
 
   // Lo guardado se lee tras montar (en el servidor no hay localStorage). Si la sesión ya estaba terminada, se vuelve
   // directamente al formulario de registro.
@@ -95,7 +98,10 @@ export function Cronometro({ plan, pasos, molestiasChequeo }: { plan: SesionPlan
   useEffect(() => {
     if (!estado.enMarcha) return
     // lib.dom lo declara siempre, pero hay navegadores sin Screen Wake Lock.
-    if (!('wakeLock' in navigator) || !navigator.wakeLock) return
+    if (!('wakeLock' in navigator) || !navigator.wakeLock) {
+      setSinPantalla(true)
+      return
+    }
     const wakeLock = navigator.wakeLock
     let activo = true
     let bloqueo: WakeLockSentinel | null = null
@@ -107,7 +113,10 @@ export function Cronometro({ plan, pasos, molestiasChequeo }: { plan: SesionPlan
         if (!activo) return soltar(b)
         soltar(bloqueo)
         bloqueo = b
-      }).catch(() => {})
+        setSinPantalla(false)
+      }).catch(() => {
+        if (activo) setSinPantalla(true)
+      })
     }
     const alVolver = (): void => {
       if (document.visibilityState === 'visible') pedir()
@@ -172,8 +181,21 @@ export function Cronometro({ plan, pasos, molestiasChequeo }: { plan: SesionPlan
     setEstado(empezar(desde, t))
   }
 
+  // Cada botón vuelve a desbloquear el audio: en iOS ayuda a que siga sonando.
+  const pulsar = (f: (e: EstadoReloj, t: number) => EstadoReloj): void => {
+    pitidos.desbloquear()
+    actuar(f)
+  }
+
+  const volverALaSesion = (): void => {
+    pitidos.desbloquear()
+    reinicios.current += 1
+    setEstado((e) => reabrir(pasos, e))
+  }
+
   const alRegistrar = useCallback(() => {
     registrado.current = true
+    setHayRegistro(true)
     escribir(clave, null)
     router.push('/')
   }, [clave, router])
@@ -214,6 +236,9 @@ export function Cronometro({ plan, pasos, molestiasChequeo }: { plan: SesionPlan
           minutosIniciales={minutosReales(estado, ahora)}
           alTerminar={alRegistrar}
         />
+        {!hayRegistro && (
+          <button type="button" className={BOTON_SECUNDARIO} onClick={volverALaSesion}>Volver a la sesión</button>
+        )}
       </div>
     )
   }
@@ -245,20 +270,39 @@ export function Cronometro({ plan, pasos, molestiasChequeo }: { plan: SesionPlan
         {!estado.enMarcha && <p className="text-sm font-medium">En pausa</p>}
       </section>
       {siguientePaso && <p className="text-sm text-stone-500">Después: {siguientePaso.titulo}</p>}
+      {sinPantalla && (
+        <p className="text-xs text-amber-700">
+          Tu navegador no puede mantener la pantalla encendida: sube el tiempo de bloqueo automático del iPhone (Ajustes ›
+          Pantalla y brillo) mientras entrenas.
+        </p>
+      )}
       <div className="flex flex-wrap gap-3">
         {paso.tipo === 'manual' && (
-          <button type="button" className={BOTON} onClick={() => actuar((e, t) => siguiente(pasos, e, t))}>Hecho</button>
+          <button type="button" className={BOTON} onClick={() => pulsar((e, t) => siguiente(pasos, e, t))}>Hecho</button>
         )}
         {paso.tipo === 'fallo' && (
-          <button type="button" className={BOTON} onClick={() => actuar((e, t) => noPuedoMas(pasos, e, t))}>No puedo más</button>
+          <button type="button" className={BOTON} onClick={() => pulsar((e, t) => noPuedoMas(pasos, e, t))}>No puedo más</button>
         )}
         {estado.enMarcha ? (
           <button type="button" className={BOTON_SECUNDARIO} onClick={() => actuar(pausar)}>Pausa</button>
         ) : (
-          <button type="button" className={BOTON_SECUNDARIO} onClick={() => { pitidos.desbloquear(); actuar(empezar) }}>Seguir</button>
+          <button type="button" className={BOTON_SECUNDARIO} onClick={() => pulsar(empezar)}>Seguir</button>
         )}
-        <button type="button" className={BOTON_SECUNDARIO} onClick={() => { reinicios.current += 1; actuar(atras) }}>Atrás</button>
-        <button type="button" className={BOTON_SECUNDARIO} onClick={() => actuar((e, t) => siguiente(pasos, e, t))}>Saltar</button>
+        <button type="button" className={BOTON_SECUNDARIO} onClick={() => { reinicios.current += 1; pulsar(atras) }}>Atrás</button>
+        {/* En un `fallo` ya está «No puedo más»; saltarlo perdería el resultado. Saltar el último paso termina la sesión. */}
+        {paso.tipo !== 'fallo' && (
+          <button
+            type="button"
+            className={BOTON_SECUNDARIO}
+            onClick={() => {
+              if (estado.indice < pasos.length - 1 || window.confirm('¿Terminar la sesión ahora?')) {
+                pulsar((e, t) => siguiente(pasos, e, t))
+              }
+            }}
+          >
+            Saltar
+          </button>
+        )}
         <button
           type="button"
           className={BOTON_SECUNDARIO}

@@ -90,6 +90,17 @@ export function terminar(e: EstadoReloj, ahoraMs: number): EstadoReloj {
   return { ...e, totalMs: e.totalMs + transcurridoMs(e, ahoraMs), acumuladoMs: 0, enMarcha: false, desdeMs: null, terminado: true }
 }
 
+// Deshace el terminado: vuelve en pausa al paso donde se terminó (o al último si se llegó al final), con ese paso desde
+// cero. El tiempo vivido sigue contando. Si es un `fallo`, sus segundos colgado se vuelven a medir.
+export function reabrir(pasos: readonly Paso[], e: EstadoReloj): EstadoReloj {
+  if (!e.terminado || pasos.length === 0) return e
+  const indice = Math.min(e.indice, pasos.length - 1)
+  return {
+    ...e, indice, acumuladoMs: 0, desdeMs: null, enMarcha: false, terminado: false,
+    colgadoFalloS: pasos[indice]?.tipo === 'fallo' ? null : e.colgadoFalloS,
+  }
+}
+
 export function restanteS(pasos: readonly Paso[], e: EstadoReloj, ahoraMs: number): number | null {
   const paso = pasos[e.indice]
   const s = paso ? segundosDe(paso) : null
@@ -111,6 +122,8 @@ export function leerGuardado(x: unknown, nPasos: number): EstadoReloj | null {
   if (!num(o.indice) || !Number.isInteger(o.indice) || o.indice > nPasos) return null
   if (!num(o.acumuladoMs) || !num(o.totalMs) || typeof o.terminado !== 'boolean') return null
   if (o.colgadoFalloS !== null && !num(o.colgadoFalloS)) return null
+  // Al final solo se llega terminando.
+  if (o.indice === nPasos && !o.terminado) return null
   return {
     indice: o.indice, enMarcha: false, desdeMs: null, acumuladoMs: o.acumuladoMs, totalMs: o.totalMs,
     colgadoFalloS: (o.colgadoFalloS as number | null) ?? null, terminado: o.terminado,
