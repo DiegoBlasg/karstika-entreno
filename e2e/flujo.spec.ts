@@ -43,6 +43,7 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await aceptar.click()
 
   await expect(page).toHaveURL(/\/$/)
+  await page.getByRole('button', { name: 'Terminar', exact: true }).click()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('7')
   await page.getByRole('button', { name: 'Registrar' }).click()
   await expect(page.getByText(/Hecha · RPE 7/)).toBeVisible()

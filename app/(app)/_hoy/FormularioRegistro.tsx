@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import type { Molestia, Sesion } from '@/motor'
 import { CamposMolestias } from '@/components/CamposMolestias'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
@@ -19,6 +19,7 @@ export function FormularioRegistro({
   useEffect(() => {
     if (estado?.ok) alTerminar?.()
   }, [estado, alTerminar])
+  const [filas, setFilas] = useState(previo?.intentos.length ?? 0)
   const intentoPrevio = (i: number): string => {
     const p = previo?.intentos[i]
     return p === undefined ? '' : p.encadenado ? 'encadenado' : (p.motivo_caida ?? '')
@@ -37,11 +38,11 @@ export function FormularioRegistro({
         Minutos reales
         <input type="number" name="minutos" min={1} max={1440} defaultValue={previo?.registro.duracion_min ?? minutosIniciales ?? sesion.duracionMin} required className={CAMPO} />
       </label>
-      <CamposMolestias iniciales={previo?.registro.molestias ?? iniciales} />
+      <CamposMolestias iniciales={previo?.registro.molestias ?? iniciales} plegable />
       {TIPOS_CON_INTENTOS.includes(sesion.tipo) && (
         <fieldset className="space-y-2">
           <legend className="font-medium">Intentos al límite</legend>
-          {Array.from({ length: MAX_INTENTOS }, (_, i) => (
+          {Array.from({ length: filas }, (_, i) => (
             <label key={i} className="flex items-center gap-3 text-sm">
               <span className="w-20">Intento {i + 1}</span>
               <select name={`intento_${i}`} defaultValue={intentoPrevio(i)} className="flex-1 rounded border border-stone-300 px-2 py-1">
@@ -51,6 +52,9 @@ export function FormularioRegistro({
               </select>
             </label>
           ))}
+          <button type="button" onClick={() => setFilas((n) => Math.min(n + 1, MAX_INTENTOS))} disabled={filas >= MAX_INTENTOS} className="text-sm underline disabled:opacity-50">
+            + intento
+          </button>
         </fieldset>
       )}
       <button className={BOTON} disabled={pendiente}>

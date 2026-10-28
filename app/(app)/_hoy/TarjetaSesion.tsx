@@ -117,6 +117,8 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
   const s = fila.sesion
   const pasada = fila.fecha <= hoy
   const [cambiando, setCambiando] = useState(false)
+  const [terminando, setTerminando] = useState(false)
+  const cerrarRegistro = (): void => setTerminando(false)
   return (
     <article className={TARJETA}>
       {fila.fecha !== hoy && <p className="text-sm text-stone-500">{fechaLarga(fila.fecha)}</p>}
@@ -144,7 +146,15 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
               Empezar con cronómetro
             </Link>
           )}
-          {pasada && !cambiando && <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} />}
+          {pasada && !cambiando && !terminando && (
+            <button type="button" onClick={() => setTerminando(true)} className={BOTON}>Terminar</button>
+          )}
+          {pasada && !cambiando && terminando && (
+            <>
+              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} alTerminar={cerrarRegistro} />
+              <button type="button" onClick={cerrarRegistro} className="text-sm underline">Cancelar</button>
+            </>
+          )}
           <div className="flex gap-4 text-sm">
             <BotonNoLaHice id={s.id} />
             {pasada && (
