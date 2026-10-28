@@ -1,5 +1,5 @@
 // Lo que muestra la pantalla Hoy. Puro.
-import { estadoAtleta, ZONAS, type Molestia, type Zona } from '../../motor'
+import { estadoAtleta, motivosNoEncaja, ZONAS, type Molestia, type Zona } from '../../motor'
 import { sumarDias } from '../fecha'
 import type { DatosAtleta, FilaIntento, FilaRegistro, FilaSesion } from './filas'
 import { historialMotor, seguimientoMotor } from './mapeo'
@@ -9,6 +9,7 @@ export interface Tarjeta {
   registro?: FilaRegistro
   intentos: FilaIntento[]
   molestiasChequeo: Molestia[]   // las del chequeo de su día: el registro sale con ellas
+  noEncaja: string[]             // con cómo llega hoy, por qué el entrenador ya no la propondría (solo hoy, aceptadas, sin registrar)
 }
 
 export interface VistaHoy {
@@ -18,6 +19,7 @@ export interface VistaHoy {
   proximas: Tarjeta[]
   zonasRojo: Zona[]
   zonasAmbar: Zona[]
+  pedirChequeo: boolean          // hay una sesión de hoy sin registrar y aún no hay chequeo de hoy
 }
 
 // Un registro se puede corregir durante 7 días: desde hoy-7 hasta hoy, ambos incluidos.
@@ -32,14 +34,15 @@ export function vistaHoy(d: DatosAtleta, fecha: string): VistaHoy {
   const historial = historialMotor(d.sesiones)
   const porId = new Map(d.sesiones.map((s) => [s.id, s]))
   const chequeo = new Map(d.chequeos.map((c) => [c.fecha, c.molestias]))
+  const estado = estadoAtleta(historial, seguimientoMotor(d), fecha)
   const tarjetas: Tarjeta[] = historial.map((s) => {
     const fila = porId.get(s.id)!
     const registro = registros.get(s.id)
     const intentos = d.intentos.filter((i) => i.sesion_id === s.id)
     const molestiasChequeo = chequeo.get(s.fecha) ?? []
-    return registro ? { fila, registro, intentos, molestiasChequeo } : { fila, intentos, molestiasChequeo }
+    const noEncaja = s.fecha === fecha && fila.propuesta && !registro ? motivosNoEncaja(s, estado) : []
+    return registro ? { fila, registro, intentos, molestiasChequeo, noEncaja } : { fila, intentos, molestiasChequeo, noEncaja }
   })
-  const estado = estadoAtleta(historial, seguimientoMotor(d), fecha)
   const desde = sumarDias(fecha, -DIAS_CORRECCION)
   return {
     hoy: tarjetas.filter((t) => t.fila.fecha === fecha),
@@ -48,6 +51,7 @@ export function vistaHoy(d: DatosAtleta, fecha: string): VistaHoy {
     proximas: tarjetas.filter((t) => t.fila.fecha > fecha),
     zonasRojo: ZONAS.filter((z) => estado.zonas[z] === 'rojo'),
     zonasAmbar: ZONAS.filter((z) => estado.zonas[z] === 'ambar'),
+    pedirChequeo: tarjetas.some((t) => t.fila.fecha === fecha && !t.registro) && !d.chequeos.some((c) => c.fecha === fecha),
   }
 }
 
