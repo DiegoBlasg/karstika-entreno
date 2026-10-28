@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useEffect, useState } from 'react'
-import { TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
+import { TIPOS_SESION, type Molestia, type Sesion, type TipoSesion } from '@/motor'
 import { CamposMolestias } from '@/components/CamposMolestias'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
@@ -21,8 +21,8 @@ const hhmm = (h: number): string => `${String(Math.floor(h)).padStart(2, '0')}:$
 
 // Registrar o, con `previo`, corregir lo ya registrado (precargado). Los campos no se vacían si la acción falla.
 function FormularioRegistro({
-  sesion, previo, alTerminar,
-}: { sesion: Sesion; previo?: { registro: FilaRegistro; intentos: FilaIntento[] }; alTerminar?: () => void }) {
+  sesion, previo, iniciales, alTerminar,
+}: { sesion: Sesion; previo?: { registro: FilaRegistro; intentos: FilaIntento[] }; iniciales?: readonly Molestia[]; alTerminar?: () => void }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(previo ? corregirRegistro : registrar, null)
   useEffect(() => {
     if (estado?.ok) alTerminar?.()
@@ -45,7 +45,7 @@ function FormularioRegistro({
         Minutos reales
         <input type="number" name="minutos" min={1} max={1440} defaultValue={previo?.registro.duracion_min ?? sesion.duracionMin} required className={CAMPO} />
       </label>
-      <CamposMolestias iniciales={previo?.registro.molestias} />
+      <CamposMolestias iniciales={previo?.registro.molestias ?? iniciales} />
       {TIPOS_CON_INTENTOS.includes(sesion.tipo) && (
         <fieldset className="space-y-2">
           <legend className="font-medium">Intentos al límite</legend>
@@ -177,7 +177,7 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
         <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
       ) : (
         <>
-          {pasada && !cambiando && <FormularioRegistro sesion={s} />}
+          {pasada && !cambiando && <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} />}
           <div className="flex gap-4 text-sm">
             <BotonNoLaHice id={s.id} />
             {pasada && (

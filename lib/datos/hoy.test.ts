@@ -15,6 +15,15 @@ describe('vistaHoy', () => {
     expect(v.proximas.map((t) => t.fila.id)).toEqual([uuid(4)])
     expect(vistaHoy(d, '2026-11-02').hoy[0]?.registro?.rpe).toBe(4)
   })
+  it('cada tarjeta lleva las molestias del chequeo de su día', () => {
+    const d = datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03'), sesionFila(uuid(2), '2026-11-04')],
+      chequeos: [{ fecha: '2026-11-03', sueno: 4, fatiga: 4, ganas: 4, molestias: [{ zona: 'dedos', dolor: 2 }] }],
+    })
+    const v = vistaHoy(d, '2026-11-03')
+    expect(v.hoy[0]?.molestiasChequeo).toEqual([{ zona: 'dedos', dolor: 2 }])
+    expect(v.proximas[0]?.molestiasChequeo).toEqual([])
+  })
   it('zonas en rojo y en ámbar según el semáforo del motor', () => {
     const conDolor = (zona: 'hombro' | 'dedos', dolor: number) =>
       datosVacios({ chequeos: [{ fecha: '2026-11-03', sueno: 4, fatiga: 4, ganas: 4, molestias: [{ zona, dolor }] }] })
