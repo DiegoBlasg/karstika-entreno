@@ -1,20 +1,32 @@
 import Link from 'next/link'
 import { AvisoMedico } from '@/components/AvisoMedico'
 import { testsSinResultado, vistaHoy } from '@/lib/datos/hoy'
-import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
-import { NOMBRE_ZONA } from '@/lib/nombres'
+import { proximoHueco } from '@/lib/datos/semana'
+import { ahoraMadrid, fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
+import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonAlta } from './_hoy/BotonAlta'
 import { TarjetaSesion } from './_hoy/TarjetaSesion'
 
 export default async function PaginaHoy() {
   const { datos } = await requerirDatos()
-  const hoy = ahoraMadrid(new Date()).fecha
+  const ahora = ahoraMadrid(new Date())
+  const hoy = ahora.fecha
+  const proximo = proximoHueco(datos, { fecha: hoy, minutos: Math.round(ahora.hora * 60) })
   const v = vistaHoy(datos, hoy)
   const sinResultado = testsSinResultado(datos, hoy)
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Hoy, {fechaLarga(hoy)}</h1>
+      {proximo && (
+        <p className="text-sm">
+          Próximo hueco: {fechaLarga(proximo.fila.fecha)} {hhmmDeMinutos(proximo.fila.inicio_min)} ·{' '}
+          {proximo.estado.tipo === 'planeado'
+            ? `${nombreSesion(proximo.estado.sesion)}${proximo.estado.cargaAlta ? ' ★' : ''}`
+            : proximo.estado.tipo === 'libre' ? 'libre' : 'sin plan'}
+          {' · '}<Link href="/semana" className="underline">Mi semana</Link>
+        </p>
+      )}
       {sinResultado.map((f) => (
         <p key={f} className="rounded border border-sky-300 bg-sky-50 p-3 text-sm">
           Te falta apuntar el resultado del test del {fechaLarga(f)}. <Link href="/evaluacion" className="underline">Apuntarlo en Evaluación</Link>
