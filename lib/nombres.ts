@@ -1,6 +1,12 @@
-import type { Agarre, MotivoCaida, TipoSesion, Zona } from '../motor'
+import type { Agarre, MotivoCaida, Sesion, TipoSesion, Zona } from '../motor'
+import { NOMBRE_TIPO } from '../motor/nombres'
 
-export { NOMBRE_TIPO } from '../motor/nombres'
+export { NOMBRE_TIPO }
+
+// «Técnica + ARC»: el tipo y sus complementos.
+export function nombreSesion(s: Sesion): string {
+  return [s.tipo, ...(s.incluye ?? [])].map((t) => NOMBRE_TIPO[t]).join(' + ')
+}
 
 export const NOMBRE_ZONA: Record<Zona, string> = {
   dedos: 'Dedos',
