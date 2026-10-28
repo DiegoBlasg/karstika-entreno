@@ -1,5 +1,6 @@
 // Lectura y validación de campos de formulario. Los errores llevan un mensaje en español listo para mostrar.
 import { ZONAS, type Agarre, type Compania, type Contexto, type Lugar, type Molestia, type MotivoCaida } from '../motor'
+import type { FilaChequeo } from './datos/filas'
 import type { EntradaPeticion } from './datos/peticion'
 import { AGARRES, MOTIVOS_CAIDA, NOMBRE_ZONA } from './nombres'
 
@@ -73,6 +74,14 @@ export function contexto(fd: FormData): Contexto {
 }
 
 // Valores iniciales del formulario de Entrenar desde la URL (botón «Preparar» de Mi semana). Lo que no vale se ignora.
+export type ChequeoInicial = Pick<FilaChequeo, 'sueno' | 'fatiga' | 'ganas' | 'molestias'>
+
+// El chequeo ya guardado del día, para que Entrenar arranque con él y no lo pise con 3/3/3 y sin molestias.
+export function chequeoDelDia(chequeos: readonly FilaChequeo[], fecha: string): ChequeoInicial | undefined {
+  const c = chequeos.find((x) => x.fecha === fecha)
+  return c && { sueno: c.sueno, fatiga: c.fatiga, ganas: c.ganas, molestias: c.molestias }
+}
+
 export interface InicialEntrenar { fecha?: string; hora?: string; compania?: Compania; lugar?: Lugar; minutos?: number; reemplaza?: string }
 
 export function inicialEntrenar(p: Record<string, string | string[] | undefined>): InicialEntrenar {

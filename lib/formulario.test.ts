@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  contexto, detalleRegleta, entero, ErrorFormulario, fecha, hora, inicialEntrenar, intentos, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
+  chequeoDelDia, contexto, detalleRegleta, entero, ErrorFormulario, fecha, hora, inicialEntrenar, intentos, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
 } from './formulario'
 
 const fd = (campos: Record<string, string>): FormData => {
@@ -107,5 +107,19 @@ describe('inicialEntrenar', () => {
     expect(inicialEntrenar({ fecha: '2026-02-30', hora: '25:00', compania: 'pareja', lugar: ['casa', 'roca'], minutos: '5' })).toEqual({})
     expect(inicialEntrenar({ minutos: '90.5', lugar: 'casa' })).toEqual({ lugar: 'casa' })
     expect(inicialEntrenar({})).toEqual({})
+  })
+})
+
+describe('chequeoDelDia', () => {
+  const chequeos = [
+    { fecha: '2026-10-27', sueno: 4, fatiga: 4, ganas: 4, molestias: [] },
+    { fecha: '2026-10-28', sueno: 1, fatiga: 2, ganas: 1, molestias: [{ zona: 'dedos' as const, dolor: 3 }] },
+  ]
+  it('devuelve el chequeo guardado de ese día, con sus molestias', () => {
+    expect(chequeoDelDia(chequeos, '2026-10-28')).toEqual({ sueno: 1, fatiga: 2, ganas: 1, molestias: [{ zona: 'dedos', dolor: 3 }] })
+  })
+  it('sin chequeo ese día no hay valores iniciales', () => {
+    expect(chequeoDelDia(chequeos, '2026-10-29')).toBeUndefined()
+    expect(chequeoDelDia([], '2026-10-28')).toBeUndefined()
   })
 })

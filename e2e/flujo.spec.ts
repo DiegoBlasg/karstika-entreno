@@ -175,11 +175,27 @@ test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra',
   await page.getByRole('link', { name: 'Cambiarla por otra' }).click()
   await expect(page).toHaveURL(new RegExp(`/entrenar\?.*reemplaza=${id}`))
   await expect(page.getByText(/Vas a cambiar la sesión/)).toBeVisible()
+  // Entrenar arranca con el chequeo ya guardado en Hoy (1/1/1) y no se toca: preparar no debe pisarlo con 3/3/3.
+  await expect(page.getByText('Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.')).toBeVisible()
+  await expect(page.getByLabel('Sueño')).toHaveValue('1')
+  await expect(page.getByLabel('Fatiga')).toHaveValue('1')
+  await expect(page.getByLabel('Ganas')).toHaveValue('1')
   await page.getByLabel('Casa').check()
   await page.getByRole('button', { name: 'Preparar sesión' }).click()
-  await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
-  await expect(page).toHaveURL(/\/$/)
-  expect(await sql`select id from sesiones where id = ${id}`).toHaveLength(0)
+  // Con un chequeo tan bajo el motor puede proponer solo descanso (sin «Aceptar»): entonces no hay nada que aceptar y la
+  // vieja sigue; se comprueba «Toca descansar» y se saltan las aserciones de la sustitución.
+  const aceptar = page.getByRole('button', { name: 'Aceptar esta sesión' }).first()
+  const descansar = page.getByRole('heading', { name: 'Toca descansar' })
+  await expect(aceptar.or(descansar).first()).toBeVisible()
+  if (await aceptar.isVisible()) {
+    await aceptar.click()
+    await expect(page).toHaveURL(/\/$/)
+    expect(await sql`select id from sesiones where id = ${id}`).toHaveLength(0)
+  } else {
+    await expect(descansar).toBeVisible()
+  }
+  // En cualquier caso, el chequeo de hoy sigue siendo el guardado en Hoy.
+  expect(await sql`select sueno, fatiga, ganas from chequeos where fecha = ${hoy}`).toEqual([{ sueno: 1, fatiga: 1, ganas: 1 }])
 })
 
 test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) => {

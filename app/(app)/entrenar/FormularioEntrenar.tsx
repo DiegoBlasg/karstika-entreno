@@ -5,7 +5,7 @@ import { CamposChequeo } from '@/components/CamposChequeo'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
 import { fechaLarga } from '@/lib/fecha'
-import { MINUTOS_DISPONIBLES, type InicialEntrenar } from '@/lib/formulario'
+import { MINUTOS_DISPONIBLES, type ChequeoInicial, type InicialEntrenar } from '@/lib/formulario'
 import { proponer, type EstadoProponer } from './acciones'
 import { ResultadoPropuesta } from './ResultadoPropuesta'
 
@@ -17,9 +17,9 @@ function Radio({ nombre, valor, texto, marcado = false }: { nombre: string; valo
   )
 }
 
-// Se envía sin vaciar los campos (enviarSinVaciar): tras proponer, el formulario conserva lo rellenado, así que volver
-// a preparar no sustituye el chequeo de hoy por uno sin molestias.
-export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }: { hoy: string; hora: string; inicioTemporada: string; inicial?: InicialEntrenar }) {
+// Se envía sin vaciar los campos (enviarSinVaciar): tras proponer, el formulario conserva lo rellenado. Y si ya hay
+// chequeo de hoy guardado (`chequeoHoy`), los campos arrancan con él, así que preparar no lo pisa con 3/3/3 y sin molestias.
+export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, chequeoHoy }: { hoy: string; hora: string; inicioTemporada: string; inicial?: InicialEntrenar; chequeoHoy?: ChequeoInicial }) {
   const [estado, accion, pendiente] = useActionState<EstadoProponer, FormData>(proponer, null)
   const antesDeTemporada = hoy < inicioTemporada
   const primerDia = antesDeTemporada ? inicioTemporada : hoy
@@ -61,7 +61,8 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {} }:
         {dia === hoy && (
           <fieldset className="space-y-3">
             <legend className="font-medium">¿Cómo llegas hoy?</legend>
-            <CamposChequeo />
+            {chequeoHoy && <p className="text-sm text-stone-600">Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.</p>}
+            <CamposChequeo inicial={chequeoHoy} />
           </fieldset>
         )}
         <button className={BOTON} disabled={pendiente}>{pendiente ? 'Preparando…' : 'Preparar sesión'}</button>

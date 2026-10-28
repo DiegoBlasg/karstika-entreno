@@ -1,5 +1,5 @@
 import { ahoraMadrid } from '@/lib/fecha'
-import { inicialEntrenar } from '@/lib/formulario'
+import { chequeoDelDia, inicialEntrenar } from '@/lib/formulario'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { FormularioEntrenar } from './FormularioEntrenar'
 
@@ -10,7 +10,7 @@ export default async function PaginaEntrenar({ searchParams }: { searchParams: P
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Entrenar</h1>
-      <FormularioEntrenar hoy={ahora.fecha} hora={ahora.hhmm} inicioTemporada={datos.perfil.inicio_temporada} inicial={inicial} />
+      <FormularioEntrenar hoy={ahora.fecha} hora={ahora.hhmm} inicioTemporada={datos.perfil.inicio_temporada} inicial={inicial} chequeoHoy={chequeoDelDia(datos.chequeos, ahora.fecha)} />
     </div>
   )
 }
