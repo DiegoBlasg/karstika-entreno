@@ -9,10 +9,10 @@ import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
-import { detalleRegleta, entero, hora, intentos, mensajeDe, molestias, opcion, texto } from '@/lib/formulario'
+import { detalleRegleta, entero, fecha as leerFecha, hora, intentos, mensajeDe, molestias, opcion, texto } from '@/lib/formulario'
 import { TIPOS_CON_INTENTOS, TIPOS_CON_REGLETA } from '@/lib/nombres'
 import {
-  borrarSesionBd, corregirRegistroBd, guardarChequeo, insertarAlta, insertarRegistro, requerirDatos, sustituirSesion,
+  borrarSesionBd, corregirRegistroBd, guardarChequeo, insertarAlta, insertarRegistro, insertarSesionRegistrada, requerirDatos, sustituirSesion,
 } from '@/lib/servidor/consultas'
 
 const TIPOS_LIBRES = TIPOS_SESION.filter((t): t is Exclude<TipoSesion, 'descanso'> => t !== 'descanso')
@@ -198,4 +198,43 @@ export async function guardarChequeoHoy(_previo: EstadoAccion, fd: FormData): Pr
   }
   revalidatePath('/')
   return { ok: 'Chequeo guardado.' }
+}
+
+// Un entrenamiento que no estaba planeado, de hoy o de los 7 días anteriores: la sesión libre, su registro y sus
+// intentos, guardados juntos. Como en «Hice otra cosa», las reglas de seguridad solo avisan y hay que confirmarlas.
+export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const hoy = ahoraMadrid(new Date()).fecha
+  const { sql, datos } = await requerirDatos()
+  let libre: FilaSesion
+  let leido: ReturnType<typeof leerRegistro>
+  try {
+    const dia = leerFecha(fd, 'fecha', 'El día')
+    if (!corregible(dia, hoy)) return { error: 'Solo puedes apuntar entrenamientos de hoy o de los 7 días anteriores.' }
+    const tipo = opcion(fd, 'tipo', 'Lo que hiciste', TIPOS_LIBRES)
+    libre = filaSesionLibre({
+      id: crypto.randomUUID(),
+      tipo,
+      intensidad: opcion(fd, 'intensidad', 'La intensidad', ['alta', 'suave']),
+      fecha: dia,
+      horaInicio: hora(fd, 'hora', 'La hora'),
+      // La duración de la sesión y los minutos reales son el mismo dato: un solo campo `minutos`.
+      duracionMin: entero(fd, 'minutos', 'Los minutos', 1, 1440),
+      ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
+    })
+    leido = leerRegistro(fd, libre)
+    validarDatos(conRegistro(conSesion(datos, libre), leido.registro, leido.filasIntentos))
+    const avisos = validarSesion(libre.sesion, historialMotor(datos.sesiones), perfilMotor(datos.perfil)).map((v) => v.mensaje)
+    if (avisos.length > 0 && fd.get('confirmar') !== 'on') {
+      return { error: 'El entrenador no habría propuesto esto. Revisa los avisos y confirma si lo hiciste así.', avisos }
+    }
+  } catch (e) {
+    return { error: mensajeDe(e) }
+  }
+  try {
+    await insertarSesionRegistrada(sql, libre, leido.registro, leido.filasIntentos)
+  } catch (e) {
+    return { error: `No se ha podido guardar el entrenamiento: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/')
+  return { ok: 'Entrenamiento apuntado.' }
 }

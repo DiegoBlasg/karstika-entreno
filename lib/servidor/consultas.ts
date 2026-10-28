@@ -113,6 +113,17 @@ export async function insertarRegistro(sql: Sql, r: FilaRegistro, intentos: Fila
   ])
 }
 
+// Un entrenamiento no planeado: la sesión, su registro y sus intentos en una transacción.
+export async function insertarSesionRegistrada(sql: Sql, f: FilaSesion, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
+  await sql.transaction([
+    consultaSesion(sql, f),
+    sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb)`,
+    ...intentos.map(
+      (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
+    ),
+  ])
+}
+
 // Corrige un registro: actualiza el registro y sustituye todos los intentos de la sesión, en una transacción.
 export async function corregirRegistroBd(sql: Sql, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
   await sql.transaction([

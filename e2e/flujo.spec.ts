@@ -146,3 +146,60 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
   // Lo apuntado del test se borra al registrar.
   expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}:test`)).toBeNull()
 })
+
+test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra', async ({ page }) => {
+  const sql = await sqlPruebas()
+  const hoy = ahoraMadrid(new Date()).fecha
+  const id = '00000000-0000-4000-8000-00000000c003'
+  // A las 23:00, libre: la del test guiado es a las 22:00 y dura 10 min.
+  const sesion = { id, tipo: 'bloque-limite', intensidad: 'alta', fecha: hoy, horaInicio: 23, duracionMin: 30 }
+  const explicacion = { regla: 'e2e.cambiar', parametros: [], evidencias: [], nivelMinimo: 'C', origen: 'diseno', motivo: 'e2e' }
+  const propuesta = {
+    sesion,
+    bloques: [{ nombre: 'Bloque', minutos: 30, ejercicios: [{ nombre: 'Bloques al límite', cargaTexto: 'Máximo' }], explicacion }],
+    explicaciones: [explicacion],
+  }
+  await sql`insert into sesiones (id, fecha, sesion, propuesta, origen)
+            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(propuesta)}::jsonb, 'propuesta')`
+  // Sin chequeo de hoy, Hoy lo pide (el primer test lo guardó desde Entrenar).
+  await sql`delete from chequeos where fecha = ${hoy}`
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByText('¿Cómo llegas hoy?')).toBeVisible()
+  await page.getByLabel('Sueño').selectOption('1')
+  await page.getByLabel('Fatiga').selectOption('1')
+  await page.getByLabel('Ganas').selectOption('1')
+  await page.getByRole('button', { name: 'Guardar chequeo' }).click()
+  await expect(page.getByText('Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:')).toBeVisible()
+  await page.getByRole('link', { name: 'Cambiarla por otra' }).click()
+  await expect(page).toHaveURL(new RegExp(`/entrenar\?.*reemplaza=${id}`))
+  await expect(page.getByText(/Vas a cambiar la sesión/)).toBeVisible()
+  await page.getByLabel('Casa').check()
+  await page.getByRole('button', { name: 'Preparar sesión' }).click()
+  await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
+  await expect(page).toHaveURL(/\/$/)
+  expect(await sql`select id from sesiones where id = ${id}`).toHaveLength(0)
+})
+
+test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) => {
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByRole('button', { name: 'Apuntar un entrenamiento que no estaba planeado' }).click()
+  await page.getByLabel('¿Qué hiciste?').selectOption({ label: 'Técnica' })
+  await page.getByLabel('Intensidad').selectOption('suave')
+  await page.getByLabel('Hora de inicio').fill('08:00')
+  await page.getByLabel('Minutos', { exact: true }).fill('30')
+  await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('4')
+  const guardar = page.getByRole('button', { name: 'Guardar', exact: true })
+  await guardar.click()
+  // Si el entrenador no lo habría propuesto, avisa y hay que confirmarlo.
+  const confirmar = page.getByLabel('Lo hice así de todos modos')
+  await expect(page.getByText('Entrenamiento apuntado.').or(confirmar)).toBeVisible()
+  if (await confirmar.isVisible()) {
+    await confirmar.check()
+    await guardar.click()
+  }
+  await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
+})
