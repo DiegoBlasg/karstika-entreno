@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { datosVacios, uuid } from './_fabrica'
+import { datosVacios, huecoFila, uuid } from './_fabrica'
 import { conChequeo, conRegistro, conSesion, filaSesionAceptada } from './cambios'
 import { opcionElegida, prepararPropuesta, temporadaDe, type EntradaPeticion, type Preparacion } from './peticion'
 
@@ -59,5 +59,24 @@ describe('temporadaDe', () => {
       evaluaciones: [{ id: uuid(1), fecha: '2027-05-03', peso_corporal_kg: 70, lastre_kg: 25, resistencia_s: 200, tecnica: 6 }],
     })
     expect(temporadaDe(tardia)).toEqual(base)
+  })
+})
+
+describe('prepararPropuesta con huecos', () => {
+  it('sin huecos declarados en la semana no hay plan semanal', () => {
+    const p = propuestaDe(prepararPropuesta(datosVacios(), MARTES))
+    expect(p.propuesta.semana).toBeUndefined()
+  })
+  it('con huecos declarados devuelve el plan del resto de la semana', () => {
+    const d = datosVacios({
+      huecos: [
+        huecoFila(uuid(101), '2026-11-03', '19:00', { compania: 'con-gente', lugar: 'rocodromo', minutos: 120 }),
+        huecoFila(uuid(102), '2026-11-04', '09:00'),
+        huecoFila(uuid(103), '2026-11-05', '19:00', { lugar: 'rocodromo', minutos: 90 }),
+      ],
+    })
+    const p = propuestaDe(prepararPropuesta(d, MARTES))
+    expect(p.propuesta.semana?.map((x) => x.hueco.fecha)).toEqual(['2026-11-04', '2026-11-05'])
+    expect(prepararPropuesta(d, MARTES)).toEqual(p) // determinista: aceptar ve lo mismo
   })
 })
