@@ -28,3 +28,13 @@ export function sumarDias(fecha: string, dias: number): string {
   d.setUTCDate(d.getUTCDate() + dias)
   return d.toISOString().slice(0, 10)
 }
+
+// Lunes de la semana natural (lunes a domingo) de una fecha.
+export function lunesDe(fecha: string): string {
+  const diaSemana = (new Date(`${fecha}T12:00:00Z`).getUTCDay() + 6) % 7 // 0 = lunes
+  return sumarDias(fecha, -diaSemana)
+}
+
+export function hhmmDeMinutos(minutos: number): string {
+  return `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`
+}

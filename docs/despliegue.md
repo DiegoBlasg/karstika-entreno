@@ -33,7 +33,7 @@ Después:
     npx playwright install chromium
     npm run e2e              # flujo completo contra pruebas
 
-Salida esperada de `npm run probar-bd`: `base de datos correcta: 19 casos rechazados`.
+Salida esperada de `npm run probar-bd`: `base de datos correcta: 25 casos rechazados`.
 
 Nota: `npm run migrar:pruebas` se niega a ejecutarse si la URL de pruebas apunta a la misma base de datos que
 `DATABASE_URL` (incluso a través del host `-pooler`) o si la base ya contiene datos.

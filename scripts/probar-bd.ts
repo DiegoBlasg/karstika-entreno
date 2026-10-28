@@ -35,6 +35,12 @@ const casos: [string, () => Promise<unknown>][] = [
   ['alta de zona desconocida', () => sql`insert into altas (zona, fecha) values ('rodilla', '2026-11-03')`],
   ['intento encadenado con motivo', () => sql`insert into intentos_limite (sesion_id, fecha, encadenado, motivo_caida) values (${S1}, '2026-11-03', true, 'bombeo')`],
   ['intento con motivo desconocido', () => sql`insert into intentos_limite (sesion_id, fecha, encadenado, motivo_caida) values (${S1}, '2026-11-03', false, 'lluvia')`],
+  ['hueco a las 24:00', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 1440, 'solo', 'casa', 60)`],
+  ['hueco de 5 minutos', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 540, 'solo', 'casa', 5)`],
+  ['hueco de 601 minutos', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 0, 'solo', 'casa', 601)`],
+  ['hueco que cruza la medianoche', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 1400, 'solo', 'casa', 60)`],
+  ['hueco con compañía desconocida', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 540, 'pareja', 'casa', 60)`],
+  ['hueco con lugar desconocido', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 540, 'solo', 'playa', 60)`],
 ]
 
 // Solo cuenta como rechazo una violación de restricción: 23514 (check) o 23505 (unique).
