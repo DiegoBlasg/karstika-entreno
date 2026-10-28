@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { TIPOS_SESION, validarSesion, ZONAS, type TipoSesion, type Zona } from '@/motor'
-import { conAlta, conRegistro, conRegistroCorregido, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
-import type { DatosAtleta, FilaIntento, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
+import { conAlta, conChequeo, conRegistro, conRegistroCorregido, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
+import type { DatosAtleta, FilaChequeo, FilaIntento, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { corregible, vistaHoy } from '@/lib/datos/hoy'
 import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { validarDatos } from '@/lib/datos/validar'
@@ -12,7 +12,7 @@ import { ahoraMadrid } from '@/lib/fecha'
 import { detalleRegleta, entero, hora, intentos, mensajeDe, molestias, opcion, texto } from '@/lib/formulario'
 import { TIPOS_CON_INTENTOS, TIPOS_CON_REGLETA } from '@/lib/nombres'
 import {
-  borrarSesionBd, corregirRegistroBd, insertarAlta, insertarRegistro, requerirDatos, sustituirSesion,
+  borrarSesionBd, corregirRegistroBd, guardarChequeo, insertarAlta, insertarRegistro, requerirDatos, sustituirSesion,
 } from '@/lib/servidor/consultas'
 
 const TIPOS_LIBRES = TIPOS_SESION.filter((t): t is Exclude<TipoSesion, 'descanso'> => t !== 'descanso')
@@ -171,4 +171,31 @@ export async function alta(_previo: EstadoAccion, fd: FormData): Promise<EstadoA
   }
   revalidatePath('/')
   return { ok: 'Alta registrada.' }
+}
+
+// El chequeo de hoy desde Hoy (el mismo que guarda Entrenar al preparar): con él, las sesiones de hoy aceptadas
+// avisan si ya no encajan.
+export async function guardarChequeoHoy(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const hoy = ahoraMadrid(new Date()).fecha
+  const { sql, datos } = await requerirDatos()
+  let chequeo: FilaChequeo
+  try {
+    chequeo = {
+      fecha: hoy,
+      sueno: entero(fd, 'sueno', 'El sueño', 1, 5),
+      fatiga: entero(fd, 'fatiga', 'La fatiga', 1, 5),
+      ganas: entero(fd, 'ganas', 'Las ganas', 1, 5),
+      molestias: molestias(fd),
+    }
+    validarDatos(conChequeo(datos, chequeo))
+  } catch (e) {
+    return { error: mensajeDe(e) }
+  }
+  try {
+    await guardarChequeo(sql, chequeo)
+  } catch (e) {
+    return { error: `No se ha podido guardar el chequeo: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/')
+  return { ok: 'Chequeo guardado.' }
 }
