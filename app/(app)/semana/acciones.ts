@@ -9,7 +9,7 @@ import { contexto, fecha, hora, mensajeDe, texto } from '@/lib/formulario'
 import { borrarHuecoBd, insertarHueco, requerirDatos } from '@/lib/servidor/consultas'
 
 export async function anadirHueco(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
-  const hoy = ahoraMadrid(new Date()).fecha
+  const ahora = ahoraMadrid(new Date())
   const { sql, datos } = await requerirDatos()
   let fila: FilaHueco
   try {
@@ -22,7 +22,7 @@ export async function anadirHueco(_previo: EstadoAccion, fd: FormData): Promise<
       lugar: c.lugar,
       minutos: c.minutosDisponibles,
     }
-    validarHuecoNuevo(datos, fila, hoy)
+    validarHuecoNuevo(datos, fila, { fecha: ahora.fecha, minutos: Math.round(ahora.hora * 60) })
   } catch (e) {
     return { error: mensajeDe(e) }
   }

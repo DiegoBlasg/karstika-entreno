@@ -50,9 +50,10 @@ export function huecosPosteriores(d: DatosAtleta, e: EntradaPeticion): Hueco[] |
 }
 
 // Reglas al declarar un hueco. Lanza con un mensaje listo para mostrar.
-export function validarHuecoNuevo(d: DatosAtleta, f: FilaHueco, hoy: string): void {
-  if (f.fecha < hoy) throw new Error('No puedes añadir huecos en días pasados.')
-  if (f.fecha > sumarDias(lunesDe(hoy), 13)) throw new Error('Solo puedes declarar huecos de esta semana y de la siguiente.')
+export function validarHuecoNuevo(d: DatosAtleta, f: FilaHueco, ahora: { fecha: string; minutos: number }): void {
+  if (f.fecha < ahora.fecha) throw new Error('No puedes añadir huecos en días pasados.')
+  if (f.fecha === ahora.fecha && f.inicio_min + f.minutos <= ahora.minutos) throw new Error('Ese hueco ya ha pasado.')
+  if (f.fecha > sumarDias(lunesDe(ahora.fecha), 13)) throw new Error('Solo puedes declarar huecos de esta semana y de la siguiente.')
   if (!Number.isInteger(f.inicio_min) || f.inicio_min < 0 || f.inicio_min > 1439) throw new Error('La hora no es válida.')
   if (!Number.isInteger(f.minutos) || f.minutos < MINUTOS_DISPONIBLES.min || f.minutos > MINUTOS_DISPONIBLES.max) {
     throw new Error(`Minutos disponibles: entre ${MINUTOS_DISPONIBLES.min} y ${MINUTOS_DISPONIBLES.max}.`)

@@ -50,6 +50,25 @@ describe('vistaSemana', () => {
   })
 })
 
+describe('un error del motor no tumba la vista', () => {
+  // 70 kg + 50 kg de lastre con 1,5 años escalando: el motor lo rechaza por poco plausible, pero la evaluación se guarda.
+  const d = datosVacios({
+    huecos: [LUN_M],
+    evaluaciones: [{ id: uuid(9), fecha: '2026-11-02', peso_corporal_kg: 70, lastre_kg: 50, resistencia_s: null, tecnica: null }],
+  })
+  it('vistaSemana deja el hueco sin plan y avisa', () => {
+    let v: ReturnType<typeof vistaSemana> | undefined
+    expect(() => {
+      v = vistaSemana(d, LUNES, ANTES)
+    }).not.toThrow()
+    expect(v?.huecos[0]?.estado.tipo).toBe('sin-plan')
+    expect(v?.aviso).toMatch(/^No se ha podido calcular el plan de la semana:/)
+  })
+  it('proximoHueco no lanza', () => {
+    expect(() => proximoHueco(d, ANTES)).not.toThrow()
+  })
+})
+
 describe('proximoHueco', () => {
   it('el primer hueco ni pasado ni ocupado de la semana actual', () => {
     const d = datosVacios({ huecos: [LUN_M, MAR_T] })

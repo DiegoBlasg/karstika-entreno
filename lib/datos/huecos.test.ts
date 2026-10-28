@@ -60,27 +60,33 @@ describe('huecosPosteriores', () => {
 
 describe('validarHuecoNuevo', () => {
   const HOY = '2026-11-02'
+  const AHORA = { fecha: HOY, minutos: 0 }
   it('acepta un hueco válido', () => {
-    expect(() => validarHuecoNuevo(datosVacios(), LUN_T, HOY)).not.toThrow()
+    expect(() => validarHuecoNuevo(datosVacios(), LUN_T, AHORA)).not.toThrow()
   })
   it('rechaza días pasados y fuera de esta semana o la siguiente', () => {
-    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), '2026-11-01', '09:00'), HOY)).toThrow('No puedes añadir huecos en días pasados.')
-    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), '2026-11-16', '09:00'), HOY)).toThrow('Solo puedes declarar huecos de esta semana y de la siguiente.')
+    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), '2026-11-01', '09:00'), AHORA)).toThrow('No puedes añadir huecos en días pasados.')
+    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), '2026-11-16', '09:00'), AHORA)).toThrow('Solo puedes declarar huecos de esta semana y de la siguiente.')
   })
   it('rechaza el 10.º de la semana, el 3.º del día y los solapes', () => {
     const nueve = ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'].flatMap((f, i) => [
       huecoFila(uuid(10 + 2 * i), f, '09:00'), huecoFila(uuid(11 + 2 * i), f, '19:00'),
     ]).concat(huecoFila(uuid(30), '2026-11-06', '09:00'))
     expect(nueve.length).toBe(MAX_HUECOS_SEMANA)
-    expect(() => validarHuecoNuevo(datosVacios({ huecos: nueve }), huecoFila(uuid(1), '2026-11-07', '09:00'), HOY)).toThrow('Como mucho 9 huecos por semana.')
+    expect(() => validarHuecoNuevo(datosVacios({ huecos: nueve }), huecoFila(uuid(1), '2026-11-07', '09:00'), AHORA)).toThrow('Como mucho 9 huecos por semana.')
     const dos = datosVacios({ huecos: [LUN_M, LUN_T] })
-    expect(() => validarHuecoNuevo(dos, huecoFila(uuid(1), '2026-11-02', '14:00'), HOY)).toThrow('Como mucho 2 huecos por día.')
+    expect(() => validarHuecoNuevo(dos, huecoFila(uuid(1), '2026-11-02', '14:00'), AHORA)).toThrow('Como mucho 2 huecos por día.')
     const uno = datosVacios({ huecos: [LUN_T] })
-    expect(() => validarHuecoNuevo(uno, huecoFila(uuid(1), '2026-11-02', '20:00'), HOY)).toThrow('Se solapa con otro hueco de ese día.')
-    expect(() => validarHuecoNuevo(uno, huecoFila(uuid(1), '2026-11-02', '20:30'), HOY)).not.toThrow() // 19:00 + 90 min = 20:30
+    expect(() => validarHuecoNuevo(uno, huecoFila(uuid(1), '2026-11-02', '20:00'), AHORA)).toThrow('Se solapa con otro hueco de ese día.')
+    expect(() => validarHuecoNuevo(uno, huecoFila(uuid(1), '2026-11-02', '20:30'), AHORA)).not.toThrow() // 19:00 + 90 min = 20:30
   })
   it('rechaza horas y minutos fuera de rango', () => {
-    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), HOY, '23:30', { minutos: 60 }), HOY)).toThrow('El hueco no puede pasar de la medianoche.')
-    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), HOY, '09:00', { minutos: 5 }), HOY)).toThrow('Minutos disponibles: entre 10 y 600.')
+    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), HOY, '23:30', { minutos: 60 }), AHORA)).toThrow('El hueco no puede pasar de la medianoche.')
+    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), HOY, '09:00', { minutos: 5 }), AHORA)).toThrow('Minutos disponibles: entre 10 y 600.')
+  })
+  it('no admite un hueco de hoy que ya ha pasado, pero sí uno en curso', () => {
+    const ahora = { fecha: HOY, minutos: 10 * 60 }
+    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), HOY, '09:00', { minutos: 60 }), ahora)).toThrow('Ese hueco ya ha pasado.')
+    expect(() => validarHuecoNuevo(datosVacios(), huecoFila(uuid(1), HOY, '09:30', { minutos: 60 }), ahora)).not.toThrow()
   })
 })

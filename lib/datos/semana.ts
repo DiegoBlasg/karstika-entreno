@@ -1,6 +1,7 @@
 // Lo que muestra «Mi semana»: los huecos declarados con lo que el motor planea en cada uno. Puro: no guarda nada.
 import { esCargaAlta, FASES, semanaEnFecha, ZONAS, type Sesion } from '../../motor'
 import { lunesDe, sumarDias } from '../fecha'
+import { mensajeDe } from '../formulario'
 import type { DatosAtleta, FilaHueco, FilaSesion } from './filas'
 import { entradaDeHueco, sesionEnHueco } from './huecos'
 import { prepararPropuesta, temporadaDe } from './peticion'
@@ -49,7 +50,12 @@ export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: strin
   if (!primero) {
     return { lunes, domingo, fase, huecos, ...(filas.length > 0 ? { aviso: 'No te quedan huecos pendientes esta semana.' } : {}) }
   }
-  const prep = prepararPropuesta(d, entradaDeHueco(primero.fila))
+  let prep: ReturnType<typeof prepararPropuesta>
+  try {
+    prep = prepararPropuesta(d, entradaDeHueco(primero.fila))
+  } catch (e) {
+    return { lunes, domingo, fase, huecos, aviso: `No se ha podido calcular el plan de la semana: ${mensajeDe(e)}` }
+  }
   if (prep.tipo !== 'propuesta') return { lunes, domingo, fase: null, huecos, aviso: prep.mensaje }
   const { propuesta } = prep
   fase = { nombre: prep.fase.nombre, descarga: prep.fase.descarga === true }
@@ -57,7 +63,12 @@ export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: strin
   primero.estado = principal ? { tipo: 'planeado', sesion: principal.sesion, cargaAlta: esCargaAlta(principal.sesion) } : { tipo: 'libre' }
   if (!propuesta.semana) {
     const rojo = propuesta.estado ? ZONAS.some((z) => propuesta.estado!.zonas[z] === 'rojo') : false
-    return { lunes, domingo, fase, huecos, ...(rojo ? { aviso: AVISO_ROJO } : {}) }
+    const aviso = rojo
+      ? AVISO_ROJO
+      : pendientes.length > 1
+        ? 'El entrenador no ha planificado el resto de la semana: prepara cada hueco cuando llegue.'
+        : undefined
+    return { lunes, domingo, fase, huecos, ...(aviso ? { aviso } : {}) }
   }
   const plan = new Map(propuesta.semana.map((x) => [clave(x.hueco.fecha, Math.round(x.hueco.horaInicio * 60)), x.sesion]))
   for (const h of pendientes.slice(1)) {
