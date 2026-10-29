@@ -8,6 +8,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
       <nav className="flex flex-wrap items-center gap-4 border-b border-stone-200 py-3 text-sm">
         <Link href="/" className="font-semibold">Hoy</Link>
         <Link href="/semana">Mi semana</Link>
+        <Link href="/plan">Plan</Link>
         <Link href="/entrenar">Entrenar</Link>
         <Link href="/evaluacion">Evaluación</Link>
         <Link href="/perfil">Perfil</Link>

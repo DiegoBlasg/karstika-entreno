@@ -79,7 +79,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
             )}
           </div>
         )}
-        {estado && 'prep' in estado && <ResultadoPropuesta entrada={estado.entrada} prep={estado.prep} reemplaza={estado.reemplaza} />}
+        {estado && 'prep' in estado && <ResultadoPropuesta entrada={estado.entrada} prep={estado.prep} posicion={estado.posicion} reemplaza={estado.reemplaza} />}
       </div>
     </div>
   )

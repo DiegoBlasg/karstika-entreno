@@ -1,5 +1,5 @@
 import type { Ejercicio, SesionPlan } from '@/motor'
-import { NOMBRE_TIPO } from '@/lib/nombres'
+import { DONDE_SE_HACE, NOMBRE_TIPO } from '@/lib/nombres'
 import { PorQue } from './PorQue'
 
 function detalle(ej: Ejercicio): string {
@@ -21,6 +21,7 @@ export function PlanSesion({ plan }: { plan: SesionPlan }) {
       <h3 className="font-semibold">
         {NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min{s.intensidad === 'alta' ? ' · intensa' : ''}
       </h3>
+      <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[s.tipo]}</p>
       <PorQue explicaciones={plan.explicaciones} />
       <ol className="space-y-2">
         {plan.bloques.map((b, i) => (

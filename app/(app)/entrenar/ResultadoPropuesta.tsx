@@ -3,10 +3,12 @@
 import { useActionState } from 'react'
 import { esCargaAlta, ZONAS, type SesionPlan } from '@/motor'
 import { AvisoMedico } from '@/components/AvisoMedico'
+import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, TARJETA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
 import { PorQue } from '@/components/PorQue'
 import type { EntradaPeticion, Preparacion } from '@/lib/datos/peticion'
+import type { PosicionTemporada } from '@/lib/datos/temporada'
 import type { EstadoAccion } from '@/lib/estado'
 import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
@@ -30,7 +32,9 @@ function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan
   )
 }
 
-export function ResultadoPropuesta({ entrada, prep, reemplaza }: { entrada: EntradaPeticion; prep: Preparacion; reemplaza?: string }) {
+export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
+  entrada: EntradaPeticion; prep: Preparacion; posicion: PosicionTemporada | null; reemplaza?: string
+}) {
   if (prep.tipo === 'fuera-temporada') return <p className="rounded bg-amber-50 p-3">{prep.mensaje}</p>
   const { propuesta, consejos, fase } = prep
   const estado = propuesta.estado
@@ -42,8 +46,9 @@ export function ResultadoPropuesta({ entrada, prep, reemplaza }: { entrada: Entr
   return (
     <div className="space-y-4">
       <p className="text-sm text-stone-600">
-        {fechaLarga(entrada.fecha)} · fase {fase.nombre}{fase.descarga ? ' · semana de descarga' : ''}
+        {fechaLarga(entrada.fecha)}{posicion ? '' : ` · fase ${fase.nombre}${fase.descarga ? ' · semana de descarga' : ''}`}
       </p>
+      {posicion && <ContextoTemporada posicion={posicion} />}
       {noVerdes.length > 0 && (
         <section className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
           <ul>

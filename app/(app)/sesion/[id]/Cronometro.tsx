@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
+import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, CAMPO } from '@/components/estilos'
 import type { Paso } from '@/lib/cronometro/pasos'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
@@ -12,7 +13,8 @@ import {
   atras, empezar, ESTADO_INICIAL, faseFallo, leerGuardado, minutosReales, noPuedoMas, pausar, reabrir, restanteS, siguiente,
   terminar, tick, transcurridoMs, type EstadoReloj,
 } from '@/lib/cronometro/reloj'
-import { NOMBRE_TIPO } from '@/lib/nombres'
+import type { PosicionTemporada } from '@/lib/datos/temporada'
+import { DONDE_SE_HACE, NOMBRE_TIPO } from '@/lib/nombres'
 import { FormularioRegistro } from '../../_hoy/FormularioRegistro'
 import { FormularioIntento } from './FormularioIntento'
 import { FormularioResultadoTest } from './FormularioResultadoTest'
@@ -72,8 +74,9 @@ const pesoValido = (texto: string): number | null => {
   return texto.trim() !== '' && Number.isFinite(v) && v >= PESO.min && v <= PESO.max ? v : null
 }
 
-export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy }: {
+export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy, posicion }: {
   plan: SesionPlan; pasos: Paso[]; molestiasChequeo: Molestia[]; hoy: string; pesoInicial: number; evaluacionHoy: boolean
+  posicion: PosicionTemporada | null
 }) {
   const router = useRouter()
   const clave = `cronometro:${plan.sesion.id}`
@@ -274,6 +277,8 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">{NOMBRE_TIPO[plan.sesion.tipo]} · {plan.sesion.duracionMin} min</h1>
+        <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[plan.sesion.tipo]}</p>
+        {posicion && <ContextoTemporada posicion={posicion} />}
         <ol className="list-decimal space-y-1 pl-5 text-sm">
           {plan.bloques.map((b, i) => <li key={`${b.nombre}-${i}`}>{b.nombre} · {b.minutos} min</li>)}
         </ol>

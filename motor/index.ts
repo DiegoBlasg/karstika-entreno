@@ -11,14 +11,14 @@ export {
   type Perfil, type Sesion, type TipoComplemento, type TipoSesion, type Violacion,
 } from './tipos'
 export { motivosNoEncaja, proponerSesion } from './propuesta'
-export { construirComplemento, construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
+export { construirComplemento, construirSesion, FRACCION_INICIAL_REPEATERS, TIPOS_CON_PLANTILLA } from './plantillas'
 export { FASE_BASE, FASE_FUERZA } from './fases'
 export { evaluacionVigente, fuerzaRelativa, lastreRepeaters } from './evaluacion'
 export type {
   Bloque, Ejercicio, EvaluacionDedos, Fase, Peticion, Propuesta, SesionPlan,
 } from './propuesta-tipos'
 export { planificarTemporada, semanaEnFecha, faseEnFecha, type SemanaPlan, type Temporada } from './temporada'
-export { descargar, FASES, FASE_RENDIMIENTO, FASE_RESISTENCIA, FASE_TRANSICION } from './fases'
+export { descargar, FASES, FASE_OBJETIVO, FASE_RENDIMIENTO, FASE_RESISTENCIA, FASE_TRANSICION } from './fases'
 export type { FaseId } from './propuesta-tipos'
 export {
   ajusteCiclo2, diagnosticar,

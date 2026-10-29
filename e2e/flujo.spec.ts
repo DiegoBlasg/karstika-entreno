@@ -30,7 +30,7 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   const inicio = lunesDeEstaSemana()
   await page.getByLabel('Peso (kg)').fill('70')
   await page.getByLabel('Años escalando').fill('1.5')
-  await page.getByLabel('Inicio de la temporada (lunes)').fill(inicio)
+  await page.getByLabel('Inicio de la temporada').fill(inicio)
   await page.getByLabel('Fecha objetivo').fill(sumarDias(inicio, 48 * 7))
   await page.getByLabel('He leído el aviso y lo acepto').check()
   await page.getByRole('button', { name: 'Guardar perfil' }).click()
@@ -224,4 +224,22 @@ test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) =>
     await guardar.click()
   }
   await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
+})
+
+test('Plan: próximos días, el año y una fuente desde «¿Por qué?»', async ({ page }) => {
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.getByRole('link', { name: 'Plan', exact: true }).click()
+  await expect(page).toHaveURL(/\/plan$/)
+  await expect(page.getByRole('heading', { name: 'Próximos días' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'El año' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Qué ha cambiado por tus resultados' })).toBeVisible()
+  // La semana actual va marcada en el año.
+  await expect(page.locator('li[aria-current="date"]')).toHaveCount(1)
+  await page.locator('summary', { hasText: '¿Por qué?' }).first().click()
+  await page.getByRole('link', { name: 'detalle' }).first().click()
+  await expect(page).toHaveURL(/\/fuentes\//)
+  await expect(page.getByRole('heading', { name: 'Limitaciones' })).toBeVisible()
 })

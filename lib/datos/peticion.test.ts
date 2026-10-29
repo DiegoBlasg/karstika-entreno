@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { sumarDias } from '../fecha'
 import { datosVacios, huecoFila, uuid } from './_fabrica'
 import { conChequeo, conRegistro, conSesion, filaSesionAceptada } from './cambios'
 import { opcionElegida, prepararPropuesta, temporadaDe, type EntradaPeticion, type Preparacion } from './peticion'
@@ -78,5 +79,33 @@ describe('prepararPropuesta con huecos', () => {
     const p = propuestaDe(prepararPropuesta(d, MARTES))
     expect(p.propuesta.semana?.map((x) => x.hueco.fecha)).toEqual(['2026-11-04', '2026-11-05'])
     expect(prepararPropuesta(d, MARTES)).toEqual(p) // determinista: aceptar ve lo mismo
+  })
+})
+
+describe('material en casa (multipresa_en_casa)', () => {
+  const SIN = ['multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'evaluacion-dedos', 'campus']
+  const tipos = (p: Preparacion): string[] => {
+    const pr = propuestaDe(p).propuesta
+    return [pr.principal, ...pr.alternativas].flatMap((o) => (o ? [o.sesion.tipo] : []))
+  }
+  const sinMultipresa = datosVacios({ perfil: { ...datosVacios().perfil, multipresa_en_casa: false } })
+  const conMultipresa = datosVacios({ perfil: { ...datosVacios().perfil, multipresa_en_casa: true } })
+  // cada día de la temporada, en casa y solo
+  const dias: string[] = []
+  for (let f = '2026-11-02'; f < '2027-05-01'; f = sumarDias(f, 1)) dias.push(f)
+  const enCasa = (fecha: string): EntradaPeticion => ({ fecha, horaInicio: 19, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 } })
+
+  it('sin multipresa en casa nunca propone multipresa, test de dedos ni campus en casa', () => {
+    for (const f of dias) for (const t of tipos(prepararPropuesta(sinMultipresa, enCasa(f)))) expect(SIN).not.toContain(t)
+  })
+  it('con multipresa en casa sigue pudiendo proponerla', () => {
+    const vistos = new Set(dias.flatMap((f) => tipos(prepararPropuesta(conMultipresa, enCasa(f)))))
+    expect(SIN.some((t) => vistos.has(t))).toBe(true)
+  })
+  it('los huecos de casa de la semana llevan la misma regla (no lanza y no propone material que falta)', () => {
+    const huecos = [huecoFila(uuid(1), '2026-11-05', '19:00'), huecoFila(uuid(2), '2026-11-07', '10:00')]
+    const d = { ...sinMultipresa, huecos }
+    for (const t of tipos(prepararPropuesta(d, { ...MARTES, fecha: '2026-11-03' }))) expect(t).toBeTruthy()
+    expect(() => prepararPropuesta(d, MARTES)).not.toThrow()
   })
 })

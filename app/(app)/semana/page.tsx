@@ -1,22 +1,13 @@
 import Link from 'next/link'
 import { TARJETA } from '@/components/estilos'
+import { enlacePreparar } from '@/lib/datos/huecos'
 import type { HuecoVista } from '@/lib/datos/semana'
 import { vistaSemana } from '@/lib/datos/semana'
 import { ahoraMadrid, fechaLarga, hhmmDeMinutos, lunesDe, sumarDias } from '@/lib/fecha'
-import { nombreSesion } from '@/lib/nombres'
+import { DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LUGAR, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonBorrarHueco } from './BotonBorrarHueco'
 import { FormularioHueco } from './FormularioHueco'
-
-const LUGAR = { casa: 'casa', rocodromo: 'rocódromo', roca: 'roca' } as const
-const COMPANIA = { solo: 'solo', 'con-gente': 'con gente' } as const
-
-function enlacePreparar({ fila }: HuecoVista): string {
-  const q = new URLSearchParams({
-    fecha: fila.fecha, hora: hhmmDeMinutos(fila.inicio_min), compania: fila.compania, lugar: fila.lugar, minutos: String(fila.minutos),
-  })
-  return `/entrenar?${q.toString()}`
-}
 
 function Fila({ h }: { h: HuecoVista }) {
   const { fila, estado } = h
@@ -25,11 +16,16 @@ function Fila({ h }: { h: HuecoVista }) {
     <li className={`${TARJETA} ${pasado ? 'opacity-50' : ''}`}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm">
-          {fechaLarga(fila.fecha)} · {hhmmDeMinutos(fila.inicio_min)} · {LUGAR[fila.lugar]} · {COMPANIA[fila.compania]} · {fila.minutos} min
+          {fechaLarga(fila.fecha)} · {hhmmDeMinutos(fila.inicio_min)} · {NOMBRE_LUGAR[fila.lugar]} · {NOMBRE_COMPANIA[fila.compania]} · {fila.minutos} min
         </p>
         {!pasado && <BotonBorrarHueco id={fila.id} conSesion={estado.tipo === 'ocupado'} />}
       </div>
-      {estado.tipo === 'planeado' && <p className="font-medium">{nombreSesion(estado.sesion)}{estado.cargaAlta ? ' ★' : ''}</p>}
+      {estado.tipo === 'planeado' && (
+        <>
+          <p className="font-medium">{nombreSesion(estado.sesion)}{estado.cargaAlta ? ' ★' : ''}</p>
+          <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[estado.sesion.tipo]}</p>
+        </>
+      )}
       {estado.tipo === 'libre' && <p className="text-stone-600">Libre: no hace falta entrenar.</p>}
       {estado.tipo === 'ocupado' && (
         <p>
@@ -38,7 +34,7 @@ function Fila({ h }: { h: HuecoVista }) {
       )}
       {pasado && estado.sesion && <p className="text-sm">{nombreSesion(estado.sesion.sesion)}</p>}
       {(estado.tipo === 'planeado' || estado.tipo === 'libre' || estado.tipo === 'sin-plan') && (
-        <Link href={enlacePreparar(h)} className="inline-block rounded bg-stone-900 px-3 py-1 text-sm font-medium text-white">Preparar</Link>
+        <Link href={enlacePreparar(fila)} className="inline-block rounded bg-stone-900 px-3 py-1 text-sm font-medium text-white">Preparar</Link>
       )}
     </li>
   )

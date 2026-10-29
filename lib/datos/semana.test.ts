@@ -64,6 +64,21 @@ describe('un error del motor no tumba la vista', () => {
     expect(v?.huecos[0]?.estado.tipo).toBe('sin-plan')
     expect(v?.aviso).toMatch(/^No se ha podido calcular el plan de la semana:/)
   })
+  it('con datos que no dejan calcular la temporada tampoco lanza', () => {
+    const rotos = datosVacios({
+      huecos: [LUN_M],
+      evaluaciones: [
+        { id: uuid(1), fecha: '2026-11-02', peso_corporal_kg: 70, lastre_kg: 5, resistencia_s: null, tecnica: null },
+        { id: uuid(2), fecha: '2026-11-02', peso_corporal_kg: 70, lastre_kg: 6, resistencia_s: null, tecnica: null },
+      ],
+    })
+    let v: ReturnType<typeof vistaSemana> | undefined
+    expect(() => {
+      v = vistaSemana(rotos, LUNES, ANTES)
+    }).not.toThrow()
+    expect(v?.fase).toBeNull()
+    expect(v?.aviso).toMatch(/^No se ha podido calcular el plan de la semana:/)
+  })
   it('proximoHueco no lanza', () => {
     expect(() => proximoHueco(d, ANTES)).not.toThrow()
   })

@@ -6,13 +6,17 @@ import { conChequeo, conSesion, datosSinReemplazada, filaSesionAceptada } from '
 import type { FilaChequeo, FilaSesion } from '@/lib/datos/filas'
 import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { opcionElegida, prepararPropuesta, type EntradaPeticion, type Preparacion } from '@/lib/datos/peticion'
+import { posicionEnTemporada, type PosicionTemporada } from '@/lib/datos/temporada'
 import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
 import { contexto, entero, fecha, hora, leerEntradaPeticion, mensajeDe, molestias, texto, textoOpcional } from '@/lib/formulario'
 import { guardarChequeo, insertarConsejos, insertarSesion, requerirDatos, sustituirSesion } from '@/lib/servidor/consultas'
 
-export type EstadoProponer = { error: string; detalle?: string } | { entrada: EntradaPeticion; prep: Preparacion; reemplaza?: string } | null
+export type EstadoProponer =
+  | { error: string; detalle?: string }
+  | { entrada: EntradaPeticion; prep: Preparacion; posicion: PosicionTemporada | null; reemplaza?: string }
+  | null
 
 export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<EstadoProponer> {
   const hoy = ahoraMadrid(new Date()).fecha
@@ -58,7 +62,10 @@ export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<E
       return { error: `No se ha podido guardar el chequeo: ${mensajeDe(e)}` }
     }
   }
-  return { entrada, prep, ...(reemplaza ? { reemplaza } : {}) }
+  // La descarga es la de la fase aplicada: una adelantada por el bienestar sustituye a la del calendario.
+  const enCalendario = prep.tipo === 'propuesta' ? posicionEnTemporada(base, entrada.fecha) : null
+  const posicion = enCalendario && prep.tipo === 'propuesta' ? { ...enCalendario, descarga: prep.fase.descarga === true } : null
+  return { entrada, prep, posicion, ...(reemplaza ? { reemplaza } : {}) }
 }
 
 // Vuelve a ejecutar el motor con los datos actuales (no se fía de lo que manda el navegador) y guarda la opción

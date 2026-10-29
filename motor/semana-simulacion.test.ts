@@ -3,14 +3,15 @@ import {
   diaNumero, esCargaAlta, esIntensaDedos, estadoAtleta, faseEnFecha, fechaDesdeDia, objetivoRpe, planificarTemporada, proponerSesion,
   validarSesion,
 } from './index'
-import type { Contexto, EvaluacionDedos, Hueco, RegistroSesion, Sesion } from './index'
+import type { Contexto, EvaluacionDedos, Hueco, RegistroSesion, Sesion, TipoSesion } from './index'
 
 // 16 semanas con los huecos reales de Diego (2026-10-27): mañanas de lunes a jueves en casa, tardes de lunes y jueves
-// solo en el rocódromo y martes por la tarde con gente; viernes a domingo, nada. En cada hueco se pide la sesión con
+// solo en el rocódromo y martes por la tarde con gente; viernes a domingo, nada. En casa solo hay barra de dominadas (sin
+// multipresa: ni suspensiones, ni test, ni campus en casa). En cada hueco se pide la sesión con
 // los huecos que quedan de la semana, se acepta la principal y se registra con el RPE objetivo.
 const perfil = { pesoKg: 72, anosEscalando: 1.5, lesiones: [] }
 const temporada = planificarTemporada('2026-11-02', '2027-10-04')
-const CASA: Contexto = { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 }
+const CASA: Contexto = { compania: 'solo', lugar: 'casa', minutosDisponibles: 60, multipresaEnCasa: false }
 const SOLO: Contexto = { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 90 }
 const AMIGOS: Contexto = { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: 120 }
 const PATRON: { off: number; hora: number; contexto: Contexto }[] = [
@@ -18,6 +19,10 @@ const PATRON: { off: number; hora: number; contexto: Contexto }[] = [
   { off: 1, hora: 9, contexto: CASA }, { off: 1, hora: 19, contexto: AMIGOS },
   { off: 2, hora: 9, contexto: CASA },
   { off: 3, hora: 9, contexto: CASA }, { off: 3, hora: 19, contexto: SOLO },
+]
+
+const NECESITA_MULTIPRESA: readonly TipoSesion[] = [
+  'multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'evaluacion-dedos', 'campus',
 ]
 
 interface Semana { lunes: string; fase: string; descarga: boolean; sesiones: { hueco: Hueco; sesion: Sesion | null }[] }
@@ -73,6 +78,16 @@ describe('simulación de 16 semanas con huecos (P-67)', () => {
     for (const s of semanas) {
       const dias = new Set(s.sesiones.filter((x) => x.sesion && esIntensaDedos(x.sesion)).map((x) => x.hueco.fecha))
       expect(dias.size, s.lunes).toBeLessThanOrEqual(3)
+    }
+  })
+  it('sin multipresa en casa, ninguna multipresa, test ni campus cae en casa: van al rocódromo', () => {
+    const todas = semanas.flatMap((s) => s.sesiones)
+    const conMultipresa = todas.filter((x) => x.sesion && NECESITA_MULTIPRESA.includes(x.sesion.tipo))
+    expect(conMultipresa.length).toBeGreaterThan(0)
+    for (const x of conMultipresa) expect(x.hueco.contexto.lugar, `${x.hueco.fecha} ${x.sesion!.tipo}`).toBe('rocodromo')
+    // Tampoco como complemento dentro de una sesión de casa.
+    for (const x of todas.filter((y) => y.hueco.contexto === CASA && y.sesion)) {
+      expect((x.sesion!.incluye ?? []).filter((t) => (NECESITA_MULTIPRESA as readonly string[]).includes(t)), x.hueco.fecha).toEqual([])
     }
   })
 })

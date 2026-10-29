@@ -9,6 +9,7 @@ export const PERFIL: FilaPerfil = {
   grado_objetivo: '7a',
   inicio_temporada: '2026-11-02',
   objetivo_temporada: '2027-10-04',
+  multipresa_en_casa: false,
   aviso_aceptado_en: '2026-10-27 10:00:00+00',
 }
 
