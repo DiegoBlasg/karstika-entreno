@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { METADATOS, PARAMETRO_IDS } from '../motor'
+import { METADATOS, PARAMETRO_IDS, type ParametroId } from '../motor'
 import type { Explicacion } from '@/motor'
 import { basesDe, citaCorta, estudio, NIVEL_TEXTO } from './fuentes'
 
@@ -34,6 +34,10 @@ describe('citaCorta', () => {
 })
 
 describe('basesDe', () => {
+  it('omite un parámetro que ya no existe (propuestas antiguas guardadas)', () => {
+    const x = { regla: 'r', parametros: ['P-99', 'P-02'] as unknown as ParametroId[], evidencias: [], nivelMinimo: 'A' as const, origen: 'evidencia' as const, motivo: 'm' }
+    expect(basesDe([x]).map((b) => b.parametro)).toEqual(['P-02'])
+  })
   it('no repite parámetros y da el nivel en palabras', () => {
     const b = basesDe([expl(['P-02', 'P-03']), expl(['P-03'])])
     expect(b.map((x) => x.parametro)).toEqual(['P-02', 'P-03'])

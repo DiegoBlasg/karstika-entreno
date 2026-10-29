@@ -9,7 +9,12 @@ const METODO: Record<'fuente-primaria' | 'resumen', string> = {
 
 export default async function PaginaFuente({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const h = porId(decodeURIComponent(id))
+  let h: ReturnType<typeof porId>
+  try {
+    h = porId(decodeURIComponent(id))
+  } catch {
+    h = undefined // URL mal formada (p. ej. «%E0»)
+  }
   if (!h) {
     return (
       <div className="space-y-4">

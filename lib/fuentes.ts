@@ -59,6 +59,8 @@ export function basesDe(explicaciones: Explicacion[]): Base[] {
       if (vistos.has(p)) continue
       vistos.add(p)
       const m = METADATOS[p]
+      // Una propuesta guardada puede citar un parámetro que ya no existe: se omite en vez de romper la página.
+      if (!m) continue
       bases.push({
         parametro: p,
         titulo: m.titulo,

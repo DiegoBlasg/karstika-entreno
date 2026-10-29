@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { FRACCION_INICIAL_REPEATERS, VALORES } from '@/motor'
 import { TARJETA } from '@/components/estilos'
 import { PorQue } from '@/components/PorQue'
 import { textoLastre } from '@/lib/cronometro/test'
@@ -77,7 +78,7 @@ function Cambios({ c }: { c: CambiosResultados }) {
           {c.repeaters && (
             <li>
               <span className="font-medium">Carga de los repeaters: </span>
-              al empezar, el 70 % del test ({textoLastre(c.repeaters.lastreInicial)}); con sesiones válidas sube como mucho al 80 %
+              al empezar, el {Math.round(FRACCION_INICIAL_REPEATERS * 100)} % del test ({textoLastre(c.repeaters.lastreInicial)}); con sesiones válidas sube como mucho al {Math.round(VALORES['P-06'].fraccionMaximaRepeaters * 100)} %
               ({textoLastre(c.repeaters.lastreMaximo)}). La carga exacta sale en cada sesión de multipresa.
             </li>
           )}
