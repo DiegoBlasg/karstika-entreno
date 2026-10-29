@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
+import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
 import type { FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { corregible, type Tarjeta } from '@/lib/datos/hoy'
+import type { PosicionTemporada } from '@/lib/datos/temporada'
 import type { EstadoAccion } from '@/lib/estado'
 import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { REGLETA_MM } from '@/lib/formulario'
@@ -112,7 +114,8 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
   )
 }
 
-export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string }) {
+// `posicion`: dónde cae el día de la sesión en la temporada (se calcula en el servidor); solo se muestra si hay plan.
+export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null }) {
   const { fila, registro } = tarjeta
   const s = fila.sesion
   const pasada = fila.fecha <= hoy
@@ -130,7 +133,10 @@ export function TarjetaSesion({ tarjeta, hoy }: { tarjeta: Tarjeta; hoy: string 
         </div>
       )}
       {fila.propuesta ? (
-        <PlanSesion plan={fila.propuesta} />
+        <>
+          {posicion && <ContextoTemporada posicion={posicion} />}
+          <PlanSesion plan={fila.propuesta} />
+        </>
       ) : (
         <h3 className="font-semibold">{NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min (lo que hiciste)</h3>
       )}

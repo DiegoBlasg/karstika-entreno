@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { AvisoMedico } from '@/components/AvisoMedico'
 import { testsSinResultado, vistaHoy } from '@/lib/datos/hoy'
 import { proximoHueco } from '@/lib/datos/semana'
+import { posicionSiSePuede, type PosicionTemporada } from '@/lib/datos/temporada'
 import { ahoraMadrid, fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
@@ -17,6 +18,12 @@ export default async function PaginaHoy() {
   const proximo = proximoHueco(datos, { fecha: hoy, minutos: Math.round(ahora.hora * 60) })
   const v = vistaHoy(datos, hoy)
   const sinResultado = testsSinResultado(datos, hoy)
+  // Dónde cae cada sesión en la temporada, una vez por día (la temporada se recalcula en cada llamada).
+  const posiciones = new Map<string, PosicionTemporada | null>()
+  const posicionDe = (fecha: string): PosicionTemporada | null => {
+    if (!posiciones.has(fecha)) posiciones.set(fecha, posicionSiSePuede(datos, fecha))
+    return posiciones.get(fecha)!
+  }
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Hoy, {fechaLarga(hoy)}</h1>
@@ -49,26 +56,26 @@ export default async function PaginaHoy() {
         <section className="space-y-3">
           <h2 className="font-medium">Sin registrar</h2>
           <p className="text-sm text-stone-600">Las sesiones sin registro no cuentan para progresar: apunta cómo fueron.</p>
-          {v.pendientes.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} />)}
+          {v.pendientes.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)}
         </section>
       )}
       {v.hoy.length === 0 ? (
         <p>No tienes ninguna sesión para hoy. <Link href="/entrenar" className="underline">Prepara una</Link>.</p>
       ) : (
-        v.hoy.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} />)
+        v.hoy.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)
       )}
       {v.recientes.length > 0 && (
         <details className="space-y-3">
           <summary className="cursor-pointer font-medium">Últimos 7 días</summary>
           <div className="space-y-3 pt-3">
-            {[...v.recientes].reverse().map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} />)}
+            {[...v.recientes].reverse().map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)}
           </div>
         </details>
       )}
       {v.proximas.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-medium">Próximas</h2>
-          {v.proximas.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} />)}
+          {v.proximas.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)}
         </section>
       )}
       <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} />
