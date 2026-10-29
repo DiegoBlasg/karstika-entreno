@@ -112,3 +112,51 @@ describe('validarContexto', () => {
     expect({ s, c }).toEqual(antes)
   })
 })
+
+describe('material en casa (multipresaEnCasa)', () => {
+  const NECESITA_MULTIPRESA = [
+    'campus', 'evaluacion-dedos', 'multipresa-maxima', 'multipresa-resistencia', 'multipresa-resistencia-fuerza',
+  ] as const
+  it('sin multipresa en casa: solo barra (dominadas, hombro) y descanso', () => {
+    for (const compania of ['solo', 'con-gente'] as const) {
+      const t = tiposPosibles(ctx({ compania, lugar: 'casa', multipresaEnCasa: false }))
+      expect(t).toEqual(['descanso', 'dominadas', 'hombro'])
+      for (const tipo of NECESITA_MULTIPRESA) expect(t).not.toContain(tipo)
+    }
+  })
+  it('con el campo ausente o a true, en casa todo sigue igual', () => {
+    const antes = tiposPosibles(ctx({ lugar: 'casa' }))
+    expect(tiposPosibles(ctx({ lugar: 'casa', multipresaEnCasa: true }))).toEqual(antes)
+    for (const tipo of NECESITA_MULTIPRESA) expect(antes).toContain(tipo)
+  })
+  it('en el rocódromo la multipresa de casa no importa', () => {
+    expect(tiposPosibles(ctx({ multipresaEnCasa: false }))).toEqual(tiposPosibles(ctx()))
+    expect(tiposPosibles(ctx({ compania: 'con-gente', multipresaEnCasa: false })))
+      .toEqual(tiposPosibles(ctx({ compania: 'con-gente' })))
+  })
+  it.each(NECESITA_MULTIPRESA)('%s en casa sin multipresa: contexto.material', (tipo) => {
+    const v = validarContexto(
+      ses('a', '2026-10-27', 8, { tipo, duracionMin: 30 }),
+      ctx({ lugar: 'casa', minutosDisponibles: 60, multipresaEnCasa: false }),
+    )
+    expect(v.map((x) => x.regla)).toEqual(['contexto.material'])
+    expect(v[0]!.sesionIds).toEqual(['a'])
+    expect(v[0]!.mensaje).toBe(`Sin multipresa en casa no se puede hacer ${tipo} en casa: hazla en el rocódromo.`)
+    expect(v[0]!.explicacion.origen).toBe('contexto')
+    expect(v[0]!.explicacion.regla).toBe('contexto.material')
+  })
+  it('sin la marca, o en el rocódromo, la multipresa pasa; dominadas en casa sin multipresa pasan', () => {
+    const s = ses('a', '2026-10-27', 8, { tipo: 'multipresa-maxima', duracionMin: 30 })
+    expect(validarContexto(s, ctx({ lugar: 'casa', minutosDisponibles: 60 }))).toEqual([])
+    expect(validarContexto(s, ctx({ multipresaEnCasa: false }))).toEqual([])
+    const d = ses('b', '2026-10-27', 8, { tipo: 'dominadas', duracionMin: 30 })
+    expect(validarContexto(d, ctx({ lugar: 'casa', minutosDisponibles: 60, multipresaEnCasa: false }))).toEqual([])
+  })
+  it('la violación de material sale en orden con las demás', () => {
+    const v = validarContexto(
+      ses('a', '2026-10-27', 8, { tipo: 'multipresa-maxima', duracionMin: 90 }),
+      ctx({ lugar: 'casa', minutosDisponibles: 60, multipresaEnCasa: false }),
+    )
+    expect(v.map((x) => x.regla)).toEqual(['contexto.material', 'contexto.tiempo'])
+  })
+})

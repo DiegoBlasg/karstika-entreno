@@ -29,6 +29,7 @@ export interface Contexto {
   compania: Compania
   lugar: Lugar
   minutosDisponibles: number
+  multipresaEnCasa?: boolean   // false: en casa no hay multipresa (solo barra); ausente = sí hay
 }
 
 export interface Sesion {

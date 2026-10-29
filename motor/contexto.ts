@@ -2,6 +2,10 @@ import { explicarContexto } from './explicacion'
 import { TIPOS_SESION, type Contexto, type Lugar, type Sesion, type TipoSesion, type Violacion } from './tipos'
 
 const NECESITA_COMPANIA: ReadonlySet<TipoSesion> = new Set<TipoSesion>(['via-cuerda-limite', 'pegues-proyecto'])
+// Sesiones que necesitan multipresa (el campus, su tabla): sin ella en casa solo quedan la barra y el descanso.
+const NECESITA_MULTIPRESA: ReadonlySet<TipoSesion> = new Set<TipoSesion>([
+  'multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'evaluacion-dedos', 'campus',
+])
 const CASA_O_ROCODROMO: readonly Lugar[] = ['casa', 'rocodromo']
 
 const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
@@ -10,7 +14,7 @@ const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
   'via-autoasegurada': ['rocodromo'],
   'bloque-limite': ['rocodromo'],
   'bloque-suave': ['rocodromo'],
-  board: ['rocodromo'],   // el usuario solo tiene multipresa en casa
+  board: ['rocodromo'],   // en casa como mucho hay multipresa y barra, nunca un board
   tecnica: ['rocodromo', 'roca'],   // en roca: vías por debajo del nivel (segundo día de un viaje)
   arc: ['rocodromo'],
   'resistencia-4x4': ['rocodromo'],
@@ -34,10 +38,14 @@ function comprobarContexto(ctx: Contexto): void {
 const necesitaCompania = (t: TipoSesion, lugar: Lugar): boolean =>
   NECESITA_COMPANIA.has(t) || (lugar === 'roca' && t !== 'descanso')
 
+// Fail-closed solo cuando el usuario dice explícitamente que no tiene multipresa en casa; ausente = sí la tiene.
+const sinMaterial = (t: TipoSesion, ctx: Contexto): boolean =>
+  ctx.lugar === 'casa' && ctx.multipresaEnCasa === false && NECESITA_MULTIPRESA.has(t)
+
 export function tiposPosibles(ctx: Contexto): TipoSesion[] {
   comprobarContexto(ctx)
   return TIPOS_SESION.filter(
-    (t) => LUGARES[t].includes(ctx.lugar) && (!necesitaCompania(t, ctx.lugar) || ctx.compania === 'con-gente'),
+    (t) => LUGARES[t].includes(ctx.lugar) && !sinMaterial(t, ctx) && (!necesitaCompania(t, ctx.lugar) || ctx.compania === 'con-gente'),
   ).sort()
 }
 
@@ -51,6 +59,15 @@ export function validarContexto(sesion: Sesion, ctx: Contexto): Violacion[] {
       sesionIds: [sesion.id],
       mensaje: motivo,
       explicacion: explicarContexto('contexto.lugar', motivo),
+    })
+  }
+  if (sinMaterial(sesion.tipo, ctx)) {
+    const motivo = `Sin multipresa en casa no se puede hacer ${sesion.tipo} en casa: hazla en el rocódromo.`
+    out.push({
+      regla: 'contexto.material',
+      sesionIds: [sesion.id],
+      mensaje: motivo,
+      explicacion: explicarContexto('contexto.material', motivo),
     })
   }
   if (necesitaCompania(sesion.tipo, ctx.lugar) && ctx.compania === 'solo') {
