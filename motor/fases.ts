@@ -18,19 +18,20 @@ export const FASE_BASE: Fase = {
   ],
 }
 
-// Las dominadas siguen prohibidas como sesión principal en todas las fases: P-39 solo las admite como complemento
-// opcional, en la fuerza y fuera de la descarga (lo decide el generador al completar la sesión).
+// Dominadas lastradas (P-39): opcionales. Como sesión, solo en la fuerza y la resistencia, con cupo de 1 por semana y
+// la prioridad más baja (decisión de Diego del 2026-10-29: aprovechar las mañanas en casa con barra); como complemento,
+// solo en la fuerza (lo decide el generador al completar la sesión). Nunca en la descarga (lo quita `descargar`).
 // Fuerza: 2 multipresas (P-07) y 1 vía al límite por semana = 3 sesiones intensas de dedos, justo el tope de
 // P-12 para perfiles novel. La vía va antes en la prioridad para que el día con compañero sea de cuerda y la
 // multipresa caiga en los días sin compañero o en casa.
 export const FASE_FUERZA: Fase = {
   id: 'fuerza',
   nombre: 'Fuerza de dedos',
-  cupos: { 'evaluacion-dedos': 1, 'via-cuerda-limite': 1, 'multipresa-resistencia': 2, tecnica: 1, arc: 1, hombro: 2 },
-  prioridad: ['evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia', 'tecnica', 'arc', 'hombro'],
+  cupos: { 'evaluacion-dedos': 1, 'via-cuerda-limite': 1, 'multipresa-resistencia': 2, tecnica: 1, arc: 1, hombro: 2, dominadas: 1 },
+  prioridad: ['evaluacion-dedos', 'via-cuerda-limite', 'multipresa-resistencia', 'tecnica', 'arc', 'hombro', 'dominadas'],
   prohibidos: [
     'campus', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'board', 'bloque-limite', 'via-autoasegurada',
-    'pegues-proyecto', 'dominadas', 'resistencia-4x4',
+    'pegues-proyecto', 'resistencia-4x4',
   ],
 }
 
@@ -41,16 +42,17 @@ export const FASE_RESISTENCIA: Fase = {
   nombre: 'Resistencia de fuerza',
   cupos: {
     'evaluacion-dedos': 1, 'via-cuerda-limite': 1, 'multipresa-resistencia-fuerza': 1, 'resistencia-4x4': 1,
-    tecnica: 1, arc: 1, hombro: 2,
+    tecnica: 1, arc: 1, hombro: 2, dominadas: 1,
   },
   // El 4x4 va antes que la multipresa: solo se puede hacer en el rocódromo, mientras que la multipresa también
   // cabe en casa; así, sin compañero en el rocódromo toca 4x4 y en casa, multipresa.
   prioridad: [
     'evaluacion-dedos', 'via-cuerda-limite', 'resistencia-4x4', 'multipresa-resistencia-fuerza', 'tecnica', 'arc', 'hombro',
+    'dominadas',
   ],
   prohibidos: [
     'campus', 'multipresa-maxima', 'multipresa-resistencia', 'board', 'bloque-limite', 'via-autoasegurada',
-    'pegues-proyecto', 'dominadas',
+    'pegues-proyecto',
   ],
 }
 
@@ -114,22 +116,22 @@ export const FASES: Readonly<Record<FaseId, Fase>> = Object.freeze({
   transicion: FASE_TRANSICION,
 })
 
-// Lo que se quita en una semana de descarga (P-48: sin sesiones al límite).
-const AL_LIMITE: readonly TipoSesion[] = [
-  'via-cuerda-limite', 'bloque-limite', 'board', 'pegues-proyecto', 'campus', 'evaluacion-dedos',
+// Lo que se quita en una semana de descarga (P-48: sin sesiones al límite; P-39: las dominadas, fuera de la descarga).
+const FUERA_DE_DESCARGA: readonly TipoSesion[] = [
+  'via-cuerda-limite', 'bloque-limite', 'board', 'pegues-proyecto', 'campus', 'evaluacion-dedos', 'dominadas',
 ]
 
-// Semana de descarga (P-47, P-48): sin nada al límite; la multipresa y el 4x4 se mantienen con la mitad de volumen
-// (lo aplican las plantillas al ver `descarga`). No muta la fase recibida.
+// Semana de descarga (P-47, P-48): sin nada al límite ni dominadas (P-39); la multipresa y el 4x4 se mantienen con la
+// mitad de volumen (lo aplican las plantillas al ver `descarga`). No muta la fase recibida.
 export function descargar(fase: Fase): Fase {
   const cupos = { ...fase.cupos }
-  for (const t of AL_LIMITE) delete cupos[t]
+  for (const t of FUERA_DE_DESCARGA) delete cupos[t]
   return {
     ...fase,
     nombre: `${fase.nombre} (descarga)`,
     cupos,
-    prioridad: fase.prioridad.filter((t) => !AL_LIMITE.includes(t)),
-    prohibidos: [...new Set([...fase.prohibidos, ...AL_LIMITE])],
+    prioridad: fase.prioridad.filter((t) => !FUERA_DE_DESCARGA.includes(t)),
+    prohibidos: [...new Set([...fase.prohibidos, ...FUERA_DE_DESCARGA])],
     descarga: true,
   }
 }

@@ -90,9 +90,10 @@ describe('proponerSesion: fase de fuerza', () => {
     const r = proponerSesion(fuerza({ evaluacion: evaluacionReciente, contexto: solo }))
     expect(r.principal!.sesion.tipo).toBe('multipresa-resistencia')
   })
-  it('en casa solo ofrece lo que se puede hacer allí (multipresa y hombro, sin board) y completa con hombro', () => {
+  it('en casa solo ofrece lo que se puede hacer allí (multipresa, hombro y dominadas, sin board) y completa con hombro', () => {
     const r = proponerSesion(fuerza({ evaluacion: evaluacionReciente, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } }))
-    expect(tipos(r)).toEqual(['multipresa-resistencia', 'hombro'])
+    // Las dominadas como sesión (P-39, cupo 1 en la fuerza) van al final: la prioridad más baja de la fase.
+    expect(tipos(r)).toEqual(['multipresa-resistencia', 'hombro', 'dominadas'])
     expect(r.principal!.sesion.incluye).toEqual(['hombro'])
     expect(r.principal!.sesion.duracionMin).toBe(45)
   })

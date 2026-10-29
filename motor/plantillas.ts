@@ -618,6 +618,61 @@ function construirHombro(p: Peticion): SesionPlan | null {
   return plan(sesionDe('hombro', p, total, 'suave'), bloques)
 }
 
+// Dominadas lastradas como sesión (P-39; decisión de Diego del 2026-10-29 para las mañanas en casa con barra): el
+// mismo 4x4 del complemento, con calentamiento propio de barra (P-49) y una vuelta a la calma corta. Suave, como el
+// complemento: 2 repeticiones en reserva, sin fallo. Las reglas seguridad.dominadas-* las controlan igual que al
+// complemento. 10 + 15 + 5 = 30 min, que caben en una mañana de 45-60 min.
+const VUELTA_CALMA_DOMINADAS_MIN = 5
+
+function construirDominadas(p: Peticion): SesionPlan | null {
+  const { minutos, series, repeticiones, repeticionesEnReserva, descansoMin } = VALORES['P-39']
+  const total = CALENTAMIENTO_MIN + minutos + VUELTA_CALMA_DOMINADAS_MIN
+  if (total > p.contexto.minutosDisponibles) return null
+  const bloques: Bloque[] = [
+    {
+      nombre: 'Calentamiento en barra',
+      minutos: CALENTAMIENTO_MIN,
+      ejercicios: [
+        {
+          nombre: 'Movilidad de hombro y escápulas, colgarse de la barra y dominadas sin lastre de menos a más',
+          cargaTexto: 'Esfuerzo percibido 2–4 de 10',
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.dominadas-calentamiento',
+        ['P-39', 'P-49'],
+        'Unos 10 minutos de calentamiento de menos a más antes de las dominadas lastradas.',
+      ),
+    },
+    {
+      nombre: 'Dominadas lastradas',
+      minutos,
+      ejercicios: [
+        {
+          nombre: 'Dominadas lastradas en barra',
+          series,
+          repeticiones,
+          descansoSeriesS: descansoMin * 60,
+          cargaTexto: `Lastre que te deje ${repeticionesEnReserva} repeticiones en reserva`,
+          notas: 'En barra, no en la multipresa. Si notas el codo o el hombro, para.',
+        },
+      ],
+      explicacion: explicar(
+        'plantilla.dominadas',
+        ['P-39'],
+        `Sesión opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado; la dosis es decisión de diseño, como mucho 1 vez por semana y nunca el día de dedos intensos.`,
+      ),
+    },
+    {
+      nombre: 'Vuelta a la calma',
+      minutos: VUELTA_CALMA_DOMINADAS_MIN,
+      ejercicios: [{ nombre: 'Movilidad suave de hombro, espalda y muñecas', cargaTexto: 'Sin esfuerzo' }],
+      explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar (decisión de diseño).'),
+    },
+  ]
+  return plan(sesionDe('dominadas', p, total, 'suave'), bloques)
+}
+
 // Escalada al límite. Decisiones de diseño: 15 min de vías o bloques progresivos y, en vía, hasta 3 intentos
 // (P-61 permite hasta 4) de unos 5 min, cada uno seguido de 20 min de recuperación activa (P-51).
 const PROGRESIVAS_VIA_MIN = 15
@@ -770,7 +825,7 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
 }
 
 export const TIPOS_CON_PLANTILLA: readonly TipoSesion[] = [
-  'arc', 'bloque-limite', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
+  'arc', 'bloque-limite', 'bloque-suave', 'board', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
   'multipresa-resistencia-fuerza', 'pegues-proyecto', 'resistencia-4x4', 'tecnica', 'via-cuerda-limite',
 ]
 
@@ -800,6 +855,8 @@ export function construirSesion(tipo: TipoSesion, p: Peticion): SesionPlan | nul
       return construirArc(p)
     case 'hombro':
       return construirHombro(p)
+    case 'dominadas':
+      return construirDominadas(p)
     default:
       return null
   }

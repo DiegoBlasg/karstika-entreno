@@ -6,7 +6,7 @@ import { explicar, explicarContexto, type Explicacion } from './explicacion'
 import { descargar } from './fases'
 import { VALORES } from './parametros'
 import { construirComplemento, construirSesion } from './plantillas'
-import type { Bloque, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
+import type { Bloque, Hueco, Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 import { NOMBRE_TIPO } from './nombres'
 import { explicacionAlternativaSemana, explicacionHuecoLibre, explicacionSemana, planificarSemana, PREFIJO_SEMANA, validarHuecos } from './semana'
@@ -37,6 +37,7 @@ const SUSTITUTO_SUAVE: Partial<Record<TipoSesion, TipoSesion>> = { board: 'bloqu
 // hombro). Las dominadas (P-39) van detrás de todo en prioridad y por su propio camino (dominadasPermitidas).
 const PRIORIDAD_COMPLEMENTOS: readonly TipoComplemento[] = ['hombro', 'tecnica', 'arc']
 const RELLENO_SUAVE: readonly TipoComplemento[] = ['tecnica', 'arc']
+const SIN_ESCALADA: readonly TipoSesion[] = ['hombro', 'dominadas']
 
 interface Candidato {
   tipoPlan: TipoSesion       // el tipo de la fase (difiere de plan.sesion.tipo si se sustituyó por su versión suave)
@@ -49,12 +50,14 @@ interface Candidato {
 // Sesiones al límite que quita un ámbar en «otra» zona (P-64): caídas, talones y esfuerzos máximos.
 const AL_LIMITE: readonly TipoSesion[] = ['bloque-limite', 'via-cuerda-limite', 'pegues-proyecto', 'board']
 
-// P-64 y P-65: lo que el estado del escalador impide hoy.
+// P-64 y P-65: lo que el estado del escalador impide hoy. Una sesión de dominadas tampoco va cuando hoy no tocan
+// (P-39, P-45: chequeo bajo o alguna zona de carga fuera del verde).
 function bloqueadaPorEstado(s: Sesion, r: Restricciones | undefined): boolean {
   if (!r) return false
   if (r.soloDescanso) return true
   if (r.soloHombro) return s.tipo !== 'hombro'
   if (r.sinCargaAlta && esCargaAlta(s)) return true
+  if (r.sinDominadas && s.tipo === 'dominadas') return true
   return r.sinLimite && AL_LIMITE.includes(s.tipo)
 }
 
@@ -69,7 +72,8 @@ export function motivosNoEncaja(s: Sesion, e: EstadoAtleta): string[] {
     out.push(e.chequeoBajoHoy ? 'Tu chequeo de hoy es bajo: hoy nada de carga alta.' : 'Tienes una zona de carga en ámbar: hoy nada de carga alta.')
   }
   if (r.sinLimite && AL_LIMITE.includes(s.tipo)) out.push('Tienes «otra zona» en ámbar: hoy nada al límite.')
-  if (r.sinDominadas && (s.incluye ?? []).includes('dominadas')) out.push('Hoy no tocan dominadas: sáltate ese complemento.')
+  if (r.sinDominadas && s.tipo === 'dominadas') out.push('Hoy no tocan dominadas: no hagas esta sesión.')
+  else if (r.sinDominadas && (s.incluye ?? []).includes('dominadas')) out.push('Hoy no tocan dominadas: sáltate ese complemento.')
   return out
 }
 
@@ -168,6 +172,7 @@ function completar(
   posibles: ReadonlySet<TipoSesion>,
   enDiaDeDescanso = false,
   sinDominadas = false,
+  sinHombro = false,
 ): { plan: SesionPlan; anadidos: TipoComplemento[] } {
   // Una sesión de hombro es corta y no lleva calentamiento de escalada: no se le añade escalada detrás (sí las
   // dominadas, que no son escalada).
@@ -178,7 +183,9 @@ function completar(
   const anadir = (t: TipoComplemento, exigirCupo: boolean): void => {
     if (elegidos.has(t) || t === plan.sesion.tipo || !posibles.has(t) || p.fase.prohibidos.includes(t)) return
     if (exigirCupo && !cupoPendiente(p, t)) return
-    if (t === 'hombro' && hombroHoy(p)) return
+    if (t === 'hombro' && (sinHombro || hombroHoy(p))) return
+    // La sesión de dominadas ya carga el hombro: el hombro va otro día (decisión de diseño, para repartirlo).
+    if (t === 'hombro' && plan.sesion.tipo === 'dominadas') return
     const bloque = construirComplemento(t, p, libres)
     if (!bloque) return
     elegidos.set(t, bloque)
@@ -267,6 +274,16 @@ function testReciente(p: Peticion): boolean {
   return !(p.fase.reevaluar && Math.min(...hace) >= DIAS_MIN_REEVALUAR)
 }
 
+// Para afinar la poda del plan semanal: si en ese hueco el test de dedos no se descarta por haber uno reciente (con el
+// mismo estado y la misma caducidad del test que usa `proponer`).
+function testPosibleEn(p: Peticion, h: Hueco): boolean {
+  const q: Peticion = { ...p, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto }
+  const estado = q.seguimiento ? estadoAtleta(q.historial, q.seguimiento, q.fecha) : undefined
+  const caducado = estado?.retestDesde !== undefined && q.evaluacion !== undefined && q.evaluacion.fecha < estado.retestDesde
+  const { evaluacion: _evaluacion, ...sinEvaluacion } = q
+  return !testReciente({ ...(caducado ? sinEvaluacion : q), ...(estado ? { estado } : {}) })
+}
+
 // Los mejores `n` de tipos distintos, en el orden ya calculado.
 function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
   const out: Valido[] = []
@@ -289,7 +306,11 @@ export function proponerSesion(p: Peticion): Propuesta {
   const r0 = proponer(sinHuecos, true)
   // Con alguna zona en rojo no se planifica la semana: cada día se decide con el estado de ese día (falla cerrado).
   if (r0.estado && Object.values(r0.estado.zonas).includes('rojo')) return r0
-  const { ranuras, elegidas } = planificarSemana(p, (q, sinDominadas, soloSuave) => proponer(q, false, sinDominadas, soloSuave))
+  const { ranuras, elegidas } = planificarSemana(
+    p,
+    (q, sinDominadas, soloSuave, sinHombro) => proponer(q, false, sinDominadas, soloSuave, sinHombro),
+    (h) => testPosibleEn(sinHuecos, h),
+  )
   const semana = ranuras.slice(1).map((hueco, i) => {
     const o = elegidas[i + 1]
     return { hueco, sesion: o ? { ...o.sesion, id: `${PREFIJO_SEMANA}${i + 1}` } : null }
@@ -314,11 +335,14 @@ export function proponerSesion(p: Peticion): Propuesta {
   // (mismo tipo y complementos; cargas exactas).
   const iguales = (o: SesionPlan | null): o is SesionPlan =>
     o !== null && o.sesion.tipo === elegidaHoy.sesion.tipo && (o.sesion.incluye ?? []).join() === (elegidaHoy.sesion.incluye ?? []).join()
-  const variantes: [boolean, boolean][] = [[true, false], [false, true], [true, true]]
+  const variantes: [boolean, boolean, boolean][] = [
+    [true, false, false], [false, true, false], [true, true, false],
+    [false, false, true], [true, false, true], [false, true, true], [true, true, true],
+  ]
   let hoy = [r0.principal, ...r0.alternativas].find(iguales)
-  for (const [sinDom, suave] of variantes) {
+  for (const [sinDom, suave, sinHom] of variantes) {
     if (hoy) break
-    const v = proponer(sinHuecos, false, sinDom, suave)
+    const v = proponer(sinHuecos, false, sinDom, suave, sinHom)
     hoy = [v.principal, ...v.alternativas].find(iguales)
   }
   // Falla cerrado: si la sesión del plan no es una de las que el generador propone hoy con el historial completo, el
@@ -336,11 +360,13 @@ export function proponerSesion(p: Peticion): Propuesta {
   }
 }
 
-// `sinDominadas`: el plan semanal pide la misma propuesta sin el complemento opcional de dominadas (P-39), que no
-// puede ir el día de una sesión intensa de dedos y podría quitarle sitio a otra del mismo día.
+// `sinDominadas`: el plan semanal pide la misma propuesta sin dominadas (P-39), ni como complemento opcional ni como
+// sesión: no pueden ir el día de una sesión intensa de dedos y podrían quitarle sitio a otra del mismo día.
+// `sinHombro`: el plan semanal pide la propuesta sin hombro, ni como sesión ni como complemento, para no ponerlo en días
+// seguidos (P-41, preferencia de diseño).
 // `soloSuave`: el plan semanal pide solo opciones sin carga alta (como si el estado la bloqueara: las intensas de
 // bloque pasan a su versión suave), para aprovechar un hueco de rocódromo que reserva la carga para otro día.
-function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false, soloSuave = false): Propuesta {
+function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false, soloSuave = false, sinHombro = false): Propuesta {
   // Tramo 2d: el estado se recalcula para cada fecha (el chequeo de hoy no vale para mañana) y puede adelantar
   // la descarga (P-50).
   const estado = recibida.seguimiento ? estadoAtleta(recibida.historial, recibida.seguimiento, recibida.fecha) : undefined
@@ -358,6 +384,8 @@ function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false,
       t !== 'descanso' &&
       posibles.has(t) &&
       !p.fase.prohibidos.includes(t) &&
+      (t !== 'dominadas' || !sinDominadas) &&
+      (t !== 'hombro' || !sinHombro) &&
       (t !== 'evaluacion-dedos' || !vigente),
   )
 
@@ -406,17 +434,18 @@ function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false,
       return { ...c, hechas7d, puntuacion: pendiente + prioridad - repetir }
     })
     .sort((a, b) => b.puntuacion - a.puntuacion || comparar(a.plan.sesion.tipo, b.plan.sesion.tipo))
-  // Fuera de casa, si hay alguna escalada posible, la principal no es una sesión de hombro: el hombro entra como
-  // complemento (decisión de diseño; antes, con la carga alta quitada por el estado o por una descarga, el día de
-  // rocódromo podía quedarse en 40 min de hombro).
-  if (p.contexto.lugar !== 'casa' && validos.some((v) => v.plan.sesion.tipo !== 'hombro')) {
-    validos.sort((a, b) => Number(a.plan.sesion.tipo === 'hombro') - Number(b.plan.sesion.tipo === 'hombro'))
+  // Fuera de casa, si hay alguna escalada posible, la principal no es una sesión sin escalada (hombro o dominadas): el
+  // hombro entra como complemento (decisión de diseño; antes, con la carga alta quitada por el estado o por una
+  // descarga, el día de rocódromo podía quedarse en 40 min de hombro). Entre ellas se mantiene el orden de la fase.
+  const sinEscalada = (v: Valido): number => Number(SIN_ESCALADA.includes(v.plan.sesion.tipo))
+  if (p.contexto.lugar !== 'casa' && validos.some((v) => sinEscalada(v) === 0)) {
+    validos.sort((a, b) => sinEscalada(a) - sinEscalada(b))
   }
 
   const elegidos = elegidosDe(validos, 3)
 
   const terminar = (v: Valido, enDiaDeDescanso = false): SesionPlan => {
-    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso, sinDominadas)
+    const { plan, anadidos } = completar(v.plan, p, posibles, enDiaDeDescanso, sinDominadas, sinHombro)
     return { ...plan, explicaciones: [explicacionEleccion(v, p, anadidos), ...plan.explicaciones] }
   }
   const conEstado = (prop: Propuesta): Propuesta => {

@@ -226,7 +226,7 @@ describe('hombro', () => {
 describe('TIPOS_CON_PLANTILLA', () => {
   it('lista exactamente los tipos que construyen sesión', () => {
     expect([...TIPOS_CON_PLANTILLA].sort()).toEqual([
-      'arc', 'bloque-limite', 'bloque-suave', 'board', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
+      'arc', 'bloque-limite', 'bloque-suave', 'board', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-resistencia',
       'multipresa-resistencia-fuerza', 'pegues-proyecto', 'resistencia-4x4', 'tecnica', 'via-cuerda-limite',
     ])
     for (const t of TIPOS_CON_PLANTILLA) {
@@ -407,5 +407,24 @@ describe('test de resistencia: carga explícita (revisión)', () => {
     const e = construirSesion('evaluacion-dedos', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 } }))!.bloques[4]!.ejercicios[0]!
     expect(e.notas).not.toMatch(/Con tu último test/)
     expect(e.cargaTexto).toMatch(/Carga total/)
+  })
+})
+
+describe('dominadas como sesión (P-39)', () => {
+  const casa = (minutosDisponibles: number) => peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles, multipresaEnCasa: false } })
+  it('calentamiento, 4x4 con 2 en reserva y 3 min de descanso, y vuelta a la calma: 10 + 15 + 5 = 30 min, suave', () => {
+    const plan = construirSesion('dominadas', casa(60))!
+    expect(plan.sesion).toMatchObject({ tipo: 'dominadas', intensidad: 'suave', duracionMin: 30 })
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 5])
+    const principal = plan.bloques[1]!.ejercicios[0]!
+    expect(principal).toMatchObject({ series: 4, repeticiones: 4, descansoSeriesS: 180 })
+    expect(principal.cargaTexto).toMatch(/2 repeticiones en reserva/)
+    expect(plan.bloques.every((b) => b.explicacion.parametros.includes('P-39'))).toBe(true)
+    expect(plan.bloques[0]!.explicacion.parametros).toContain('P-49')
+  })
+  it('cabe en 45 min y devuelve null si no caben 30', () => {
+    expect(construirSesion('dominadas', casa(45))!.sesion.duracionMin).toBeLessThanOrEqual(45)
+    expect(construirSesion('dominadas', casa(30))).not.toBeNull()
+    expect(construirSesion('dominadas', casa(29))).toBeNull()
   })
 })
