@@ -14,7 +14,7 @@ const PAUSA_ENTRE_BLOQUES_MIN = 5
 const REGLETA_MM = VALORES['P-12'].regletaMinimaMm
 // Decisión de diseño (dirección segura): las primeras semanas de multipresa se cuelga al 70 % del test; después,
 // como mucho al tope del 80 % de P-06. El 80 % viene de escaladores avanzados y P-06 lo fija como techo, no como objetivo.
-const FRACCION_INICIAL_REPEATERS = 0.7
+export const FRACCION_INICIAL_REPEATERS = 0.7
 
 function bloqueCalentamiento(): Bloque {
   return {

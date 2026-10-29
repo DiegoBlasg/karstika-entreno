@@ -30,6 +30,21 @@ export const AVISO_ROJO = 'Tienes alguna zona en rojo: no hay plan de la semana,
 
 const clave = (fecha: string, minutos: number): string => `${fecha}|${minutos}`
 
+// Un hueco ya acabado (acabar justo ahora cuenta como pasado).
+export function huecoPasado(f: FilaHueco, ahora: { fecha: string; minutos: number }): boolean {
+  return f.fecha < ahora.fecha || (f.fecha === ahora.fecha && f.inicio_min + f.minutos <= ahora.minutos)
+}
+
+// La fase de la semana según el calendario, o null si los datos no dejan calcular la temporada (lo avisa el plan).
+function faseCalendario(d: DatosAtleta, lunes: string): VistaSemana['fase'] {
+  try {
+    const s = semanaEnFecha(temporadaDe(d), lunes)
+    return s ? { nombre: FASES[s.faseId].nombre, descarga: s.descarga } : null
+  } catch {
+    return null
+  }
+}
+
 export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: string; minutos: number }): VistaSemana {
   const domingo = sumarDias(lunes, 6)
   const filas = d.huecos
@@ -38,13 +53,11 @@ export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: strin
   const registradas = new Set(d.registros.map((r) => r.sesion_id))
   const huecos: HuecoVista[] = filas.map((fila) => {
     const sesion = sesionEnHueco(d, fila)
-    const pasado = fila.fecha < ahora.fecha || (fila.fecha === ahora.fecha && fila.inicio_min + fila.minutos <= ahora.minutos)
-    if (pasado) return { fila, estado: sesion ? { tipo: 'pasado', sesion } : { tipo: 'pasado' } }
+    if (huecoPasado(fila, ahora)) return { fila, estado: sesion ? { tipo: 'pasado', sesion } : { tipo: 'pasado' } }
     if (sesion) return { fila, estado: { tipo: 'ocupado', sesion, registrada: registradas.has(sesion.id) } }
     return { fila, estado: { tipo: 'sin-plan' } }
   })
-  const semanaPlan = semanaEnFecha(temporadaDe(d), lunes)
-  let fase = semanaPlan ? { nombre: FASES[semanaPlan.faseId].nombre, descarga: semanaPlan.descarga } : null
+  let fase = faseCalendario(d, lunes)
   const pendientes = huecos.filter((h) => h.estado.tipo === 'sin-plan')
   const primero = pendientes[0]
   if (!primero) {

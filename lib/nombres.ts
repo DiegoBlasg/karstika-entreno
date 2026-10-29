@@ -1,4 +1,4 @@
-import type { Agarre, FaseId, MotivoCaida, Sesion, TipoSesion, Zona } from '../motor'
+import type { Agarre, Compania, FaseId, Limitante, Lugar, MotivoCaida, Sesion, TipoSesion, Zona } from '../motor'
 import { NOMBRE_TIPO } from '../motor/nombres'
 
 export { NOMBRE_TIPO }
@@ -87,3 +87,14 @@ export const DONDE_SE_HACE: Record<TipoSesion, string> = {
   campus: 'Campus',
   descanso: '—',
 }
+
+// Lo que más limita al escalador según el diagnóstico (decide el reparto del ciclo 2).
+export const NOMBRE_LIMITANTE: Record<Limitante, string> = {
+  'fuerza-dedos': 'la fuerza de dedos',
+  resistencia: 'la resistencia',
+  tecnica: 'la técnica',
+  cabeza: 'la cabeza',
+}
+
+export const NOMBRE_LUGAR: Record<Lugar, string> = { casa: 'casa', rocodromo: 'rocódromo', roca: 'roca' }
+export const NOMBRE_COMPANIA: Record<Compania, string> = { solo: 'solo', 'con-gente': 'con gente' }

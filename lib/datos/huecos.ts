@@ -1,6 +1,6 @@
 // Huecos de la semana: reglas al declararlos, cuándo los ocupa una sesión y cuáles se pasan al motor. Puro.
 import { diaNumero, finHoras, inicioHoras, MAX_HUECOS_POR_DIA, VALORES, type Hueco } from '../../motor'
-import { lunesDe, sumarDias } from '../fecha'
+import { hhmmDeMinutos, lunesDe, sumarDias } from '../fecha'
 import { MINUTOS_DISPONIBLES } from '../formulario'
 import type { DatosAtleta, FilaHueco, FilaSesion } from './filas'
 import { historialMotor } from './mapeo'
@@ -20,6 +20,12 @@ export function huecoMotor(f: FilaHueco): Hueco {
 
 export function entradaDeHueco(f: FilaHueco): EntradaPeticion {
   return huecoMotor(f)
+}
+
+// Enlace a Entrenar con el hueco ya rellenado.
+export function enlacePreparar(f: FilaHueco): string {
+  const q = new URLSearchParams({ fecha: f.fecha, hora: hhmmDeMinutos(f.inicio_min), compania: f.compania, lugar: f.lugar, minutos: String(f.minutos) })
+  return `/entrenar?${q.toString()}`
 }
 
 // La sesión guardada (aceptada o libre) que se solapa con el hueco, si la hay. Acabar justo cuando empieza no cuenta.
