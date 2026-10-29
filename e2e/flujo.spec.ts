@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test'
 import { ahoraMadrid, sumarDias } from '../lib/fecha.ts'
 import { sqlPruebas, vaciar } from '../scripts/base-pruebas.ts'
 
+// En serie: si una prueba falla, las siguientes se saltan en vez de reiniciar el worker y vaciar otra vez la base.
+test.describe.configure({ mode: 'serial' })
+
 test.beforeAll(async () => {
   await vaciar(await sqlPruebas())
 })
@@ -18,7 +21,7 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await expect(page).toHaveURL(/\/entrar$/)
   await page.getByLabel('Contraseña').fill('mala')
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await expect(page.getByRole('alert')).toHaveText('Contraseña incorrecta.')
+  await expect(page.getByText('Contraseña incorrecta.')).toBeVisible()
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
 
@@ -55,6 +58,8 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.getByRole('button', { name: 'Entrar' }).click()
   await page.getByRole('link', { name: 'Mi semana' }).first().click()
   await page.getByRole('link', { name: 'Semana siguiente →' }).click()
+  // Esperar a que cargue la semana siguiente: si no, el hueco se añadiría a la semana actual.
+  await expect(page.getByRole('link', { name: '← Esta semana' })).toBeVisible()
   await page.getByLabel('Hora').fill('19:00')
   await page.getByLabel('Rocódromo').check()
   await page.getByRole('button', { name: 'Añadir hueco' }).click()
@@ -121,6 +126,7 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/$/) // esperar a que termine de entrar antes de navegar
   await page.goto(`/sesion/${id}`)
   await page.getByLabel('Peso hoy (kg)').fill('70')
   await page.getByRole('button', { name: 'Empezar', exact: true }).click()

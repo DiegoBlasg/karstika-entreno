@@ -3,6 +3,7 @@ import { pasosDeSesion } from '@/lib/cronometro/pasos'
 import { ahoraMadrid } from '@/lib/fecha'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { Cronometro } from './Cronometro'
+import { YaRegistrada } from './YaRegistrada'
 
 // Cronómetro de una sesión: solo de hoy, aceptada (con plan) y sin registrar. Se comprueba aquí, en el servidor.
 export default async function PaginaSesion({ params }: { params: Promise<{ id: string }> }) {
@@ -16,9 +17,8 @@ export default async function PaginaSesion({ params }: { params: Promise<{ id: s
       ? 'El cronómetro solo está disponible para las sesiones de hoy.'
       : !fila.propuesta
         ? 'Esta sesión no tiene plan: es lo que apuntaste que hiciste.'
-        : datos.registros.some((r) => r.sesion_id === id)
-          ? 'Esta sesión ya está registrada.'
-          : null
+        : null
+  if (!motivo && datos.registros.some((r) => r.sesion_id === id)) return <YaRegistrada id={id} />
   if (motivo || !fila?.propuesta) {
     return (
       <div className="space-y-3">

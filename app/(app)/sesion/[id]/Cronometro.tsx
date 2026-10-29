@@ -102,6 +102,10 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   // guardado), 'antes' si después se ha vuelto a la sesión. Así no se ofrece guardar otra evaluación el mismo día.
   const [resultadoTest, setResultadoTest] = useState<'no' | 'en pantalla' | 'antes'>('no')
   const alGuardarResultado = useCallback(() => setResultadoTest('en pantalla'), [])
+  // Si había evaluación de hoy al abrir la pantalla. No se usa el valor vivo: al guardar el resultado aquí, la página se
+  // vuelve a pintar en el servidor con `evaluacionHoy` ya a true en el mismo paso que la respuesta, y el formulario
+  // desaparecería antes de enseñar «Evaluación guardada.».
+  const [evaluacionAlEntrar] = useState(evaluacionHoy)
 
   // Lo guardado se lee tras montar (en el servidor no hay localStorage). Si la sesión ya estaba terminada, se vuelve
   // directamente al formulario de registro.
@@ -319,7 +323,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
 
   if (estado.terminado || !paso) {
     // Ya hay evaluación de hoy (de antes, o guardada aquí y luego se volvió a la sesión): no se ofrece otra.
-    const yaEvaluado = (evaluacionHoy || resultadoTest === 'antes') && resultadoTest !== 'en pantalla'
+    const yaEvaluado = (evaluacionAlEntrar || resultadoTest === 'antes') && resultadoTest !== 'en pantalla'
     // Sin 7:3 la sesión acaba en el colgado del último intento: se apunta aquí.
     const ultimo = esTest && !yaEvaluado && resultadoTest === 'no' ? intentoAbierto(pasos, pasos.length) : null
     return (
