@@ -18,7 +18,9 @@ export function FormularioPerfil({ perfil }: { perfil: FilaPerfil | null }) {
         <label className="block flex-1">Grado objetivo<input name="grado_objetivo" required maxLength={10} defaultValue={perfil?.grado_objetivo ?? '7a'} className={CAMPO} /></label>
       </div>
       <label className="block">Lesiones (una por línea)<textarea name="lesiones" rows={2} defaultValue={perfil?.lesiones.join('\n')} className={CAMPO} /></label>
-      <label className="block">Inicio de la temporada (lunes)<input type="date" name="inicio_temporada" required defaultValue={perfil?.inicio_temporada ?? '2026-11-02'} className={CAMPO} /></label>
+      <label className="block">Inicio de la temporada<input type="date" name="inicio_temporada" required defaultValue={perfil?.inicio_temporada ?? '2026-11-02'} className={CAMPO} /></label>
+      <p className="text-xs text-stone-500">La temporada cuenta por semanas de lunes a domingo: si eliges un jueves, empieza el lunes de esa semana y ese jueves ya es la semana 1.</p>
+      <label className="flex items-center gap-2"><input type="checkbox" name="multipresa_en_casa" defaultChecked={perfil?.multipresa_en_casa ?? false} /> Tengo multipresa en casa</label>
       <label className="block">Fecha objetivo<input type="date" name="objetivo_temporada" required defaultValue={perfil?.objetivo_temporada ?? '2027-10-04'} className={CAMPO} /></label>
       {perfil && <p className="text-xs text-stone-500">Cambiar las fechas replanifica toda la temporada.</p>}
       {!perfil && (

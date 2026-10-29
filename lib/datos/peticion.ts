@@ -55,13 +55,13 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
   const peticion: Peticion = {
     fecha: e.fecha,
     horaInicio: e.horaInicio,
-    contexto: e.contexto,
+    contexto: { ...e.contexto, multipresaEnCasa: d.perfil.multipresa_en_casa },
     perfil: perfilMotor(d.perfil),
     historial,
     fase,
     seguimiento,
     consejosMostrados: consejosMostradosMotor(d.consejos),
-    ...(huecos ? { huecos } : {}),
+    ...(huecos ? { huecos: huecos.map((h) => ({ ...h, contexto: { ...h.contexto, multipresaEnCasa: d.perfil.multipresa_en_casa } })) } : {}),
     ...(diagnostico.limitantes[0] ? { limitantePrincipal: diagnostico.limitantes[0] } : {}),
     ...(evaluacion ? { evaluacion } : {}),
   }

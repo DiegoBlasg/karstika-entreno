@@ -38,3 +38,8 @@ export function lunesDe(fecha: string): string {
 export function hhmmDeMinutos(minutos: number): string {
   return `${String(Math.floor(minutos / 60)).padStart(2, '0')}:${String(minutos % 60).padStart(2, '0')}`
 }
+
+// El inicio de la temporada se guarda siempre como lunes: el de la semana de la fecha elegida.
+export function inicioTemporadaDe(fecha: string): string {
+  return lunesDe(fecha)
+}

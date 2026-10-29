@@ -30,7 +30,7 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   const inicio = lunesDeEstaSemana()
   await page.getByLabel('Peso (kg)').fill('70')
   await page.getByLabel('Años escalando').fill('1.5')
-  await page.getByLabel('Inicio de la temporada (lunes)').fill(inicio)
+  await page.getByLabel('Inicio de la temporada').fill(inicio)
   await page.getByLabel('Fecha objetivo').fill(sumarDias(inicio, 48 * 7))
   await page.getByLabel('He leído el aviso y lo acepto').check()
   await page.getByRole('button', { name: 'Guardar perfil' }).click()

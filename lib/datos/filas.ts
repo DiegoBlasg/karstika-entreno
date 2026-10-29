@@ -9,6 +9,7 @@ export interface FilaPerfil {
   grado_objetivo: string
   inicio_temporada: string
   objetivo_temporada: string
+  multipresa_en_casa: boolean
   aviso_aceptado_en: string
 }
 export type PerfilNuevo = Omit<FilaPerfil, 'aviso_aceptado_en'>

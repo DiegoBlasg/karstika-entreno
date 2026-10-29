@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ahoraMadrid, fechaLarga, hhmmDeMinutos, lunesDe, sumarDias } from './fecha'
+import { ahoraMadrid, fechaLarga, hhmmDeMinutos, inicioTemporadaDe, lunesDe, sumarDias } from './fecha'
 
 describe('ahoraMadrid', () => {
   it('usa la hora de Madrid, también el día del cambio de hora', () => {
@@ -34,5 +34,13 @@ describe('hhmmDeMinutos', () => {
     expect(hhmmDeMinutos(0)).toBe('00:00')
     expect(hhmmDeMinutos(9 * 60)).toBe('09:00')
     expect(hhmmDeMinutos(19 * 60 + 5)).toBe('19:05')
+  })
+})
+
+describe('inicioTemporadaDe', () => {
+  it('guarda el lunes de la semana elegida', () => {
+    expect(inicioTemporadaDe('2026-10-29')).toBe('2026-10-26') // jueves
+    expect(inicioTemporadaDe('2026-11-02')).toBe('2026-11-02') // lunes
+    expect(inicioTemporadaDe('2026-11-08')).toBe('2026-11-02') // domingo
   })
 })
