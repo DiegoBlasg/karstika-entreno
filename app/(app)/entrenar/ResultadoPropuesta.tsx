@@ -11,7 +11,7 @@ import type { EntradaPeticion, Preparacion } from '@/lib/datos/peticion'
 import type { PosicionTemporada } from '@/lib/datos/temporada'
 import type { EstadoAccion } from '@/lib/estado'
 import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
-import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
+import { DESCANSO_ACTIVO, NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { aceptar } from './acciones'
 
 function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan; indice: number; titulo: string; entrada: EntradaPeticion; reemplaza?: string }) {
@@ -62,6 +62,9 @@ export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
         <section className={TARJETA}>
           <h2 className="font-semibold">Toca descansar</h2>
           <p className="text-sm">{propuesta.descanso.motivo}</p>
+          {!propuesta.principal && propuesta.descanso.regla === 'plan.semana-libre' && entrada.contexto.lugar === 'casa' && (
+            <p className="text-sm">{DESCANSO_ACTIVO}</p>
+          )}
           {propuesta.proximaVentanaIntensa && (
             <p className="text-sm">Próximo día con sesión intensa de dedos posible: {fechaLarga(propuesta.proximaVentanaIntensa.fecha)}.</p>
           )}

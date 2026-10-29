@@ -6,7 +6,7 @@ import { textoLastre } from '@/lib/cronometro/test'
 import { enlacePreparar } from '@/lib/datos/huecos'
 import { cambiosPorResultados, proximosDias, vistaAno, type CambiosResultados, type HuecoPlan, type SemanaPlanVista } from '@/lib/datos/plan'
 import { ahoraMadrid, fechaLarga, hhmmDeMinutos, sumarDias } from '@/lib/fecha'
-import { DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LIMITANTE, NOMBRE_LUGAR, NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
+import { DESCANSO_ACTIVO, DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LIMITANTE, NOMBRE_LUGAR, NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 
 const CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' })
@@ -34,7 +34,7 @@ function FilaHueco({ h }: { h: HuecoPlan }) {
           <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
         </>
       )}
-      {estado === 'libre' && <p className="text-stone-600">Libre: no hace falta entrenar.</p>}
+      {estado === 'libre' && <p className="text-stone-600">{h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
       {estado === 'sin-plan' && <p className="text-stone-600">Sin plan: prepáralo cuando llegue.</p>}
       {(estado === 'planeada' || estado === 'libre' || estado === 'sin-plan') && (
         <Link href={enlacePreparar(hueco)} className="inline-block rounded bg-stone-900 px-3 py-1 text-sm font-medium text-white">Preparar</Link>

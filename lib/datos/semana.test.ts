@@ -39,6 +39,15 @@ describe('vistaSemana', () => {
     expect(v.huecos[0]?.estado.tipo).toBe('sin-plan')
     expect(v.fase).toBeNull()
   })
+  it('los huecos de casa que el plan deja libres traen el descanso activo', () => {
+    // Cuatro mañanas en casa (sin multipresa) en la base: el hombro va 2 veces y en días no seguidos (P-41); el resto,
+    // libre.
+    const mananas = ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'].map((f, i) => huecoFila(uuid(200 + i), f, '09:00'))
+    const v = vistaSemana(datosVacios({ huecos: mananas }), LUNES, ANTES)
+    const libres = v.huecos.filter((h) => h.estado.tipo === 'libre')
+    expect(libres.length).toBeGreaterThan(0)
+    for (const h of libres) expect(h.estado).toEqual({ tipo: 'libre', descansoActivo: true })
+  })
   it('con una zona en rojo no hay plan de la semana', () => {
     const d = datosVacios({
       huecos: [LUN_M, MAR_T, JUE_T],
@@ -46,6 +55,8 @@ describe('vistaSemana', () => {
     })
     const v = vistaSemana(d, LUNES, ANTES)
     expect(v.aviso).toBe(AVISO_ROJO)
+    // El primero queda libre por el rojo, no por el plan: sin descanso activo.
+    expect(v.huecos[0]?.estado).toEqual({ tipo: 'libre', descansoActivo: false })
     expect(v.huecos.slice(1).map((h) => h.estado.tipo)).toEqual(['sin-plan', 'sin-plan'])
   })
 })
