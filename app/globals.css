@@ -17,6 +17,15 @@
   --color-rojo: #FF5A5A;
 }
 
+/* Entrada de la chapa nueva (≤ 400 ms); se apaga con motion-reduce:animate-none. */
+@theme {
+  --animate-chapa: chapa 350ms ease-out both;
+  @keyframes chapa {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+}
+
 /* Las variables las declara next/font en <html> (app/layout.tsx). */
 @theme inline {
   --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;

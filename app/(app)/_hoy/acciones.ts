@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { TIPOS_SESION, validarSesion, ZONAS, type TipoSesion, type Zona } from '@/motor'
 import { conAlta, conChequeo, conRegistro, conRegistroCorregido, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
 import type { DatosAtleta, FilaChequeo, FilaIntento, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
@@ -58,7 +59,8 @@ export async function registrar(_previo: EstadoAccion, fd: FormData): Promise<Es
     return { error: `No se ha podido guardar el registro: ${mensajeDe(e)}` }
   }
   revalidatePath('/')
-  return { ok: 'Sesión registrada.' }
+  // Fuera de los try/catch (redirect lanza una excepción de control de flujo): tras registrar se celebra la chapa.
+  redirect(`/chapa/${leido.registro.sesion_id}`)
 }
 
 // Corrige el RPE, los minutos, las molestias y los intentos de una sesión registrada en los últimos 7 días.

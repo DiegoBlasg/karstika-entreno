@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { ahoraMadrid, sumarDias } from '../lib/fecha.ts'
 
 // Corre después de flujo.spec.ts (orden alfabético): ese fichero deja el perfil creado, y sin perfil «/» redirige a /perfil.
 test.beforeEach(async ({ page }) => {
@@ -46,5 +47,28 @@ test('Hoy: mini-vía con el largo actual que lleva a Vía', async ({ page }) => 
   await expect(mini).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Semanas del largo' })).toBeVisible()
   await mini.click()
+  await expect(page).toHaveURL(/\/via$/)
+})
+
+test('Progreso: fuerza, grado, semanas cumplidas y logros', async ({ page }) => {
+  await page.goto('/progreso')
+  await expect(page.getByRole('heading', { name: 'Tu progreso' })).toBeVisible()
+  await expect(page.getByText('Fuerza de dedos · % del peso')).toBeVisible()
+  await expect(page.getByText('Semanas cumplidas')).toBeVisible()
+  await expect(page.getByText(/^Logros · \d+ de \d+$/)).toBeVisible()
+})
+
+test('Progreso: apuntar un test lleva a la reunión', async ({ page }) => {
+  await page.goto('/progreso')
+  // Hoy ya puede tener un test (el del cronómetro guiado de flujo.spec.ts): dos el mismo día no se admiten, así que se
+  // apunta uno de hace tres días. flujo.spec.ts vacía la base de pruebas al empezar, y no queda nada entre ejecuciones.
+  const hoy = ahoraMadrid(new Date()).fecha
+  await page.getByLabel('Fecha del test').fill(sumarDias(hoy, -3))
+  await page.getByLabel('Peso ese día (kg)').fill('70')
+  await page.getByLabel('Lastre del mejor intento de 10 s (kg)').fill('12')
+  await page.getByRole('button', { name: 'Guardar evaluación' }).click()
+  await expect(page).toHaveURL(/\/reunion\//)
+  await expect(page.getByRole('link', { name: 'Seguir escalando' })).toBeVisible()
+  await page.getByRole('link', { name: 'Seguir escalando' }).click()
   await expect(page).toHaveURL(/\/via$/)
 })

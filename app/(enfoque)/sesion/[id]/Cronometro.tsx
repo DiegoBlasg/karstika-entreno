@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
 import { ComoSeHace } from '@/components/ComoSeHace'
@@ -77,7 +76,6 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   plan: SesionPlan; pasos: Paso[]; molestiasChequeo: Molestia[]; hoy: string; pesoInicial: number; evaluacionHoy: boolean
   posicion: PosicionTemporada | null
 }) {
-  const router = useRouter()
   const clave = `cronometro:${plan.sesion.id}`
   // Test de dedos guiado: peso, intentos y carga del 7:3. Las demás sesiones no usan nada de esto.
   const esTest = plan.sesion.tipo === 'evaluacion-dedos'
@@ -99,9 +97,6 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   // Qué fase y qué pitido corto ya sonaron; `reinicios` distingue volver a empezar el mismo paso con «Atrás».
   const sonado = useRef({ fase: '', corto: '' })
   const reinicios = useRef(0)
-  // Tras registrar no se vuelve a guardar nada.
-  const registrado = useRef(false)
-  const [hayRegistro, setHayRegistro] = useState(false)
   // El resultado del test guardado desde aquí: 'en pantalla' mientras su formulario sigue montado (con el texto de
   // guardado), 'antes' si después se ha vuelto a la sesión. Así no se ofrece guardar otra evaluación el mismo día.
   const [resultadoTest, setResultadoTest] = useState<'no' | 'en pantalla' | 'antes'>('no')
@@ -147,15 +142,15 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   }, [estado.enMarcha, pasos])
 
   // Se guarda la foto en pausa cada vez que cambia algo y cada segundo de marcha (también la de terminada, para no
-  // perder los minutos si se recarga antes de registrar).
+  // perder los minutos si se recarga antes de registrar). Al registrar, la acción redirige a la chapa, que borra lo guardado.
   const segundo = Math.floor(ahora / 1000)
   useEffect(() => {
-    if (empezado && !registrado.current) escribir(clave, pausar(estado, ahora))
+    if (empezado) escribir(clave, pausar(estado, ahora))
     // `ahora` va implícito en `segundo`: basta con guardar una vez por segundo.
   }, [clave, empezado, estado, segundo])
 
   useEffect(() => {
-    if (esTest && empezado && !registrado.current) escribirTest(claveTest, test)
+    if (esTest && empezado) escribirTest(claveTest, test)
   }, [esTest, claveTest, empezado, test])
 
   // Pantalla encendida mientras corre; el navegador suelta el bloqueo al ocultar la pestaña y se pide otra vez al volver.
@@ -257,14 +252,6 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
     setResultadoTest((r) => (r === 'en pantalla' ? 'antes' : r))
     setEstado((e) => reabrir(pasos, e))
   }
-
-  const alRegistrar = useCallback(() => {
-    registrado.current = true
-    setHayRegistro(true)
-    escribir(clave, null)
-    escribirTest(claveTest, null)
-    router.push('/')
-  }, [clave, claveTest, router])
 
   const apuntarIntento = (n: number, i: Intento): void => {
     setTest((t) => {
@@ -377,11 +364,8 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           sesion={plan.sesion}
           iniciales={molestiasChequeo}
           minutosIniciales={minutosReales(estado, ahora)}
-          alTerminar={alRegistrar}
         />
-        {!hayRegistro && (
-          <button type="button" className={BOTON_SECUNDARIO} onClick={volverALaSesion}>Volver a la sesión</button>
-        )}
+        <button type="button" className={BOTON_SECUNDARIO} onClick={volverALaSesion}>Volver a la sesión</button>
       </div>
     )
   }

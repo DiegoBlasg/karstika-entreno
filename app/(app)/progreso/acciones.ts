@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { validarEvaluacion } from '@/motor'
 import { conEvaluacion } from '@/lib/datos/cambios'
 import type { FilaEvaluacion } from '@/lib/datos/filas'
@@ -35,6 +36,9 @@ export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Pr
     return { error: `No se ha podido guardar la evaluación: ${mensajeDe(e)}` }
   }
   revalidatePath('/progreso')
+  // Fuera de los try/catch (redirect lanza una excepción de control de flujo). Solo desde Progreso: el test guiado del
+  // cronómetro no manda `tras` y necesita el `ok` para seguir en su pantalla.
+  if (fd.get('tras') === 'reunion') redirect(`/reunion/${fila.id}`)
   return { ok: 'Evaluación guardada.' }
 }
 

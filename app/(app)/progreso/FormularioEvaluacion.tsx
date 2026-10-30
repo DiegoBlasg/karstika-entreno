@@ -10,6 +10,8 @@ export function FormularioEvaluacion({ hoy, fechaInicial, peso }: { hoy: string;
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarEvaluacion, null)
   return (
     <form action={accion} className="space-y-4">
+      {/* Tras guardar, ir a la pantalla de llegada a la reunión (la usa la acción). */}
+      <input type="hidden" name="tras" value="reunion" />
       <label className="block">Fecha del test<input type="date" name="fecha" max={hoy} defaultValue={fechaInicial} required className={CAMPO} /></label>
       <label className="block">Peso ese día (kg)<input name="peso_corporal_kg" inputMode="decimal" defaultValue={peso} required className={CAMPO} /></label>
       <label className="block">

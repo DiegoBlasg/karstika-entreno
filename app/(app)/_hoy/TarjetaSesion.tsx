@@ -168,7 +168,8 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
           )}
           {pasada && !cambiando && terminando && (
             <>
-              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} alTerminar={cerrarRegistro} />
+              {/* Sin alTerminar: registrar redirige a la chapa, así que nunca devuelve ok (solo corregir lo usa). */}
+              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} />
               <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}
