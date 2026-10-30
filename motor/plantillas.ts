@@ -2,7 +2,7 @@ import { restriccionesDe } from './autorregulacion'
 import { explicar, type Explicacion } from './explicacion'
 import { evaluacionVigente, lastreRepeaters } from './evaluacion'
 import { VALORES } from './parametros'
-import type { Bloque, Peticion, SesionPlan } from './propuesta-tipos'
+import type { Bloque, Ejercicio, Peticion, SesionPlan } from './propuesta-tipos'
 import { diaNumero } from './tiempo'
 import type { Sesion, TipoComplemento, TipoSesion } from './tipos'
 
@@ -21,7 +21,11 @@ function bloqueCalentamiento(): Bloque {
     nombre: 'Calentamiento específico',
     minutos: CALENTAMIENTO_MIN,
     ejercicios: [
-      { nombre: 'Calentamiento de menos a más: movilidad, escalada fácil y agarres progresivos', cargaTexto: 'Esfuerzo percibido 2–4 de 10' },
+      {
+        nombre: 'Calentamiento de menos a más: movilidad, escalada fácil y agarres progresivos',
+        cargaTexto: 'Esfuerzo percibido 2–4 de 10',
+        ficha: 'calentamiento-progresivo',
+      },
     ],
     explicacion: explicar(
       'plantilla.calentamiento',
@@ -177,6 +181,7 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
           ...(kg !== undefined ? { cargaKg: kg } : {}),
           cargaTexto: cargaMultipresa(kg),
           notas: notasCarga(kg, porcentaje),
+          ficha: 'repeaters-7-3',
         },
       ],
       explicacion: explicar(
@@ -231,6 +236,7 @@ function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
           ...(kg !== undefined ? { cargaKg: kg } : {}),
           cargaTexto: cargaMultipresa(kg),
           notas: notasCarga(kg, porcentaje),
+          ficha: 'resistencia-fuerza-10-5',
         },
       ],
       explicacion: explicar(
@@ -261,7 +267,7 @@ function construir4x4(p: Peticion): SesionPlan | null {
     {
       nombre: 'Bloques progresivos',
       minutos: PROGRESIVOS_BLOQUE_MIN,
-      ejercicios: [{ nombre: '3-4 bloques por debajo de tu nivel, de menos a más', cargaTexto: 'Esfuerzo percibido 5–7 de 10' }],
+      ejercicios: [{ nombre: '3-4 bloques por debajo de tu nivel, de menos a más', cargaTexto: 'Esfuerzo percibido 5–7 de 10', ficha: 'calentamiento-progresivo' }],
       explicacion: explicar('plantilla.progresivos', ['P-49'], 'Antes del 4x4 se sube la intensidad poco a poco.'),
     },
     {
@@ -275,6 +281,7 @@ function construir4x4(p: Peticion): SesionPlan | null {
           descansoSeriesS: descansoVueltaMin * 60,
           cargaTexto: 'Esfuerzo alto por el bombeo, 7–8 de 10',
           notas: 'Bloques fáciles: el objetivo es el bombeo acumulado, no la dificultad. Para ante cualquier dolor.',
+          ficha: 'cuatro-por-cuatro',
         },
       ],
       explicacion: explicar(
@@ -299,7 +306,7 @@ function construirPegues(p: Peticion): SesionPlan | null {
     {
       nombre: 'Calentamiento en roca',
       minutos: CALENTAMIENTO_ROCA_MIN,
-      ejercicios: [{ nombre: '2-3 vías fáciles de menos a más', cargaTexto: 'Esfuerzo percibido 3–6 de 10' }],
+      ejercicios: [{ nombre: '2-3 vías fáciles de menos a más', cargaTexto: 'Esfuerzo percibido 3–6 de 10', ficha: 'calentamiento-progresivo' }],
       explicacion: explicar('plantilla.calentamiento', ['P-49'], 'Calentamiento específico de menos a más antes de los pegues.'),
     },
   ]
@@ -312,6 +319,7 @@ function construirPegues(p: Peticion): SesionPlan | null {
           nombre: 'Pegue a tu proyecto: trabaja las secuencias o intenta encadenar',
           cargaTexto: 'Esfuerzo máximo, 9–10 de 10',
           notas: `Lee la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes. En los reposos, sacude el brazo colgando. Después, 20 min de recuperación activa suave, no reposo pasivo.`,
+          ficha: 'via-limite-cuerda',
         },
       ],
       explicacion: explicar(
@@ -356,6 +364,7 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
           nombre: 'Suspensiones cortas y fáciles añadiendo lastre en escalones',
           cargaTexto: 'Esfuerzo percibido 3–6 de 10',
           notas: 'Prepara el test sin fatigarte.',
+          ficha: 'suspension-maxima-10s',
         },
       ],
       explicacion: explicar('plantilla.subida', ['P-18', 'P-49'], 'Antes del test se sube la carga en escalones tras el calentamiento.'),
@@ -371,6 +380,7 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
           descansoSeriesS: descansoS,
           cargaTexto: `Añade lastre en escalones hasta tu máximo de ${duracionS} s y apunta el mejor intento`,
           notas: 'Detente ante cualquier dolor. Vale el mejor intento completado.',
+          ficha: 'suspension-maxima-10s',
         },
       ],
       explicacion: explicar(
@@ -399,6 +409,7 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
             descansoS,
             cargaTexto: `Carga total = ${fmt(fraccion)} × (tu peso + el lastre de tu mejor intento de hoy). Lastre = esa carga − tu peso; si sale negativo, quita ese peso con polea o banda`,
             notas: `${ejemploResistencia(p, fraccion)}Si necesitas descarga y no tienes polea, haz este test en el rocódromo. Apunta los segundos totales hasta no poder completar una repetición. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.`,
+            ficha: 'test-7-3-fallo',
           },
         ],
         explicacion: explicar(
@@ -467,6 +478,7 @@ function construirBloqueSuave(p: Peticion): SesionPlan | null {
         series: 4,
         cargaTexto: 'Esfuerzo percibido 3–5 de 10',
         notas: 'Sustituye a la sesión intensa cuando falta el día de descanso entre sesiones intensas de dedos.',
+        ficha: 'practica-tecnica',
       },
     ],
     explicar('plantilla.bloque-suave', ['P-54'], 'Variar vías y tipos de presa mantiene la práctica técnica sin cargar los dedos.'),
@@ -488,12 +500,13 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     p,
     'Práctica técnica',
     [
-      { nombre: `${modalidad}, variando vías y tipos de presa`, series: 3, cargaTexto: 'Esfuerzo percibido 4–5 de 10' },
+      { nombre: `${modalidad}, variando vías y tipos de presa`, series: 3, cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
       {
         nombre: `Previsualiza la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes de cada intento`,
         cargaTexto: 'Sin esfuerzo',
+        ficha: 'practica-tecnica',
       },
-      { nombre: 'Graba al menos una vía en vídeo y revísala', cargaTexto: 'Sin esfuerzo' },
+      { nombre: 'Graba al menos una vía en vídeo y revísala', cargaTexto: 'Sin esfuerzo', ficha: 'video-autoevaluacion' },
     ],
     explicar(
       'plantilla.tecnica',
@@ -528,6 +541,7 @@ function construirArc(p: Peticion): SesionPlan | null {
           nombre: `${serieMin} min de escalada continua sin bombeo marcado`,
           cargaTexto: 'Esfuerzo percibido 3–4 de 10',
           notas: 'Si notas bombeo, baja la dificultad.',
+          ficha: 'arc',
         },
       ],
       explicacion: explicar(
@@ -552,6 +566,61 @@ const explicacionHombroSinCarga = (): Explicacion =>
     'Por tu semáforo de dolor, el trabajo de hombro va sin carga: solo movilidad y activación suave, los mismos minutos. Si duele, para.',
   )
 
+// Rutina concreta de hombro y antagonistas (P-41): dos rutinas que se alternan, A, B, A…, según cuántas sesiones o
+// complementos de hombro hay en el historial antes de hoy. Decisión de diseño: P-41 fija la frecuencia (2 por semana,
+// 15 min), no la dosis; el tipo de ejercicio sigue el programa de EV-LESION-007 (cadena cerrada, excéntricos y fuerza).
+// Las dosis van en el texto y no como series: el cronómetro sigue guiando el bloque como 15 min.
+export type RutinaHombro = 'A' | 'B'
+
+const ESFUERZO_HOMBRO = 'esfuerzo 5–6 de 10'
+const ROTACION_EXTERNA: Ejercicio = {
+  nombre: 'Rotación externa con banda',
+  cargaTexto: `3 × 12, bajada en 3 s · ${ESFUERZO_HOMBRO}`,
+  notas: 'Cada brazo, con el codo pegado al costado.',
+  ficha: 'rotacion-externa-banda',
+}
+
+const RUTINAS_HOMBRO: Record<RutinaHombro, readonly Ejercicio[]> = {
+  A: [
+    { nombre: 'Retracciones escapulares colgado', cargaTexto: `3 × 8 · ${ESFUERZO_HOMBRO}`, notas: 'En barra, sin doblar los codos.', ficha: 'retracciones-escapulares' },
+    { nombre: 'Flexiones', cargaTexto: `3 × 8-12 · ${ESFUERZO_HOMBRO}`, notas: 'Con las rodillas apoyadas si no salen con buena forma.', ficha: 'flexiones' },
+    ROTACION_EXTERNA,
+    { nombre: 'Y-T-W con banda', cargaTexto: `2 × 8 de cada · ${ESFUERZO_HOMBRO}`, ficha: 'ytw-banda' },
+  ],
+  B: [
+    { nombre: 'Face pull con banda', cargaTexto: `3 × 12 · ${ESFUERZO_HOMBRO}`, notas: 'Con los codos altos.', ficha: 'face-pull-banda' },
+    { nombre: 'Plancha con toques de hombro', cargaTexto: `3 × 30 s · ${ESFUERZO_HOMBRO}`, ficha: 'plancha-toques-hombro' },
+    ROTACION_EXTERNA,
+    { nombre: 'Extensores de dedos con banda', cargaTexto: '2 × 15 (opcional) · esfuerzo 3–4 de 10', notas: 'Cada mano.', ficha: 'extensores-dedos-banda' },
+  ],
+}
+
+const cuentaHombro = (s: Sesion): boolean => s.tipo === 'hombro' || (s.incluye ?? []).includes('hombro')
+
+export function rutinaHombro(p: Peticion): RutinaHombro {
+  const hoy = diaNumero(p.fecha)
+  const previas = p.historial.filter((s) => cuentaHombro(s) && diaNumero(s.fecha) < hoy).length
+  return previas % 2 === 0 ? 'A' : 'B'
+}
+
+const ejerciciosHombro = (r: RutinaHombro): Ejercicio[] => RUTINAS_HOMBRO[r].map((e) => ({ ...e }))
+
+const explicacionRutinaHombro = (r: RutinaHombro): Explicacion =>
+  explicar(
+    'plantilla.hombro',
+    ['P-41'],
+    `Rutina ${r} de hombro y antagonistas (se alterna con la ${r === 'A' ? 'B' : 'A'}), 15 minutos. El tipo de ejercicio sigue el programa del ensayo EV-LESION-007: cadena cerrada, excéntricos y de fuerza. Los ejercicios concretos, las series y las repeticiones son decisión de diseño: P-41 fija la frecuencia, no la dosis.`,
+  )
+
+// Sin carga (hombro o codo en ámbar, o rojo en dedos, muñeca o codo): solo movilidad y activación, sin peso, sin bandas
+// y sin colgarse.
+const MOVILIDAD_SIN_CARGA: Ejercicio = {
+  nombre: 'Movilidad de hombro y activación escapular, sin peso ni bandas',
+  cargaTexto: 'Sin esfuerzo',
+  notas: 'Solo rangos sin dolor.',
+  ficha: 'movilidad',
+}
+
 function construirHombro(p: Peticion): SesionPlan | null {
   const activacionMin = 5
   const corto = activacionMin + VALORES['P-41'].minutos
@@ -561,41 +630,32 @@ function construirHombro(p: Peticion): SesionPlan | null {
       {
         nombre: 'Movilidad y activación',
         minutos: activacionMin,
-        ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular suave', cargaTexto: 'Esfuerzo percibido 1–2 de 10' }],
+        ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular suave', cargaTexto: 'Esfuerzo percibido 1–2 de 10', ficha: 'movilidad' }],
         explicacion: explicacionHombroSinCarga(),
       },
       {
         nombre: 'Movilidad sin carga',
         minutos: VALORES['P-41'].minutos,
-        ejercicios: [{ nombre: 'Movilidad de hombro, cadera y muñecas, sin peso ni bandas', cargaTexto: 'Sin esfuerzo', notas: 'Solo rangos sin dolor.' }],
+        ejercicios: [{ nombre: 'Movilidad de hombro, cadera y muñecas, sin peso ni bandas', cargaTexto: 'Sin esfuerzo', notas: 'Solo rangos sin dolor.', ficha: 'movilidad' }],
         explicacion: explicacionHombroSinCarga(),
       },
     ])
   }
   const largo = corto + ANTAGONISTAS_MOVILIDAD_MIN <= p.contexto.minutosDisponibles
   const total = largo ? corto + ANTAGONISTAS_MOVILIDAD_MIN : corto
+  const r = rutinaHombro(p)
   const bloques: Bloque[] = [
     {
       nombre: 'Movilidad y activación',
       minutos: activacionMin,
-      ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular suave', cargaTexto: 'Esfuerzo percibido 2–3 de 10' }],
+      ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular suave', cargaTexto: 'Esfuerzo percibido 2–3 de 10', ficha: 'movilidad' }],
       explicacion: explicar('plantilla.hombro-activacion', ['P-41'], 'Se activa el hombro antes del trabajo de fuerza.'),
     },
     {
       nombre: 'Hombro y antagonistas',
       minutos: VALORES['P-41'].minutos,
-      ejercicios: [
-        {
-          nombre: 'Ejercicios de hombro en cadena cerrada, excéntricos y de fuerza',
-          cargaTexto: 'Esfuerzo percibido 5–6 de 10',
-          notas: 'Extensores de dedos: opcional.',
-        },
-      ],
-      explicacion: explicar(
-        'plantilla.hombro',
-        ['P-41'],
-        'Hombro en cadena cerrada, excéntricos y de fuerza, 2 veces por semana y 15 minutos (la dosis es decisión de diseño).',
-      ),
+      ejercicios: ejerciciosHombro(r),
+      explicacion: explicacionRutinaHombro(r),
     },
     ...(largo
       ? [
@@ -603,13 +663,14 @@ function construirHombro(p: Peticion): SesionPlan | null {
             nombre: 'Antagonistas y movilidad',
             minutos: ANTAGONISTAS_MOVILIDAD_MIN,
             ejercicios: [
-              { nombre: 'Empujes y extensores de dedos con banda', cargaTexto: 'Esfuerzo percibido 4–5 de 10' },
-              { nombre: 'Movilidad de cadera, hombro y muñecas', cargaTexto: 'Sin esfuerzo' },
+              { nombre: 'Empujes: flexiones a ritmo cómodo', cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'flexiones' },
+              { nombre: 'Extensores de dedos con banda (opcional)', cargaTexto: 'Esfuerzo percibido 3–4 de 10', ficha: 'extensores-dedos-banda' },
+              { nombre: 'Movilidad de cadera, hombro y muñecas', cargaTexto: 'Sin esfuerzo', ficha: 'movilidad' },
             ],
             explicacion: explicar(
               'plantilla.antagonistas',
               ['P-41'],
-              'Antagonistas (extensores de dedos opcionales, P-41). La movilidad y los 20 minutos son decisión de diseño para completar el día en casa sin cargar los dedos.',
+              'Antagonistas: empujes y extensores de dedos (opcionales, P-41). La movilidad y los 20 minutos son decisión de diseño para completar el día en casa sin cargar los dedos.',
             ),
           },
         ]
@@ -636,6 +697,7 @@ function construirDominadas(p: Peticion): SesionPlan | null {
         {
           nombre: 'Movilidad de hombro y escápulas, colgarse de la barra y dominadas sin lastre de menos a más',
           cargaTexto: 'Esfuerzo percibido 2–4 de 10',
+          ficha: 'calentamiento-barra',
         },
       ],
       explicacion: explicar(
@@ -655,6 +717,7 @@ function construirDominadas(p: Peticion): SesionPlan | null {
           descansoSeriesS: descansoMin * 60,
           cargaTexto: `Lastre que te deje ${repeticionesEnReserva} repeticiones en reserva`,
           notas: 'En barra, no en la multipresa. Si notas el codo o el hombro, para.',
+          ficha: 'dominadas-lastradas',
         },
       ],
       explicacion: explicar(
@@ -666,7 +729,7 @@ function construirDominadas(p: Peticion): SesionPlan | null {
     {
       nombre: 'Vuelta a la calma',
       minutos: VUELTA_CALMA_DOMINADAS_MIN,
-      ejercicios: [{ nombre: 'Movilidad suave de hombro, espalda y muñecas', cargaTexto: 'Sin esfuerzo' }],
+      ejercicios: [{ nombre: 'Movilidad suave de hombro, espalda y muñecas', cargaTexto: 'Sin esfuerzo', ficha: 'movilidad' }],
       explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar (decisión de diseño).'),
     },
   ]
@@ -692,7 +755,7 @@ function construirViaLimite(p: Peticion): SesionPlan | null {
       nombre: 'Vías progresivas',
       minutos: PROGRESIVAS_VIA_MIN,
       ejercicios: [
-        { nombre: '2 vías con cuerda por debajo de tu nivel, de menos a más', series: 2, cargaTexto: 'Esfuerzo percibido 5–7 de 10' },
+        { nombre: '2 vías con cuerda por debajo de tu nivel, de menos a más', series: 2, cargaTexto: 'Esfuerzo percibido 5–7 de 10', ficha: 'calentamiento-progresivo' },
       ],
       explicacion: explicar('plantilla.progresivas', ['P-49'], 'Antes de los intentos al límite se sube la intensidad poco a poco.'),
     },
@@ -706,6 +769,7 @@ function construirViaLimite(p: Peticion): SesionPlan | null {
           nombre: 'Intento a una vía con cuerda en tu límite (una que no encadenas a vista)',
           cargaTexto: 'Esfuerzo máximo, 9–10 de 10',
           notas: `Lee la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes. En los reposos, sacude el brazo colgando. Después, 20 min de recuperación activa suave (pedalear o caminar), no reposo pasivo.`,
+          ficha: 'via-limite-cuerda',
         },
       ],
       explicacion: explicar(
@@ -728,7 +792,7 @@ function construirBloqueLimite(p: Peticion): SesionPlan | null {
     {
       nombre: 'Bloques progresivos',
       minutos: PROGRESIVOS_BLOQUE_MIN,
-      ejercicios: [{ nombre: '3-4 bloques por debajo de tu nivel, de menos a más', cargaTexto: 'Esfuerzo percibido 5–7 de 10' }],
+      ejercicios: [{ nombre: '3-4 bloques por debajo de tu nivel, de menos a más', cargaTexto: 'Esfuerzo percibido 5–7 de 10', ficha: 'calentamiento-progresivo' }],
       explicacion: explicar('plantilla.progresivos', ['P-49'], 'Antes de los bloques al límite se sube la intensidad poco a poco.'),
     },
     {
@@ -739,6 +803,7 @@ function construirBloqueLimite(p: Peticion): SesionPlan | null {
           nombre: `Bloques cerca de tu límite durante ${principal} min`,
           cargaTexto: 'Esfuerzo alto, 8–9 de 10',
           notas: 'Hasta 4 intentos por bloque y 3-4 min de descanso entre intentos. Lee el bloque antes de cada intento. Para ante cualquier dolor.',
+          ficha: 'bloques-limite',
         },
       ],
       explicacion: explicar(
@@ -763,15 +828,16 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
         return {
           nombre: 'Complemento: movilidad de hombro sin carga',
           minutos,
-          ejercicios: [{ nombre: 'Movilidad de hombro y activación escapular, sin peso ni bandas', cargaTexto: 'Sin esfuerzo' }],
+          ejercicios: [{ ...MOVILIDAD_SIN_CARGA }],
           explicacion: explicacionHombroSinCarga(),
         }
       }
+      const r = rutinaHombro(p)
       return {
         nombre: 'Complemento: hombro y antagonistas',
         minutos,
-        ejercicios: [{ nombre: 'Ejercicios de hombro en cadena cerrada, excéntricos y de fuerza', cargaTexto: 'Esfuerzo percibido 5–6 de 10' }],
-        explicacion: explicar('plantilla.hombro', ['P-41'], 'Hombro en cadena cerrada, excéntricos y de fuerza, 15 minutos (la dosis es decisión de diseño).'),
+        ejercicios: ejerciciosHombro(r),
+        explicacion: explicacionRutinaHombro(r),
       }
     }
     case 'dominadas': {
@@ -788,6 +854,7 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
             descansoSeriesS: descansoMin * 60,
             cargaTexto: `Lastre que te deje ${repeticionesEnReserva} repeticiones en reserva`,
             notas: 'En barra, no en la multipresa. Si notas el codo o el hombro, para.',
+            ficha: 'dominadas-lastradas',
           },
         ],
         explicacion: explicar(
@@ -804,7 +871,7 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
       return {
         nombre: 'Complemento: ARC',
         minutos,
-        ejercicios: [{ nombre: `${minutos} min de escalada continua sin bombeo marcado`, cargaTexto: 'Esfuerzo percibido 3–4 de 10' }],
+        ejercicios: [{ nombre: `${minutos} min de escalada continua sin bombeo marcado`, cargaTexto: 'Esfuerzo percibido 3–4 de 10', ficha: 'arc' }],
         explicacion: explicar('plantilla.arc', ['P-35'], 'Una serie de escalada continua suave como volumen de capacidad al final de la sesión.'),
       }
     }
@@ -815,8 +882,8 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
         nombre: 'Complemento: práctica técnica',
         minutos: TECNICA_COMPLEMENTO_MIN,
         ejercicios: [
-          { nombre: `${modalidad}, variando vías y tipos de presa`, cargaTexto: 'Esfuerzo percibido 4–5 de 10' },
-          { nombre: 'Graba al menos una vía en vídeo y revísala', cargaTexto: 'Sin esfuerzo' },
+          { nombre: `${modalidad}, variando vías y tipos de presa`, cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
+          { nombre: 'Graba al menos una vía en vídeo y revísala', cargaTexto: 'Sin esfuerzo', ficha: 'video-autoevaluacion' },
         ],
         explicacion: explicar('plantilla.tecnica', ['P-54', 'P-55'], 'Volumen técnico variado y con vídeo, a nivel cómodo.'),
       }
