@@ -5,7 +5,7 @@ import { BarraProgreso } from '@/components/ui/BarraProgreso'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Tarjeta } from '@/components/ui/Tarjeta'
 import { resumenRegistro, textoEsfuerzo } from '@/lib/datos/celebracion'
-import { fechaLarga } from '@/lib/fecha'
+import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
 import { nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { LimpiarCronometro } from './LimpiarCronometro'
@@ -34,7 +34,7 @@ function DibujoChapa() {
 export default async function PaginaChapa({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { datos } = await requerirDatos()
-  const r = resumenRegistro(datos, id)
+  const r = resumenRegistro(datos, id, ahoraMadrid(new Date()).fecha)
   if (!r) redirect('/')
   const { largo } = r
   const hechas = largo ? (largo.sesionesHechas === 1 ? '1 sesión hecha' : `${largo.sesionesHechas} sesiones hechas`) : ''

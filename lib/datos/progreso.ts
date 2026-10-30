@@ -24,6 +24,9 @@ export interface ResumenEscalada {
 
 export interface Logro { id: string; titulo: string; descripcion: string; conseguido: boolean; fecha: string | null }
 
+// Por debajo de este cambio (en puntos de % del peso) un test se considera igual que el anterior: ni sube ni es récord.
+export const UMBRAL_IGUAL = 1
+
 const VACIA: Constancia = { semanas: [], cumplidas: 0, conSesiones: 0, rachaActual: 0, mejorRacha: 0 }
 
 export function constancia(d: DatosAtleta, hoy: string): Constancia {
@@ -85,9 +88,14 @@ export function logros(d: DatosAtleta, hoy: string): Logro[] {
   let record: string | null = null
   let mejor = -Infinity
   via.tests.filter((t) => t.fecha <= hoy).forEach((t, i) => {
-    if (i > 0 && t.fuerzaRelativa > mejor) record = t.fecha
+    if (i > 0 && t.fuerzaRelativa >= mejor + UMBRAL_IGUAL) record = t.fecha
     mejor = Math.max(mejor, t.fuerzaRelativa)
   })
+  // La cima pide haber entrenado: al menos una sesión registrada (no descanso) en la temporada, hasta hoy.
+  const registradas = new Set(d.registros.map((r) => r.sesion_id))
+  const inicio = via.largos[0]?.chapas[0]?.lunes
+  const entrenada = inicio !== undefined &&
+    d.sesiones.some((x) => registradas.has(x.id) && x.sesion.tipo !== 'descanso' && x.fecha >= inicio && x.fecha <= hoy)
   const logro = (id: string, titulo: string, descripcion: string, fecha: string | null): Logro =>
     ({ id, titulo, descripcion, conseguido: fecha !== null, fecha })
   return [
@@ -98,6 +106,6 @@ export function logros(d: DatosAtleta, hoy: string): Logro[] {
     ...via.largos.map((l) =>
       logro(`largo-${l.numero}`, `Largo ${l.numero} · ${l.fase}`, 'Largo completado.',
         l.estado === 'hecho' && l.sesionesHechas > 0 ? domingo(l.chapas.at(-1)!.lunes) : null)),
-    logro('cima', 'Cima', 'Llegaste a la semana objetivo de la temporada.', via.largos.length > 0 && lunesDe(hoy) >= via.cima.lunes ? via.cima.lunes : null),
+    logro('cima', 'Cima', 'Llegaste a la semana objetivo de la temporada.', entrenada && lunesDe(hoy) >= via.cima.lunes ? via.cima.lunes : null),
   ]
 }

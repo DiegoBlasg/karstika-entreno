@@ -76,4 +76,21 @@ describe('logros', () => {
     const l = logros(datosVacios({ evaluaciones: [evaluacion(1, '2026-11-05', 10)] }), '2026-11-10')
     expect(l.find((x) => x.id === 'record-fuerza')?.conseguido).toBe(false)
   })
+
+  it('una mejora de menos de UMBRAL_IGUAL puntos no es récord (es «igual»)', () => {
+    const l = logros(datosVacios({ evaluaciones: [evaluacion(1, '2026-11-05', 10), evaluacion(2, '2026-11-27', 10.2)] }), '2026-12-02')
+    expect(l.find((x) => x.id === 'record-fuerza')?.conseguido).toBe(false)
+    const conMejora = logros(datosVacios({ evaluaciones: [evaluacion(1, '2026-11-05', 10), evaluacion(2, '2026-11-27', 11)] }), '2026-12-02')
+    expect(conMejora.find((x) => x.id === 'record-fuerza')).toMatchObject({ conseguido: true, fecha: '2026-11-27' })
+  })
+
+  it('la cima pide la semana objetivo y al menos una sesión registrada (que no sea descanso) en la temporada', () => {
+    const hoy = '2027-10-05'
+    expect(logros(datosVacios(), hoy).find((x) => x.id === 'cima')?.conseguido).toBe(false)
+    const descanso = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { tipo: 'descanso' })], registros: [registro(uuid(1))] })
+    expect(logros(descanso, hoy).find((x) => x.id === 'cima')?.conseguido).toBe(false)
+    const conSesion = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03')], registros: [registro(uuid(1))] })
+    expect(logros(conSesion, hoy).find((x) => x.id === 'cima')).toMatchObject({ conseguido: true, fecha: '2027-10-04' })
+    expect(logros(conSesion, '2027-09-27').find((x) => x.id === 'cima')?.conseguido).toBe(false)
+  })
 })

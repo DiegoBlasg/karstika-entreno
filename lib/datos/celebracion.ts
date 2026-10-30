@@ -1,20 +1,23 @@
 // Lo que se enseña justo después de registrar una sesión (la «chapa»): el largo, el esfuerzo, los logros y lo siguiente. Puro.
-import { fuerzaRelativa, objetivoRpe } from '../../motor'
-import { lunesDe, sumarDias } from '../fecha'
+import { estadoAtleta, fuerzaRelativa, objetivoRpe, VALORES } from '../../motor'
+import { lunesDe } from '../fecha'
 import type { DatosAtleta, FilaRegistro, FilaSesion } from './filas'
 import { progresoLargo, type ProgresoLargo } from './largo'
-import { evaluacionMotor } from './mapeo'
+import { evaluacionMotor, historialMotor, seguimientoMotor } from './mapeo'
 import { cambiosPorResultados } from './plan'
-import { logros, type Logro } from './progreso'
+import { logros, UMBRAL_IGUAL, type Logro } from './progreso'
 import { vistaVia, type ResultadoTest } from './via'
 
 export type Valoracion = 'previsto' | 'mas-duro' | 'mas-suave' | 'sin-objetivo'
+// Lo que el motor (estadoAtleta) ha decidido de esta sesión: si cuenta para subir la carga (P-11) y, si no, por qué.
+export type Veredicto = 'cuenta' | 'por-encima' | 'incompleta' | 'molestia'
 
 export interface ResumenRegistro {
   sesion: FilaSesion
   registro: FilaRegistro
   largo: ProgresoLargo | null
-  esfuerzo: { rpe: number; objetivo: number | null; valoracion: Valoracion }
+  // valoracion: el RPE frente al objetivo (descripción); veredicto y sinSubida: lo que entiende el motor hoy.
+  esfuerzo: { rpe: number; objetivo: number | null; valoracion: Valoracion; veredicto: Veredicto; sinSubida: boolean }
   siguiente: FilaSesion | null
   logrosNuevos: Logro[]
   conTest: string | null
@@ -30,38 +33,68 @@ function valorar(rpe: number, objetivo: number | null): Valoracion {
 const despues = (a: FilaSesion, b: FilaSesion): boolean =>
   a.fecha > b.fecha || (a.fecha === b.fecha && a.sesion.horaInicio > b.sesion.horaInicio)
 
-export function resumenRegistro(d: DatosAtleta, sesionId: string): ResumenRegistro | null {
+// El veredicto sale de estadoAtleta (sesionesNoValidas). El motor no dice el motivo; se deduce con sus mismas reglas
+// (P-63: por encima si RPE > máximo o RPE × minutos reales > máximo × minutos previstos; P-11: incompleta por debajo de
+// fraccionCompletada) y, si no es ninguna de las dos, la que queda es la molestia en dedos o muñeca (P-46).
+function veredictoDe(noValida: boolean, sesion: FilaSesion, registro: FilaRegistro, objetivo: number | null): Veredicto {
+  if (!noValida) return 'cuenta'
+  const previstos = sesion.sesion.duracionMin
+  if (objetivo !== null && (registro.rpe > objetivo || registro.rpe * registro.duracion_min > objetivo * previstos)) return 'por-encima'
+  if (registro.duracion_min < VALORES['P-63'].fraccionCompletada * previstos) return 'incompleta'
+  return 'molestia'
+}
+
+// `hoy`: la fecha real (Madrid) en que se enseña la chapa.
+export function resumenRegistro(d: DatosAtleta, sesionId: string, hoy: string): ResumenRegistro | null {
   const sesion = d.sesiones.find((s) => s.id === sesionId)
   const registro = d.registros.find((r) => r.sesion_id === sesionId)
   if (!sesion || !registro) return null
   const registradas = new Set(d.registros.map((r) => r.sesion_id))
+  // Lo siguiente nunca es una sesión ya pasada (al registrar tarde, las de días anteriores sin registrar no cuentan).
   const siguiente =
     d.sesiones
-      .filter((s) => !registradas.has(s.id) && s.sesion.tipo !== 'descanso' && despues(s, sesion))
+      .filter((s) => !registradas.has(s.id) && s.sesion.tipo !== 'descanso' && s.fecha >= hoy && despues(s, sesion))
       .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.sesion.horaInicio - b.sesion.horaInicio)[0] ?? null
-  // Los logros se miden al cierre de la semana de la sesión (una semana solo está «cumplida» cuando ya ha pasado).
-  const lunes = lunesDe(sesion.fecha)
-  const domingo = sumarDias(lunes, 6)
-  const logrosNuevos = logros(d, sumarDias(lunes, 7)).filter((l) => l.conseguido && l.fecha !== null && l.fecha >= lunes && l.fecha <= domingo)
+  // Logros nuevos: los conseguidos hoy que no lo estarían sin este registro. Así nunca se anuncia uno que luego pueda
+  // desaparecer (una semana solo está cumplida cuando ha terminado: se anuncia en la primera chapa tras cerrarla).
+  const sinEste = { ...d, registros: d.registros.filter((r) => r.sesion_id !== sesionId) }
+  const antes = new Set(logros(sinEste, hoy).filter((l) => l.conseguido).map((l) => l.id))
+  const logrosNuevos = logros(d, hoy).filter((l) => l.conseguido && !antes.has(l.id))
   const objetivo = objetivoRpe(sesion.sesion) ?? null
+  const estado = estadoAtleta(historialMotor(d.sesiones), seguimientoMotor(d), hoy > sesion.fecha ? hoy : sesion.fecha)
+  const veredicto = veredictoDe(estado.sesionesNoValidas.includes(sesionId), sesion, registro, objetivo)
   return {
     sesion,
     registro,
     largo: progresoLargo(d, sesion.fecha),
-    esfuerzo: { rpe: registro.rpe, objetivo, valoracion: valorar(registro.rpe, objetivo) },
+    esfuerzo: { rpe: registro.rpe, objetivo, valoracion: valorar(registro.rpe, objetivo), veredicto, sinSubida: estado.sinSubida },
     siguiente,
     logrosNuevos,
     conTest: sesion.sesion.tipo === 'evaluacion-dedos' ? (d.evaluaciones.find((e) => e.fecha === sesion.fecha)?.id ?? null) : null,
   }
 }
 
+// Primero el RPE frente al objetivo; luego lo que ha decidido el motor. «La carga sigue su curso» solo si la sesión
+// cuenta para progresar y el motor no frena la subida.
 export function textoEsfuerzo(e: ResumenRegistro['esfuerzo']): string {
-  switch (e.valoracion) {
-    case 'previsto': return `Esfuerzo ${e.rpe}/10: lo previsto. La carga sigue su curso.`
-    case 'mas-duro': return `Esfuerzo ${e.rpe}/10: más duro de lo previsto (máximo ${e.objetivo}). El entrenador no subirá la carga en la próxima.`
-    case 'mas-suave': return `Esfuerzo ${e.rpe}/10: más suave de lo previsto.`
-    case 'sin-objetivo': return `Esfuerzo ${e.rpe}/10.`
-  }
+  const rpe = `Esfuerzo ${e.rpe}/10`
+  if (e.valoracion === 'sin-objetivo') return `${rpe}.`
+  const descripcion = {
+    previsto: `${rpe}: lo previsto (máximo ${e.objetivo}).`,
+    'mas-duro': `${rpe}: más duro de lo previsto (máximo ${e.objetivo}).`,
+    'mas-suave': `${rpe}: más suave de lo previsto.`,
+  }[e.valoracion]
+  const motor = {
+    'por-encima':
+      (e.valoracion === 'mas-duro' ? '' : 'Pero con los minutos que duró, la carga pasó de la prevista. ') +
+      `Esta sesión no cuenta para subir la carga${e.sinSubida ? ' y el entrenador no la subirá en la próxima.' : '.'}`,
+    incompleta: 'Quedó por debajo de los minutos previstos: no cuenta para subir la carga.',
+    molestia: 'Con molestias en dedos o muñeca no cuenta para subir la carga.',
+    cuenta: e.sinSubida
+      ? 'Cuenta, pero de momento la carga no sube (por una molestia o por otra sesión por encima de lo previsto).'
+      : 'La carga sigue su curso.',
+  }[e.veredicto]
+  return `${descripcion} ${motor}`
 }
 
 export type Mejora = 'sube' | 'baja' | 'igual' | 'primera'
@@ -77,8 +110,7 @@ export interface ResumenReunion {
   logrosNuevos: Logro[] // conseguidos con fecha === test.fecha
 }
 
-// Por debajo de este cambio (en puntos de % del peso) el test se considera igual que el anterior.
-export const UMBRAL_IGUAL = 1
+export { UMBRAL_IGUAL } from './progreso'
 
 export function resumenReunion(d: DatosAtleta, evaluacionId: string, hoy: string): ResumenReunion | null {
   const ordenadas = [...d.evaluaciones].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.localeCompare(b.id))
