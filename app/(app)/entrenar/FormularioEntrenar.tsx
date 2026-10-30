@@ -23,7 +23,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
   const [estado, accion, pendiente] = useActionState<EstadoProponer, FormData>(proponer, null)
   const antesDeTemporada = hoy < inicioTemporada
   const primerDia = antesDeTemporada ? inicioTemporada : hoy
-  const [dia, setDia] = useState(inicial.fecha && inicial.fecha >= primerDia ? inicial.fecha : primerDia)
+  const [dia, setDia] = useState(inicial.reemplaza ? hoy : inicial.fecha && inicial.fecha >= primerDia ? inicial.fecha : primerDia)
   const resultado = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (estado) resultado.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -43,7 +43,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
       <form onSubmit={enviarSinVaciar(accion)} className="space-y-4">
         {inicial.reemplaza && <input type="hidden" name="reemplaza" value={inicial.reemplaza} />}
         <div className="flex gap-3">
-          <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} max={inicial.reemplaza ? hoy : undefined} value={inicial.reemplaza ? hoy : dia} onChange={(e) => setDia(e.target.value)} readOnly={Boolean(inicial.reemplaza)} required className={CAMPO} /></label>
+          <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} max={inicial.reemplaza ? hoy : undefined} value={dia} onChange={(e) => setDia(e.target.value)} readOnly={Boolean(inicial.reemplaza)} required className={CAMPO} /></label>
           <label className="block w-32">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
         </div>
         <fieldset>

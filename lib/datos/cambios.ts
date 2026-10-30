@@ -38,7 +38,7 @@ export function conSesion(d: DatosAtleta, f: FilaSesion): DatosAtleta {
 // La sesión que se va a cambiar por otra desde Entrenar: tiene que ser de hoy y seguir sin registrar. Devuelve los
 // datos sin ella para preparar la nueva como si no existiera (la vieja no se borra hasta aceptar la nueva). La nueva
 // también tiene que ser de hoy (`fechaNueva`).
-export function datosSinReemplazada(d: DatosAtleta, id: string, hoy: string, fechaNueva: string = hoy): DatosAtleta {
+export function datosSinReemplazada(d: DatosAtleta, id: string, hoy: string, fechaNueva: string): DatosAtleta {
   const s = d.sesiones.find((x) => x.id === id)
   if (!s) throw new Error('La sesión que querías cambiar ya no existe.')
   if (s.fecha !== hoy) throw new Error('Solo puedes cambiar sesiones de hoy.')
