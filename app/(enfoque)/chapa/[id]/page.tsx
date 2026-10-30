@@ -8,6 +8,7 @@ import { resumenRegistro, textoEsfuerzo } from '@/lib/datos/celebracion'
 import { fechaLarga } from '@/lib/fecha'
 import { nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
+import { LimpiarCronometro } from './LimpiarCronometro'
 
 // Tramo de vía con chapas: las anteriores en lima y la nueva (la última) con aro y animación de entrada.
 function DibujoChapa() {
@@ -39,6 +40,7 @@ export default async function PaginaChapa({ params }: { params: Promise<{ id: st
   const hechas = largo ? (largo.sesionesHechas === 1 ? '1 sesión hecha' : `${largo.sesionesHechas} sesiones hechas`) : ''
   return (
     <div className="space-y-5 text-center">
+      <LimpiarCronometro sesionId={r.sesion.id} />
       <DibujoChapa />
       <div className="space-y-1">
         <Etiqueta as="p">Sesión registrada</Etiqueta>

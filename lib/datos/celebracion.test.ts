@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { datosVacios, sesionFila, uuid } from './_fabrica'
-import { resumenRegistro, textoEsfuerzo } from './celebracion'
+import { resumenRegistro, resumenReunion, textoEsfuerzo } from './celebracion'
 import type { FilaEvaluacion, FilaRegistro } from './filas'
 
 const registro = (id: string, rpe = 4): FilaRegistro => ({ sesion_id: id, rpe, duracion_min: 60, molestias: [], registrado_en: '2026-11-03 20:00:00+00' })
@@ -107,5 +107,73 @@ describe('resumenRegistro', () => {
       const otra = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03')], registros: [registro(uuid(1))], evaluaciones: [ev('2026-11-03')] })
       expect(resumenRegistro(otra, uuid(1))!.conTest).toBeNull()
     })
+  })
+})
+
+describe('resumenReunion', () => {
+  const ev = (n: number, fecha: string, lastre: number, peso = 70): FilaEvaluacion =>
+    ({ id: uuid(200 + n), fecha, peso_corporal_kg: peso, lastre_kg: lastre, resistencia_s: null, tecnica: null })
+  const hoy = '2027-02-01'
+
+  it('id inexistente → null', () => {
+    expect(resumenReunion(datosVacios({ evaluaciones: [ev(1, '2026-11-10', 10)] }), uuid(999), hoy)).toBeNull()
+  })
+
+  it('primer test → primera, sin anterior ni diferencia', () => {
+    const r = resumenReunion(datosVacios({ evaluaciones: [ev(1, '2026-11-10', 10)] }), uuid(201), hoy)!
+    expect(r.mejora).toBe('primera')
+    expect(r.anterior).toBeNull()
+    expect(r.diferencia).toBeNull()
+    expect(r.test).toMatchObject({ id: uuid(201), fecha: '2026-11-10', lastreKg: 10 })
+    expect(r.logrosNuevos.map((l) => l.id)).not.toContain('record-fuerza')
+  })
+
+  it('segundo test mejor → sube, con la diferencia exacta y el récord de fuerza', () => {
+    const d = datosVacios({ evaluaciones: [ev(1, '2026-11-10', 10), ev(2, '2026-12-10', 15)] })
+    const r = resumenReunion(d, uuid(202), hoy)!
+    expect(r.mejora).toBe('sube')
+    expect(r.anterior).toMatchObject({ fecha: '2026-11-10', lastreKg: 10 })
+    expect(r.diferencia).toBeCloseTo((85 / 70 - 80 / 70) * 100, 5)
+    expect(r.logrosNuevos.map((l) => l.id)).toContain('record-fuerza')
+  })
+
+  it('el récord sigue siendo de ese test aunque haya otros después', () => {
+    const d = datosVacios({ evaluaciones: [ev(1, '2026-11-10', 10), ev(2, '2026-12-10', 15), ev(3, '2027-01-10', 12)] })
+    expect(resumenReunion(d, uuid(202), hoy)!.logrosNuevos.map((l) => l.id)).toContain('record-fuerza')
+    const ultimo = resumenReunion(d, uuid(203), hoy)!
+    expect(ultimo.mejora).toBe('baja')
+    expect(ultimo.anterior).toMatchObject({ lastreKg: 15 })
+  })
+
+  it('peor → baja, sin récord', () => {
+    const d = datosVacios({ evaluaciones: [ev(1, '2026-11-10', 15), ev(2, '2026-12-10', 10)] })
+    const r = resumenReunion(d, uuid(202), hoy)!
+    expect(r.mejora).toBe('baja')
+    expect(r.diferencia!).toBeLessThan(-1)
+    expect(r.logrosNuevos.map((l) => l.id)).not.toContain('record-fuerza')
+  })
+
+  it('casi igual (menos de 1 punto) → igual', () => {
+    const d = datosVacios({ evaluaciones: [ev(1, '2026-11-10', 10), ev(2, '2026-12-10', 10.5)] })
+    expect(resumenReunion(d, uuid(202), hoy)!.mejora).toBe('igual')
+  })
+
+  it('un test de la semana de test de 2027-01-18: es esa reunión y el siguiente largo es Resistencia de fuerza', () => {
+    const d = datosVacios({ evaluaciones: [ev(1, '2027-01-20', 10)] })
+    const r = resumenReunion(d, uuid(201), hoy)!
+    expect(r.reunion).toEqual({ numero: 1, lunes: '2027-01-18', fase: 'Fuerza de dedos' })
+    expect(r.siguienteLargo).toMatchObject({ numero: 3, fase: 'Resistencia de fuerza' })
+    expect(r.siguienteLargo!.semanas).toBeGreaterThan(0)
+    expect(r.siguienteLargo!.objetivo).not.toBe('')
+  })
+
+  it('un test que no es de ninguna reunión: reunion null', () => {
+    const r = resumenReunion(datosVacios({ evaluaciones: [ev(1, '2026-11-10', 10)] }), uuid(201), hoy)!
+    expect(r.reunion).toBeNull()
+  })
+
+  it('repeaters con el último test vigente', () => {
+    const r = resumenReunion(datosVacios({ evaluaciones: [ev(1, '2027-01-20', 10)] }), uuid(201), '2027-01-21')!
+    expect(r.repeaters!.lastreMaximo).toBeGreaterThan(r.repeaters!.lastreInicial)
   })
 })
