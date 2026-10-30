@@ -167,6 +167,25 @@ describe('proponerSesion: tiempo y descanso', () => {
       expect(plan.sesion.incluye ?? []).not.toContain('hombro')
     }
   })
+  it('las dominadas pendientes (opcionales, P-39) no impiden recomendar el descanso (P-16)', () => {
+    const historial = [
+      ses('via1', '2026-10-26', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] }),
+      ses('blq1', '2026-10-28', 19, { tipo: 'bloque-limite', duracionMin: 50, incluye: ['hombro'] }),
+      ses('t1', '2026-10-29', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
+      ses('t2', '2026-10-30', 18, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 45 }),
+      ses('a1', '2026-10-31', 18, { tipo: 'arc', intensidad: 'suave', duracionMin: 50 }),
+    ]
+    // Fuerza con los cupos de esta semana cubiertos salvo el de dominadas.
+    const fase = {
+      ...FASE_FUERZA,
+      cupos: { 'via-cuerda-limite': 1, 'bloque-limite': 1, tecnica: 2, arc: 1, hombro: 2, dominadas: 1 },
+      prioridad: ['via-cuerda-limite', 'bloque-limite', 'tecnica', 'arc', 'hombro', 'dominadas'] as typeof FASE_FUERZA.prioridad,
+      prohibidos: FASE_FUERZA.prohibidos.filter((t) => t !== 'bloque-limite'),
+    }
+    const r = proponerSesion(peticion({ fecha: '2026-11-01', historial, fase }))
+    expect(r.descanso?.regla).toBe('generador.descanso-recomendado')
+    expect(r.principal).toBeNull()
+  })
   it('los complementos de sesiones pasadas cuentan para los cupos', () => {
     // Misma semana natural (lunes 2026-10-26): los dos complementos de hombro cubren su cupo de 2.
     const conHombro = ses('v', '2026-10-27', 19, { tipo: 'via-cuerda-limite', duracionMin: 100, incluye: ['hombro'] })

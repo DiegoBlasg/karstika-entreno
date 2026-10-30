@@ -172,8 +172,6 @@ export function planificarSemana(
     ...(p.seguimiento ? { seguimiento: { ...p.seguimiento, registros: p.seguimiento.registros.filter((r) => ids.has(r.sesionId)) } } : {}),
   }
   let mejor: Candidata | undefined
-  const C: Record<string, number> = {}
-  const cnt = (k: string) => { C[k] = (C[k] ?? 0) + 1 }
   // Cota de lo mejor que puede llegar a dar una rama, criterio a criterio y en el mismo orden que `esMejor`: cupos (un hueco
   // suma como mucho 1 a cada tipo), carga alta y minutos fuera de casa (cada hueco restante, como mucho, lo entero), hombro
   // en días seguidos (solo puede crecer) y minutos totales. Si la cota ya pierde con el mejor reparto, la rama se poda.
@@ -208,13 +206,11 @@ export function planificarSemana(
   }
   const visitar = (i: number, elegidas: (SesionPlan | null)[], historial: Sesion[]): void => {
     if (i === ranuras.length) {
-      cnt('leaf')
       const c = puntuar(p, ranuras, elegidas)
       if (!mejor || esMejor(c, mejor)) mejor = c
       return
     }
-    cnt(`n${i}`)
-    if (mejor && podar(i, elegidas, mejor)) { cnt(`p${i}`); return }
+    if (mejor && podar(i, elegidas, mejor)) return
     const h = ranuras[i]!
     const q: Peticion = { ...baseCorta, fecha: h.fecha, horaInicio: h.horaInicio, contexto: h.contexto, historial }
     const r = proponerEn(q, false, false, false)
@@ -262,7 +258,6 @@ export function planificarSemana(
     for (const o of ramas) visitar(i + 1, [...elegidas, o], [...historial, { ...o.sesion, id: `${PREFIJO_SEMANA}${i}` }])
   }
   visitar(0, [], [...corto])
-  if (process.env.DEBUGPLAN) console.log('CALLS', JSON.stringify(C), mejor!.tipos)
   return { ranuras, elegidas: mejor!.elegidas }
 }
 

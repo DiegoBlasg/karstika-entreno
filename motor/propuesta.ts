@@ -220,7 +220,9 @@ function completar(
 function explicacionEleccion(c: Valido, p: Peticion, anadidos: readonly TipoComplemento[]): Explicacion {
   const cupo = p.fase.cupos[c.tipoPlan] ?? 0
   const partes = [
-    cupo > 0
+    c.tipoPlan === 'dominadas'
+      ? `Dominadas lastradas: opcionales (P-39), como mucho 1 por semana en la fase «${p.fase.nombre}» y nunca el día de dedos intensos. Hoy hay hueco para ellas.`
+      : cupo > 0
       ? `La fase «${p.fase.nombre}» pide ${cupo} ${cupo === 1 ? 'sesión' : 'sesiones'} de ${NOMBRE_TIPO[c.tipoPlan].toLowerCase()} por semana y esta semana llevas ${c.hechas7d} (contando las ya planificadas).`
       : `Opción válida según la prioridad de la fase «${p.fase.nombre}».`,
   ]
@@ -490,7 +492,8 @@ function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false,
       const x = diaNumero(s.fecha)
       return x >= d - DIAS_RECIENTES && x <= d - 1
     }).length
-    const cuposCubiertos = validos.every((v) => !cupoPendiente(p, v.tipoPlan))
+    // Las dominadas son opcionales (P-39): su cupo pendiente no impide recomendar el descanso (P-16).
+    const cuposCubiertos = validos.every((v) => v.tipoPlan === 'dominadas' || !cupoPendiente(p, v.tipoPlan))
     if (recientes >= SESIONES_RECIENTES_PARA_DESCANSO && cuposCubiertos) {
       descanso = explicar(
         'generador.descanso-recomendado',
