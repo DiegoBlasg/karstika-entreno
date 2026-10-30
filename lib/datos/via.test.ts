@@ -104,9 +104,9 @@ describe('vistaVia', () => {
 })
 
 describe('ventanasReuniones', () => {
-  it('cada ventana va del final de la anterior al domingo de su semana + 6 días, sin pisar la siguiente', () => {
+  it('cada ventana va del final de la anterior (como mucho 21 días antes de su lunes) al domingo de su semana + 6 días, sin pisar la siguiente', () => {
     expect(ventanasReuniones(['2027-01-18', '2027-02-08', '2027-02-15'], '2026-11-02')).toEqual([
-      { lunes: '2027-01-18', desde: '2026-11-02', hasta: '2027-01-30' },
+      { lunes: '2027-01-18', desde: '2026-12-28', hasta: '2027-01-30' }, // un test de base, semanas antes, no es el de esta reunión
       { lunes: '2027-02-08', desde: '2027-01-31', hasta: '2027-02-14' }, // el margen se corta antes del lunes siguiente
       { lunes: '2027-02-15', desde: '2027-02-15', hasta: '2027-02-27' },
     ])

@@ -53,6 +53,9 @@ export interface VistaVia {
 // siguiente; uno hecho pocos días después de su semana cuenta para la suya, y el margen no roba el de la siguiente.
 // Cada reunión se queda con el último test (fecha <= hoy) de su ventana.
 export const MARGEN_DIAS_TRAS_TEST = 6
+// Y como mucho desde 21 días antes del lunes de la reunión: con un test más reciente el motor ya no propone otro
+// (DIAS_MIN_REEVALUAR en motor/propuesta.ts); uno más antiguo no es el de esta reunión.
+export const MARGEN_DIAS_ANTES_TEST = 21
 
 export interface VentanaReunion {
   lunes: string // lunes de la semana de test
@@ -66,8 +69,9 @@ export function ventanasReuniones(lunesTests: readonly string[], inicio: string)
     const siguiente = lunesTests[k + 1]
     const finMargen = sumarDias(lunes, 6 + MARGEN_DIAS_TRAS_TEST)
     const hasta = siguiente && sumarDias(siguiente, -1) < finMargen ? sumarDias(siguiente, -1) : finMargen
-    const desde = k === 0 ? inicio : sumarDias(ventanas[k - 1]!.hasta, 1)
-    ventanas.push({ lunes, desde, hasta })
+    const trasAnterior = k === 0 ? inicio : sumarDias(ventanas[k - 1]!.hasta, 1)
+    const masPronto = sumarDias(lunes, -MARGEN_DIAS_ANTES_TEST)
+    ventanas.push({ lunes, desde: trasAnterior > masPronto ? trasAnterior : masPronto, hasta })
   })
   return ventanas
 }
