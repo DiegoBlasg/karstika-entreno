@@ -5,7 +5,7 @@ import { salir } from './acciones'
 export default function LayoutApp({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-xl px-4 pb-16">
-      <nav className="flex flex-wrap items-center gap-4 border-b border-stone-200 py-3 text-sm">
+      <nav className="flex flex-wrap items-center gap-4 border-b border-borde py-3 text-sm">
         <Link href="/" className="font-semibold">Hoy</Link>
         <Link href="/semana">Mi semana</Link>
         <Link href="/plan">Plan</Link>
@@ -14,7 +14,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
         <Link href="/biblioteca">Biblioteca</Link>
         <Link href="/perfil">Perfil</Link>
         <form action={salir} className="ml-auto">
-          <button className="text-stone-500">Salir</button>
+          <button className="text-texto-2">Salir</button>
         </form>
       </nav>
       <main className="pt-4">{children}</main>

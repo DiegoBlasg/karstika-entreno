@@ -18,7 +18,7 @@ export function CamposMolestias({ iniciales = [], plegable = false }: { iniciale
         return (
           <div key={z} className="flex items-center gap-3 text-sm">
             <label htmlFor={`${prefijo}dolor_${z}`} className="w-40">{NOMBRE_ZONA[z]}</label>
-            <select id={`${prefijo}dolor_${z}`} name={`dolor_${z}`} defaultValue={String(previa?.dolor ?? 0)} className="rounded border border-stone-300 px-2 py-1">
+            <select id={`${prefijo}dolor_${z}`} name={`dolor_${z}`} defaultValue={String(previa?.dolor ?? 0)} className="rounded border border-borde px-2 py-1">
               {Array.from({ length: 11 }, (_, n) => <option key={n} value={n}>{n}</option>)}
             </select>
             <label className="flex items-center gap-1">
@@ -27,7 +27,7 @@ export function CamposMolestias({ iniciales = [], plegable = false }: { iniciale
           </div>
         )
       })}
-      <p className="text-xs text-stone-500">Alarma: chasquido, hinchazón, pérdida de fuerza o de movilidad.</p>
+      <p className="text-xs text-texto-2">Alarma: chasquido, hinchazón, pérdida de fuerza o de movilidad.</p>
     </fieldset>
   )
   if (!plegable) return campos

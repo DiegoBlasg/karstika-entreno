@@ -20,7 +20,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Ejercicio no encontrado</h1>
-        <Link href="/biblioteca" className="text-sky-800 underline">Ver la biblioteca</Link>
+        <Link href="/biblioteca" className="text-progreso underline">Ver la biblioteca</Link>
       </div>
     )
   }
@@ -29,7 +29,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
     <div className="space-y-4 text-sm">
       <h1 className="text-xl font-semibold">{f.titulo}</h1>
       <p>{f.paraQue}</p>
-      {f.dibujo && <Dibujo id={f.dibujo} className="mx-auto text-stone-800" />}
+      {f.dibujo && <Dibujo id={f.dibujo} className="mx-auto text-texto" />}
       <p><span className="font-medium">Material:</span> {f.material}</p>
       <section>
         <h2 className="font-medium">Cómo se hace</h2>
@@ -43,7 +43,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
           {f.errores.map((e) => <li key={e}>{e}</li>)}
         </ul>
       </section>
-      <section className="rounded bg-amber-50 p-3">
+      <section className="rounded bg-ambar/10 p-3">
         <h2 className="font-medium">Cuándo parar</h2>
         <ul className="mt-1 ml-4 list-disc space-y-1">
           {f.paraSi.map((e) => <li key={e}>{e}</li>)}
@@ -55,18 +55,18 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
           <ul className="mt-1 space-y-2">
             {bases.map((b) => (
               <li key={b.parametro}>
-                {b.titulo} · <span className="text-stone-600">{b.nivelTexto}</span>
+                {b.titulo} · <span className="text-texto-2">{b.nivelTexto}</span>
                 {b.estudios.length > 0 && (
                   <ul className="ml-3 list-disc text-xs">
                     {b.estudios.map((e) => (
                       <li key={e.id}>
                         {e.url ? (
-                          <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-sky-800 underline">{e.cita}</a>
+                          <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-progreso underline">{e.cita}</a>
                         ) : (
                           e.cita
                         )}
                         {' · '}
-                        <Link href={`/fuentes/${e.id}`} className="text-sky-800 underline">detalle</Link>
+                        <Link href={`/fuentes/${e.id}`} className="text-progreso underline">detalle</Link>
                       </li>
                     ))}
                   </ul>
@@ -76,7 +76,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
           </ul>
         </section>
       )}
-      <Link href="/biblioteca" className="text-sky-800 underline">Ver la biblioteca</Link>
+      <Link href="/biblioteca" className="text-progreso underline">Ver la biblioteca</Link>
     </div>
   )
 }

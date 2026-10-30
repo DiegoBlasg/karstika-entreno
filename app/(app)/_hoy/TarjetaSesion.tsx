@@ -26,7 +26,7 @@ const enlaceCambiar = (f: FilaSesion): string =>
   `/entrenar?${new URLSearchParams({ fecha: f.fecha, hora: hhmm(f.sesion.horaInicio), minutos: String(f.sesion.duracionMin), reemplaza: f.id })}`
 
 // Borra la sesión: «No la hice» (hoy y pasadas) o «Quitar» / «Quitarla» (futuras y las que ya no encajan).
-function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-red-700' }: {
+function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-rojo' }: {
   id: string
   etiqueta?: string
   confirmacion?: string
@@ -37,7 +37,7 @@ function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar e
     <form action={accion} onSubmit={(e) => { if (!confirm(confirmacion)) e.preventDefault() }}>
       <input type="hidden" name="sesion_id" value={id} />
       <button className={clase} disabled={pendiente}>{etiqueta}</button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
 }
@@ -48,7 +48,7 @@ function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(otraCosa, null)
   const [tipo, setTipo] = useState<TipoSesion>(sesion.tipo === 'descanso' ? 'tecnica' : sesion.tipo)
   return (
-    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 border-t border-stone-100 pt-3">
+    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 border-t border-borde pt-3">
       <input type="hidden" name="sesion_id" value={sesion.id} />
       <label className="block">
         ¿Qué hiciste?
@@ -86,13 +86,13 @@ function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
         </div>
       )}
       {estado?.avisos && (
-        <div className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+        <div className="space-y-2 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
           <ul className="list-disc pl-5">{estado.avisos.map((a) => <li key={a}>{a}</li>)}</ul>
           <label className="flex items-center gap-2"><input type="checkbox" name="confirmar" /> Lo hice así de todos modos</label>
         </div>
       )}
       <button className={BOTON} disabled={pendiente}>Guardar lo que hice</button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
 }
@@ -104,7 +104,7 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
   return (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm text-emerald-700">
+        <p className="text-sm text-progreso">
           Hecha · RPE {registro.rpe} · {registro.duracion_min} min
           {registro.molestias.length > 0 ? ` · molestias: ${registro.molestias.map((m) => `${NOMBRE_ZONA[m.zona]} ${m.dolor}`).join(', ')}` : ''}
         </p>
@@ -129,9 +129,9 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
   const cerrarRegistro = (): void => setTerminando(false)
   return (
     <article className={TARJETA}>
-      {fila.fecha !== hoy && <p className="text-sm text-stone-500">{fechaLarga(fila.fecha)}</p>}
+      {fila.fecha !== hoy && <p className="text-sm text-texto-2">{fechaLarga(fila.fecha)}</p>}
       {tarjeta.noEncaja.length > 0 && (
-        <div className="space-y-1 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+        <div className="space-y-1 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
           <p className="font-medium">Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:</p>
           <ul className="list-disc pl-5">{tarjeta.noEncaja.map((m) => <li key={m}>{m}</li>)}</ul>
           {tarjeta.noEncaja.includes(MOTIVO_DESCANSO)
@@ -155,7 +155,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
       ) : (
         <>
           {fila.fecha === hoy && fila.propuesta && (
-            <Link href={`/sesion/${fila.id}`} className="inline-block rounded bg-emerald-700 px-3 py-2 text-sm font-medium text-white">
+            <Link href={`/sesion/${fila.id}`} className="inline-block rounded bg-progreso px-3 py-2 text-sm font-medium text-fondo">
               Empezar con cronómetro
             </Link>
           )}

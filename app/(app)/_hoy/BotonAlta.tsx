@@ -16,9 +16,9 @@ export function BotonAlta({ zona }: { zona: Zona }) {
       }}
     >
       <input type="hidden" name="zona" value={zona} />
-      <button disabled={pendiente} className="rounded border border-red-300 bg-white px-3 py-1 text-sm">Me ha dado el alta el fisio ({NOMBRE_ZONA[zona]})</button>
-      {estado?.error && <p role="alert" className="mt-1 text-sm text-red-700">{estado.error}</p>}
-      {estado?.ok && <p className="mt-1 text-sm text-emerald-700">{estado.ok}</p>}
+      <button disabled={pendiente} className="rounded border border-rojo/50 bg-superficie px-3 py-1 text-sm">Me ha dado el alta el fisio ({NOMBRE_ZONA[zona]})</button>
+      {estado?.error && <p role="alert" className="mt-1 text-sm text-rojo">{estado.error}</p>}
+      {estado?.ok && <p className="mt-1 text-sm text-progreso">{estado.ok}</p>}
     </form>
   )
 }

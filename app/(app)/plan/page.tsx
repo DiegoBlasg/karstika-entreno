@@ -25,19 +25,19 @@ function FilaHueco({ h }: { h: HuecoPlan }) {
       {estado === 'planeada' && sesion && (
         <>
           <p className="font-medium">{nombreSesion(sesion)}{h.cargaAlta ? ' ★' : ''}</p>
-          <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
+          <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
         </>
       )}
       {estado === 'aceptada' && sesion && (
         <>
           <p className="font-medium">{nombreSesion(sesion)} · {h.registrada ? 'Registrada' : 'Aceptada'}</p>
-          <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
+          <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
         </>
       )}
-      {estado === 'libre' && <p className="text-stone-600">{h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
-      {estado === 'sin-plan' && <p className="text-stone-600">Sin plan: prepáralo cuando llegue.</p>}
+      {estado === 'libre' && <p className="text-texto-2">{h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
+      {estado === 'sin-plan' && <p className="text-texto-2">Sin plan: prepáralo cuando llegue.</p>}
       {(estado === 'planeada' || estado === 'libre' || estado === 'sin-plan') && (
-        <Link href={enlacePreparar(hueco)} className="inline-block rounded bg-stone-900 px-3 py-1 text-sm font-medium text-white">Preparar</Link>
+        <Link href={enlacePreparar(hueco)} className="inline-block rounded bg-progreso px-3 py-1 text-sm font-medium text-fondo">Preparar</Link>
       )}
     </li>
   )
@@ -49,11 +49,11 @@ function Semana({ s, titulo }: { s: SemanaPlanVista; titulo: string }) {
     <section className="space-y-3">
       <h3 className="font-medium">{titulo} · {corta(s.lunes)} – {corta(sumarDias(s.lunes, 6))}</h3>
       {s.orientativo && (
-        <p className="rounded bg-sky-50 p-3 text-sm">
+        <p className="rounded bg-superficie-2 p-3 text-sm">
           Orientativo, con tu semana habitual: declara tus huecos en <Link href="/semana" className="underline">Mi semana</Link>.
         </p>
       )}
-      {s.aviso && <p className="rounded bg-amber-50 p-3 text-sm">{s.aviso}</p>}
+      {s.aviso && <p className="rounded bg-ambar/10 p-3 text-sm">{s.aviso}</p>}
       {pendientes.length > 0 && <ul className="space-y-3">{pendientes.map((h) => <FilaHueco key={h.hueco.id} h={h} />)}</ul>}
     </section>
   )
@@ -64,7 +64,7 @@ function Cambios({ c }: { c: CambiosResultados }) {
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Qué ha cambiado por tus resultados</h2>
       {c.aviso ? (
-        <p className="rounded bg-amber-50 p-3 text-sm">{c.aviso}</p>
+        <p className="rounded bg-ambar/10 p-3 text-sm">{c.aviso}</p>
       ) : (
         <ul className={`${TARJETA} text-sm`}>
           <li>
@@ -129,24 +129,24 @@ export default async function PaginaPlan() {
         <h2 className="text-lg font-semibold">Próximos días</h2>
         {semanas[0] && <Semana s={semanas[0]} titulo="Esta semana" />}
         {semanas[1] && <Semana s={semanas[1]} titulo="Semana siguiente" />}
-        {semanas.some((s) => s.huecos.some((h) => h.estado === 'planeada' && h.cargaAlta)) && <p className="text-xs text-stone-500">★ = carga alta.</p>}
+        {semanas.some((s) => s.huecos.some((h) => h.estado === 'planeada' && h.cargaAlta)) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
       </section>
       <Cambios c={cambios} />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">El año</h2>
-        {ano.aviso && <p className="rounded bg-amber-50 p-3 text-sm">{ano.aviso}</p>}
-        <ol className="divide-y divide-stone-100 rounded border border-stone-200 bg-white text-sm">
+        {ano.aviso && <p className="rounded bg-ambar/10 p-3 text-sm">{ano.aviso}</p>}
+        <ol className="divide-y divide-borde rounded border border-borde bg-superficie text-sm">
           {ano.semanas.map((s) => (
             <li
               key={s.lunes}
               aria-current={s.actual ? 'date' : undefined}
-              className={`flex flex-wrap gap-x-2 px-3 py-1.5 ${s.actual ? 'bg-amber-100 font-medium' : ''}`}
+              className={`flex flex-wrap gap-x-2 px-3 py-1.5 ${s.actual ? 'bg-ambar/20 font-medium' : ''}`}
             >
               <span className="w-14 shrink-0 tabular-nums">{corta(s.lunes)}</span>
-              <span className="text-stone-500">C{s.ciclo}</span>
+              <span className="text-texto-2">C{s.ciclo}</span>
               <span>{s.fase}</span>
-              {s.descarga && <span className="text-stone-500">· descarga</span>}
-              {s.reevaluar && <span className="text-stone-500">· test</span>}
+              {s.descarga && <span className="text-texto-2">· descarga</span>}
+              {s.reevaluar && <span className="text-texto-2">· test</span>}
               {s.actual && <span>· esta semana</span>}
             </li>
           ))}

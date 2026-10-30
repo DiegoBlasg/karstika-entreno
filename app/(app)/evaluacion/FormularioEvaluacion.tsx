@@ -15,13 +15,13 @@ export function FormularioEvaluacion({ hoy, fechaInicial, peso }: { hoy: string;
       <label className="block">
         Lastre del mejor intento de 10 s (kg)
         <input name="lastre_kg" inputMode="decimal" required className={CAMPO} />
-        <span className="text-xs text-stone-500">Negativo si usaste descarga (polea o banda).</span>
+        <span className="text-xs text-texto-2">Negativo si usaste descarga (polea o banda).</span>
       </label>
       <label className="block">Resistencia: segundos hasta el fallo en 7:3 al 60 % (opcional)<input name="resistencia_s" inputMode="decimal" className={CAMPO} /></label>
       <label className="block">Técnica: autoevaluación del vídeo de 1 a 7 (opcional)<input name="tecnica" inputMode="decimal" className={CAMPO} /></label>
       <button className={BOTON} disabled={pendiente}>Guardar evaluación</button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
-      {estado?.ok && <p className="text-sm text-emerald-700">{estado.ok}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
+      {estado?.ok && <p className="text-sm text-progreso">{estado.ok}</p>}
     </form>
   )
 }
