@@ -10,7 +10,7 @@ export function BotonBorrarHueco({ id, conSesion }: { id: string; conSesion: boo
   return (
     <form action={accion} onSubmit={(e) => { if (pregunta && !confirm(pregunta)) e.preventDefault() }}>
       <input type="hidden" name="hueco_id" value={id} />
-      <button aria-label="Borrar hueco" className="text-texto-2" disabled={pendiente}>✕</button>
+      <button aria-label="Borrar hueco" className="flex size-11 items-center justify-center text-texto-2" disabled={pendiente}>✕</button>
       {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )

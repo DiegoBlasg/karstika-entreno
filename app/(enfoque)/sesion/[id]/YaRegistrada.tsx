@@ -20,7 +20,7 @@ export function YaRegistrada({ id }: { id: string }) {
   return (
     <div className="space-y-3">
       <p>Esta sesión ya está registrada.</p>
-      <Link href="/" className="underline">Volver a Hoy</Link>
+      <Link href="/" className="inline-flex min-h-11 items-center underline">Volver a Hoy</Link>
     </div>
   )
 }

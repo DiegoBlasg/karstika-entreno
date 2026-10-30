@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { FRACCION_INICIAL_REPEATERS, VALORES } from '@/motor'
-import { TARJETA } from '@/components/estilos'
+import { BOTON, TARJETA } from '@/components/estilos'
 import { PorQue } from '@/components/PorQue'
 import { textoLastre } from '@/lib/cronometro/test'
 import { enlacePreparar } from '@/lib/datos/huecos'
@@ -37,7 +37,7 @@ function FilaHueco({ h }: { h: HuecoPlan }) {
       {estado === 'libre' && <p className="text-texto-2">{h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
       {estado === 'sin-plan' && <p className="text-texto-2">Sin plan: prepáralo cuando llegue.</p>}
       {(estado === 'planeada' || estado === 'libre' || estado === 'sin-plan') && (
-        <Link href={enlacePreparar(hueco)} className="inline-block rounded bg-progreso px-3 py-1 text-sm font-medium text-fondo">Preparar</Link>
+        <Link href={enlacePreparar(hueco)} className={BOTON}>Preparar</Link>
       )}
     </li>
   )

@@ -94,7 +94,7 @@ export function FormularioEntrenamientoLibre({ hoy, hora }: { hoy: string; hora:
       <button
         type="button"
         onClick={() => { setAbierto(!abierto); setHecho(null) }}
-        className="text-left font-medium underline"
+        className="min-h-11 text-left font-medium underline"
       >
         {abierto ? 'Cancelar' : 'Apuntar un entrenamiento que no estaba planeado'}
       </button>

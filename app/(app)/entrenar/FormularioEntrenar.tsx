@@ -73,7 +73,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
             <p>{estado.error}</p>
             {estado.detalle && (
               <details>
-                <summary className="cursor-pointer">Detalle</summary>
+                <summary className="flex min-h-11 cursor-pointer items-center">Detalle</summary>
                 <p className="mt-1 whitespace-pre-wrap">{estado.detalle}</p>
               </details>
             )}

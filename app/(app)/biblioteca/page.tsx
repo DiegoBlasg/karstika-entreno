@@ -12,7 +12,7 @@ export default function PaginaBiblioteca() {
           <ul className="space-y-1">
             {g.fichas.map((id) => (
               <li key={id}>
-                <Link href={`/biblioteca/${id}`} className="text-progreso underline">{FICHAS[id].titulo}</Link>
+                <Link href={`/biblioteca/${id}`} className="inline-flex min-h-11 items-center text-progreso underline">{FICHAS[id].titulo}</Link>
               </li>
             ))}
           </ul>

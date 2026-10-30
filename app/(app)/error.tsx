@@ -16,7 +16,7 @@ export default function ErrorApp({ error, retry }: { error: unknown; retry: () =
       <p className="text-sm text-texto-2">No se ha podido cargar esta pantalla. Puede ser un fallo pasajero: prueba otra vez.</p>
       <button type="button" className={BOTON} onClick={() => retry()}>Reintentar</button>
       <details className="text-sm">
-        <summary className="cursor-pointer">Detalle del error</summary>
+        <summary className="flex min-h-11 cursor-pointer items-center">Detalle del error</summary>
         <p className="mt-1 whitespace-pre-wrap">{mensaje}</p>
         {digest && <p className="mt-1 text-texto-2">Identificador: {digest}</p>}
       </details>

@@ -26,6 +26,8 @@ const hhmm = (h: number): string => hhmmDeMinutos(Math.round(h * 60))
 const enlaceCambiar = (f: FilaSesion): string =>
   `/entrenar?${new URLSearchParams({ fecha: f.fecha, hora: hhmm(f.sesion.horaInicio), minutos: String(f.sesion.duracionMin), reemplaza: f.id })}`
 
+const TOQUE = 'inline-flex min-h-11 items-center'
+
 // Borra la sesión: «No la hice» (hoy y pasadas) o «Quitar» / «Quitarla» (futuras y las que ya no encajan).
 function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-rojo' }: {
   id: string
@@ -37,7 +39,7 @@ function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar e
   return (
     <form action={accion} onSubmit={(e) => { if (!confirm(confirmacion)) e.preventDefault() }}>
       <input type="hidden" name="sesion_id" value={id} />
-      <button className={clase} disabled={pendiente}>{etiqueta}</button>
+      <button className={`${TOQUE} ${clase}`} disabled={pendiente}>{etiqueta}</button>
       {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
@@ -110,7 +112,7 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
           {registro.molestias.length > 0 ? ` · molestias: ${registro.molestias.map((m) => `${NOMBRE_ZONA[m.zona]} ${m.dolor}`).join(', ')}` : ''}
         </p>
         {corregible(fila.fecha, hoy) && (
-          <button type="button" onClick={() => setCorrigiendo(!corrigiendo)} className="text-sm underline">
+          <button type="button" onClick={() => setCorrigiendo(!corrigiendo)} className={`${TOQUE} text-sm underline`}>
             {corrigiendo ? 'Cancelar' : 'Corregir'}
           </button>
         )}
@@ -138,7 +140,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
           <ul className="list-disc pl-5">{tarjeta.noEncaja.map((m) => <li key={m}>{m}</li>)}</ul>
           {tarjeta.noEncaja.includes(MOTIVO_DESCANSO)
             ? <BotonNoLaHice id={s.id} etiqueta="Quitarla" confirmacion="¿Quitar esta sesión?" clase="underline" />
-            : <Link href={enlaceCambiar(fila)} className="inline-block underline">Cambiarla por otra</Link>}
+            : <Link href={enlaceCambiar(fila)} className={`${TOQUE} underline`}>Cambiarla por otra</Link>}
         </div>
       )}
       {fila.propuesta ? (
@@ -167,15 +169,15 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
           {pasada && !cambiando && terminando && (
             <>
               <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} alTerminar={cerrarRegistro} />
-              <button type="button" onClick={cerrarRegistro} className="text-sm underline">Cancelar</button>
+              <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}
-          <div className="flex gap-4 text-sm">
+          <div className="flex flex-wrap gap-x-4 text-sm">
             {pasada
               ? <BotonNoLaHice id={s.id} />
               : <BotonNoLaHice id={s.id} etiqueta="Quitar" confirmacion="¿Quitar esta sesión?" />}
             {pasada && (
-              <button type="button" onClick={() => setCambiando(!cambiando)} className="underline">
+              <button type="button" onClick={() => setCambiando(!cambiando)} className={`${TOQUE} underline`}>
                 {cambiando ? 'Cancelar' : 'Hice otra cosa'}
               </button>
             )}

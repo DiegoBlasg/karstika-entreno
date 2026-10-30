@@ -17,7 +17,7 @@ export function BotonBorrarEvaluacion({ id, fecha }: { id: string; fecha: string
       className="text-right"
     >
       <input type="hidden" name="id" value={id} />
-      <button className="text-rojo" disabled={pendiente}>{pendiente ? 'Borrando…' : 'Borrar'}</button>
+      <button className="inline-flex min-h-11 items-center text-rojo" disabled={pendiente}>{pendiente ? 'Borrando…' : 'Borrar'}</button>
       {estado?.error && <p role="alert" className="mt-1 text-sm text-rojo">{estado.error}</p>}
     </form>
   )

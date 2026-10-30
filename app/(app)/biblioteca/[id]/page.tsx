@@ -20,7 +20,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Ejercicio no encontrado</h1>
-        <Link href="/biblioteca" className="text-progreso underline">Ver la biblioteca</Link>
+        <Link href="/biblioteca" className="inline-flex min-h-11 items-center text-progreso underline">Ver la biblioteca</Link>
       </div>
     )
   }
@@ -76,7 +76,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
           </ul>
         </section>
       )}
-      <Link href="/biblioteca" className="text-progreso underline">Ver la biblioteca</Link>
+      <Link href="/biblioteca" className="inline-flex min-h-11 items-center text-progreso underline">Ver la biblioteca</Link>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
 import { ComoSeHace } from '@/components/ComoSeHace'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
-import { BOTON, CAMPO } from '@/components/estilos'
+import { BOTON, BOTON_SECUNDARIO, CAMPO } from '@/components/estilos'
 import type { Paso } from '@/lib/cronometro/pasos'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
 import { intentoAbierto, lastre73, leerDatosTest, mejorLastre, textoLastre, type DatosTest, type Intento } from '@/lib/cronometro/test'
@@ -28,8 +28,6 @@ const FONDO: Record<Paso['tipo'], string> = {
   manual: 'bg-superficie-2 text-texto',
   fallo: 'bg-progreso text-fondo',
 }
-
-const BOTON_SECUNDARIO = 'rounded border border-borde px-4 py-2'
 
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -314,7 +312,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
             <button type="button" className={BOTON} onClick={() => arrancar(guardado)}>Continuar donde ibas</button>
             <button
               type="button"
-              className="underline"
+              className="inline-flex min-h-11 items-center underline"
               onClick={() => {
                 escribir(clave, null)
                 // Empezar de nuevo también borra los intentos apuntados; el peso se queda.
@@ -471,7 +469,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         >
           Terminar
         </button>
-        <button type="button" className="text-sm underline" onClick={() => setSilencio((v) => !v)}>
+        <button type="button" className="inline-flex min-h-11 items-center text-sm underline" onClick={() => setSilencio((v) => !v)}>
           {silencio ? 'Activar pitidos' : 'Silenciar'}
         </button>
       </div>
