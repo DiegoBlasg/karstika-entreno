@@ -49,6 +49,10 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await page.getByRole('button', { name: 'Terminar', exact: true }).click()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('7')
   await page.getByRole('button', { name: 'Registrar' }).click()
+  await expect(page).toHaveURL(/\/chapa\//)
+  await expect(page.getByRole('heading', { name: '+1 chapa' })).toBeVisible()
+  await page.getByRole('link', { name: 'Hecho' }).click()
+  await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText(/Hecha · RPE 7/)).toBeVisible()
 })
 
@@ -102,6 +106,9 @@ test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla',
   await expect(page.getByLabel('Minutos reales')).toHaveValue('1')
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('4')
   await page.getByRole('button', { name: 'Registrar' }).click()
+  await expect(page).toHaveURL(/\/chapa\//)
+  await expect(page.getByRole('heading', { name: '+1 chapa' })).toBeVisible()
+  await page.getByRole('link', { name: 'Hecho' }).click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText(/Hecha · RPE 4/)).toBeVisible()
   // Lo guardado del cronómetro se borra al registrar.
@@ -150,6 +157,10 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
   await expect(page.getByText('Evaluación guardada.')).toBeVisible()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('8')
   await page.getByRole('button', { name: 'Registrar' }).click()
+  await expect(page).toHaveURL(/\/chapa\//)
+  await expect(page.getByRole('heading', { name: '+1 chapa' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Ver tu reunión' })).toBeVisible()
+  await page.getByRole('link', { name: 'Hecho' }).click()
   await expect(page).toHaveURL(/\/$/)
   // Lo apuntado del test se borra al registrar.
   expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}:test`)).toBeNull()
