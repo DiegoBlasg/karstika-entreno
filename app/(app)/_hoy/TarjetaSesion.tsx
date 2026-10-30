@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
-import { TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
+import { MOTIVO_DESCANSO, TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
@@ -12,7 +12,6 @@ import { corregible, type Tarjeta } from '@/lib/datos/hoy'
 import type { PosicionTemporada } from '@/lib/datos/temporada'
 import type { EstadoAccion } from '@/lib/estado'
 import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
-import { REGLETA_MM } from '@/lib/formulario'
 import {
   AGARRES, NOMBRE_AGARRE, NOMBRE_TIPO, NOMBRE_ZONA, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
@@ -26,12 +25,18 @@ const hhmm = (h: number): string => hhmmDeMinutos(Math.round(h * 60))
 const enlaceCambiar = (f: FilaSesion): string =>
   `/entrenar?${new URLSearchParams({ fecha: f.fecha, hora: hhmm(f.sesion.horaInicio), minutos: String(f.sesion.duracionMin), reemplaza: f.id })}`
 
-function BotonNoLaHice({ id }: { id: string }) {
+// Borra la sesión: «No la hice» (hoy y pasadas) o «Quitar» / «Quitarla» (futuras y las que ya no encajan).
+function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-red-700' }: {
+  id: string
+  etiqueta?: string
+  confirmacion?: string
+  clase?: string
+}) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(noLaHice, null)
   return (
-    <form action={accion} onSubmit={(e) => { if (!confirm('¿Borrar esta sesión?')) e.preventDefault() }}>
+    <form action={accion} onSubmit={(e) => { if (!confirm(confirmacion)) e.preventDefault() }}>
       <input type="hidden" name="sesion_id" value={id} />
-      <button className="text-red-700" disabled={pendiente}>No la hice</button>
+      <button className={clase} disabled={pendiente}>{etiqueta}</button>
       {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
     </form>
   )
@@ -67,7 +72,7 @@ function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
           <label className="block flex-1">
             Regleta (mm)
             <input
-              type="number" name="regleta_mm" min={REGLETA_MM.min} max={REGLETA_MM.max} step="0.5"
+              type="text" inputMode="decimal" name="regleta_mm"
               defaultValue={sesion.detalle?.regletaMm ?? ''} className={CAMPO}
             />
           </label>
@@ -129,7 +134,9 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
         <div className="space-y-1 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
           <p className="font-medium">Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:</p>
           <ul className="list-disc pl-5">{tarjeta.noEncaja.map((m) => <li key={m}>{m}</li>)}</ul>
-          <Link href={enlaceCambiar(fila)} className="inline-block underline">Cambiarla por otra</Link>
+          {tarjeta.noEncaja.includes(MOTIVO_DESCANSO)
+            ? <BotonNoLaHice id={s.id} etiqueta="Quitarla" confirmacion="¿Quitar esta sesión?" clase="underline" />
+            : <Link href={enlaceCambiar(fila)} className="inline-block underline">Cambiarla por otra</Link>}
         </div>
       )}
       {fila.propuesta ? (
@@ -162,7 +169,9 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
             </>
           )}
           <div className="flex gap-4 text-sm">
-            <BotonNoLaHice id={s.id} />
+            {pasada
+              ? <BotonNoLaHice id={s.id} />
+              : <BotonNoLaHice id={s.id} etiqueta="Quitar" confirmacion="¿Quitar esta sesión?" />}
             {pasada && (
               <button type="button" onClick={() => setCambiando(!cambiando)} className="underline">
                 {cambiando ? 'Cancelar' : 'Hice otra cosa'}

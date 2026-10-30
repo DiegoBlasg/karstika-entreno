@@ -21,6 +21,11 @@ describe('posicionEnTemporada', () => {
   it('la cuarta semana de fuerza es de descarga', () => {
     expect(posicionEnTemporada(d, '2026-12-27')).toMatchObject({ semana: 8, faseId: 'fuerza', semanaDeFase: 4, descarga: true })
   })
+  it('una descarga adelantada que sustituye a la programada la quita de la posición', () => {
+    const adelantadas = [{ desde: '2026-12-14', hasta: '2026-12-20' }]
+    expect(posicionEnTemporada(d, '2026-12-21', { descargasAdelantadas: adelantadas })).toMatchObject({ semana: 8, descarga: false })
+    expect(posicionEnTemporada(d, '2026-12-21')).toMatchObject({ descarga: true })
+  })
   it('la última semana de la fuerza del ciclo 1 es de test', () => {
     expect(posicionEnTemporada(d, '2027-01-18')).toMatchObject({ semana: 12, faseId: 'fuerza', semanaDeFase: 8, reevaluar: true })
   })

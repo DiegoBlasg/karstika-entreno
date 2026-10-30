@@ -1,7 +1,8 @@
 // Dónde cae una fecha dentro de la temporada: «Semana 3 de 49 · Ciclo 1 · Fuerza de dedos (semana 2 de 8)». Puro.
-import { FASE_OBJETIVO, FASES, semanaEnFecha, type FaseId } from '../../motor'
+import { estadoAtleta, FASE_OBJETIVO, faseEnFecha, FASES, semanaEnFecha, type FaseId } from '../../motor'
 import { sumarDias } from '../fecha'
 import type { DatosAtleta } from './filas'
+import { historialMotor, seguimientoMotor } from './mapeo'
 import { temporadaDe } from './peticion'
 
 export interface PosicionTemporada {
@@ -17,9 +18,14 @@ export interface PosicionTemporada {
   semanaObjetivo: boolean // la semana del viaje: solo pegues y cosas suaves
 }
 
-// Calendario de la temporada (la descarga programada, no una adelantada por el bienestar: esa la sabe la propuesta).
+// Calendario de la temporada. Con `descargasAdelantadas` (las de estadoAtleta), la descarga programada que una
+// adelantada sustituye (P-50) no cuenta como descarga, igual que en faseEnFecha.
 // Fuera de temporada, null; la semana objetivo cuenta como la última.
-export function posicionEnTemporada(d: DatosAtleta, fecha: string): PosicionTemporada | null {
+export function posicionEnTemporada(
+  d: DatosAtleta,
+  fecha: string,
+  opciones: { descargasAdelantadas?: readonly { desde: string; hasta: string }[] } = {},
+): PosicionTemporada | null {
   const t = temporadaDe(d)
   const total = t.semanas.length + 1
   const s = semanaEnFecha(t, fecha)
@@ -36,7 +42,8 @@ export function posicionEnTemporada(d: DatosAtleta, fecha: string): PosicionTemp
   while (t.semanas[fin + 1]?.faseId === s.faseId && t.semanas[fin + 1]?.ciclo === s.ciclo) fin++
   return {
     semana: i + 1, total, ciclo: s.ciclo, faseId: s.faseId, fase: FASES[s.faseId].nombre, semanaDeFase: s.semanaDeFase,
-    semanasDeFase: s.semanaDeFase + (fin - i), descarga: s.descarga, reevaluar: s.reevaluar, semanaObjetivo: false,
+    semanasDeFase: s.semanaDeFase + (fin - i),
+    descarga: s.descarga && faseEnFecha(t, fecha, opciones).descargaSustituida !== true, reevaluar: s.reevaluar, semanaObjetivo: false,
   }
 }
 
@@ -44,7 +51,8 @@ export function posicionEnTemporada(d: DatosAtleta, fecha: string): PosicionTemp
 // muestra y la pantalla sigue funcionando (los datos incoherentes ya se avisan al preparar sesiones).
 export function posicionSiSePuede(d: DatosAtleta, fecha: string): PosicionTemporada | null {
   try {
-    return posicionEnTemporada(d, fecha)
+    const { descargasAdelantadas } = estadoAtleta(historialMotor(d.sesiones), seguimientoMotor(d), fecha)
+    return posicionEnTemporada(d, fecha, { descargasAdelantadas })
   } catch {
     return null
   }

@@ -91,6 +91,8 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   const [estado, setEstado] = useState<EstadoReloj>(ESTADO_INICIAL)
   const [guardado, setGuardado] = useState<EstadoReloj | null>(null)
   const [empezado, setEmpezado] = useState(false)
+  // Lo guardado ya se ha leído: hasta entonces no se ofrece «Empezar» (un toque rápido empezaría de cero).
+  const [cargado, setCargado] = useState(false)
   const [silencio, setSilencio] = useState(false)
   const [ahora, setAhora] = useState(() => Date.now())
   // El navegador no da (o ha negado) el bloqueo de pantalla encendida.
@@ -120,6 +122,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
     } else {
       setGuardado(g)
     }
+    setCargado(true)
   }, [clave, pasos.length])
 
   useEffect(() => {
@@ -300,7 +303,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
             )}
           </label>
         )}
-        {guardado ? (
+        {!cargado ? null : guardado ? (
           <div className="flex flex-wrap gap-3">
             <button type="button" className={BOTON} onClick={() => arrancar(guardado)}>Continuar donde ibas</button>
             <button

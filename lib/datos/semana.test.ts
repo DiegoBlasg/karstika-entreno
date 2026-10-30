@@ -101,4 +101,9 @@ describe('proximoHueco', () => {
     expect(proximoHueco(d, { fecha: '2026-11-02', minutos: 11 * 60 })?.fila.id).toBe(uuid(102))
     expect(proximoHueco(d, { fecha: '2026-11-04', minutos: 0 })).toBeUndefined()
   })
+  it('sin huecos pendientes esta semana, el primero de la siguiente', () => {
+    const SIG = huecoFila(uuid(104), '2026-11-09', '19:00')
+    const d = datosVacios({ huecos: [LUN_M, SIG] })
+    expect(proximoHueco(d, { fecha: '2026-11-08', minutos: 12 * 60 })?.fila.id).toBe(uuid(104))
+  })
 })

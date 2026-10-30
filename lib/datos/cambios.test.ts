@@ -94,15 +94,20 @@ describe('datosSinReemplazada', () => {
   const HOY = '2026-11-05'
   it('quita la sesión de hoy sin registrar', () => {
     const d = datosVacios({ sesiones: [sesionFila(uuid(1), HOY), sesionFila(uuid(2), HOY, { horaInicio: 9 })] })
-    expect(datosSinReemplazada(d, uuid(1), HOY).sesiones.map((s) => s.id)).toEqual([uuid(2)])
+    expect(datosSinReemplazada(d, uuid(1), HOY, HOY).sesiones.map((s) => s.id)).toEqual([uuid(2)])
   })
   it('rechaza la que no existe, la de otro día y la registrada', () => {
     const d = datosVacios({
       sesiones: [sesionFila(uuid(1), HOY), sesionFila(uuid(2), '2026-11-06')],
       registros: [{ sesion_id: uuid(1), rpe: 5, duracion_min: 60, molestias: [], registrado_en: 'x' }],
     })
-    expect(() => datosSinReemplazada(d, uuid(9), HOY)).toThrow('La sesión que querías cambiar ya no existe.')
-    expect(() => datosSinReemplazada(d, uuid(2), HOY)).toThrow('Solo puedes cambiar sesiones de hoy.')
-    expect(() => datosSinReemplazada(d, uuid(1), HOY)).toThrow('Esa sesión ya está registrada: no se puede cambiar.')
+    expect(() => datosSinReemplazada(d, uuid(9), HOY, HOY)).toThrow('La sesión que querías cambiar ya no existe.')
+    expect(() => datosSinReemplazada(d, uuid(2), HOY, HOY)).toThrow('Solo puedes cambiar sesiones de hoy.')
+    expect(() => datosSinReemplazada(d, uuid(1), HOY, HOY)).toThrow('Esa sesión ya está registrada: no se puede cambiar.')
+  })
+  it('rechaza una sesión nueva que no es de hoy', () => {
+    const d = datosVacios({ sesiones: [sesionFila(uuid(1), HOY)] })
+    expect(() => datosSinReemplazada(d, uuid(1), HOY, '2026-11-06')).toThrow('La sesión que la sustituye también tiene que ser de hoy.')
+    expect(datosSinReemplazada(d, uuid(1), HOY, HOY).sesiones).toEqual([])
   })
 })

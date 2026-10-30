@@ -42,7 +42,7 @@ export async function proponer(_previo: EstadoProponer, fd: FormData): Promise<E
   let base = datos
   if (reemplaza) {
     try {
-      base = datosSinReemplazada(datos, reemplaza, hoy)
+      base = datosSinReemplazada(datos, reemplaza, hoy, entrada.fecha)
     } catch (e) {
       return { error: mensajeDe(e) }
     }
@@ -90,7 +90,7 @@ export async function aceptar(_previo: EstadoAccion, fd: FormData): Promise<Esta
   let fila: FilaSesion
   let consejos: Consejo[]
   try {
-    const base = reemplaza ? datosSinReemplazada(datos, reemplaza, hoy) : datos
+    const base = reemplaza ? datosSinReemplazada(datos, reemplaza, hoy, entrada.fecha) : datos
     const prep = prepararPropuesta(base, entrada)
     if (prep.tipo !== 'propuesta') return { error: prep.mensaje }
     const plan = opcionElegida(prep.propuesta, indice)
@@ -98,7 +98,7 @@ export async function aceptar(_previo: EstadoAccion, fd: FormData): Promise<Esta
     fila = filaSesionAceptada(plan, crypto.randomUUID())
     const violaciones = validarSesion(fila.sesion, historialMotor(base.sesiones), perfilMotor(datos.perfil))
     if (violaciones.length > 0) return { error: `La sesión ya no es válida: ${violaciones.map((v) => v.mensaje).join(' ')}` }
-    validarDatos(conSesion(base, fila))
+    validarDatos(conSesion(base, fila), fila.id)
     consejos = prep.consejos
   } catch (e) {
     return { error: `No se ha podido aceptar la sesión: ${mensajeDe(e)}` }
