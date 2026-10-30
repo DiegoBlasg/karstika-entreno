@@ -159,7 +159,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
       ) : (
         <>
           {hayCronometro && (
-            <Link href={`/sesion/${fila.id}`} className={`${BOTON} w-full`}>
+            <Link href={`/sesion/${fila.id}`} className={`${destacada ? BOTON : BOTON_SECUNDARIO} w-full`}>
               <Play size={18} aria-hidden /> Empezar sesión
             </Link>
           )}

@@ -34,6 +34,7 @@ export default async function PaginaHoy() {
     if (!posiciones.has(fecha)) posiciones.set(fecha, posicionSiSePuede(datos, fecha))
     return posiciones.get(fecha)!
   }
+  const primeraPendiente = v.hoy.findIndex((t) => !t.registro)
   return (
     <div className="space-y-5">
       <LimpiezaCronometro pendientesHoy={v.hoy.filter((t) => !t.registro).map((t) => t.fila.id)} />
@@ -68,7 +69,7 @@ export default async function PaginaHoy() {
       {v.hoy.length === 0 ? (
         <EstadoVacio titulo="Nada para hoy" texto="No tienes ninguna sesión para hoy." accion={{ href: '/entrenar', texto: 'Preparar una' }} />
       ) : (
-        v.hoy.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={!t.registro} />)
+        v.hoy.map((t, i) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} />)
       )}
 
       {proximo && (
