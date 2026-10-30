@@ -130,7 +130,7 @@ export async function otraCosa(_previo: EstadoAccion, fd: FormData): Promise<Est
       ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
     })
     const sinVieja = sinSesion(datos, idViejo)
-    validarDatos(conSesion(sinVieja, libre))
+    validarDatos(conSesion(sinVieja, libre), libre.id)
     const avisos = validarSesion(libre.sesion, historialMotor(sinVieja.sesiones), perfilMotor(datos.perfil)).map((v) => v.mensaje)
     if (avisos.length > 0 && fd.get('confirmar') !== 'on') {
       return { error: 'El entrenador no habría propuesto esto. Revisa los avisos y confirma si lo hiciste así.', avisos }
@@ -222,7 +222,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
       ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
     })
     leido = leerRegistro(fd, libre)
-    validarDatos(conRegistro(conSesion(datos, libre), leido.registro, leido.filasIntentos))
+    validarDatos(conRegistro(conSesion(datos, libre), leido.registro, leido.filasIntentos), libre.id)
     const avisos = validarSesion(libre.sesion, historialMotor(datos.sesiones), perfilMotor(datos.perfil)).map((v) => v.mensaje)
     if (avisos.length > 0 && fd.get('confirmar') !== 'on') {
       return { error: 'El entrenador no habría propuesto esto. Revisa los avisos y confirma si lo hiciste así.', avisos }

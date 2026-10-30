@@ -3,7 +3,8 @@ import { diagnosticar, finHoras, inicioHoras, validarEntrada, validarSeguimiento
 import type { DatosAtleta } from './filas'
 import { evaluacionesMotor, historialMotor, intentosMotor, seguimientoMotor } from './mapeo'
 
-export function validarDatos(d: DatosAtleta): void {
+// `guardando`: el id de la sesión que se está guardando; si solapa, el error habla de ella.
+export function validarDatos(d: DatosAtleta, guardando?: string): void {
   const historial = historialMotor(d.sesiones)
   validarEntrada(historial)
   validarSeguimiento(historial, seguimientoMotor(d))
@@ -16,7 +17,10 @@ export function validarDatos(d: DatosAtleta): void {
     const previa = minutos[k - 1]!
     const actual = minutos[k]!
     if (actual.ini < previa.fin) {
-      throw new Error(`La sesión del ${actual.s.fecha} a las ${hhmm(actual.ini)} se solapa con otra sesión.`)
+      const nombrada = previa.s.id === guardando ? previa : actual
+      throw new Error(
+        `La sesión del ${nombrada.s.fecha} a las ${hhmm(nombrada.ini)} se solapa con otra sesión. Quita antes la otra sesión en Hoy.`,
+      )
     }
   }
   const fechaDe = new Map(d.sesiones.map((s) => [s.id, s.fecha]))

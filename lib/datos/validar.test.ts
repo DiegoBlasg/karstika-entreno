@@ -37,6 +37,12 @@ describe('validarDatos', () => {
     const medianoche = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 23, duracionMin: 120 }), sesionFila(uuid(2), '2026-11-04', { horaInicio: 0.5, duracionMin: 30 })] })
     expect(() => validarDatos(medianoche)).toThrow('La sesión del 2026-11-04 a las 00:30 se solapa')
   })
+  it('el error de solape nombra la sesión que se guarda y dice cómo seguir', () => {
+    const solapa = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: 19, duracionMin: 60 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: 19.5, duracionMin: 30 })] })
+    expect(() => validarDatos(solapa)).toThrow('se solapa con otra sesión. Quita antes la otra sesión en Hoy.')
+    expect(() => validarDatos(solapa, uuid(2))).toThrow('La sesión del 2026-11-03 a las 19:30 se solapa')
+    expect(() => validarDatos(solapa, uuid(1))).toThrow('La sesión del 2026-11-03 a las 19:00 se solapa')
+  })
   it('compara el solape en minutos enteros (sin falsos positivos por coma flotante)', () => {
     const par = (h1: number, d1: number, h2: number) =>
       datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-03', { horaInicio: h1, duracionMin: d1 }), sesionFila(uuid(2), '2026-11-03', { horaInicio: h2, duracionMin: 30 })] })
