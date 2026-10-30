@@ -6,7 +6,7 @@ export const BOTON = `${BOTON_BASE} bg-progreso text-fondo hover:bg-progreso/90 
 export const BOTON_SECUNDARIO = `${BOTON_BASE} border border-borde text-texto hover:bg-superficie-2`
 export const BOTON_PELIGRO = `${BOTON_BASE} bg-rojo text-fondo hover:bg-rojo/90`
 export const CAMPO =
-  'mt-1 block min-h-11 w-full rounded-xl border border-borde bg-superficie-2 px-3 py-2 text-texto placeholder:text-texto-3'
+  'mt-1 block min-h-11 w-full rounded-xl border border-borde bg-superficie-2 px-3 py-2 text-texto placeholder:text-texto-2'
 export const TARJETA = 'space-y-3 rounded-2xl border border-borde bg-superficie p-4'
 export const TARJETA_DESTACADA = 'space-y-3 rounded-2xl border border-progreso bg-superficie p-4'
 export const ETIQUETA = 'font-titular text-xs font-medium uppercase tracking-[0.08em] text-texto-2'
