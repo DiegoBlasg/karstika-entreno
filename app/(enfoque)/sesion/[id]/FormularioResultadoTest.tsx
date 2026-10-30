@@ -4,9 +4,9 @@ import { useActionState, useEffect } from 'react'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
 import type { EstadoAccion } from '@/lib/estado'
-import { guardarEvaluacion } from '../../evaluacion/acciones'
+import { guardarEvaluacion } from '@/app/(app)/progreso/acciones'
 
-// Guarda la evaluación de hoy con la misma acción (y las mismas validaciones) que la pantalla Evaluación.
+// Guarda la evaluación de hoy con la misma acción (y las mismas validaciones) que la pantalla Progreso.
 // El lastre es texto normal, no decimal, para que en iPhone se pueda escribir el signo menos al corregirlo.
 export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS, alGuardar }: {
   hoy: string; pesoKg: number; lastreKg: number; resistenciaS: number | null; alGuardar: () => void

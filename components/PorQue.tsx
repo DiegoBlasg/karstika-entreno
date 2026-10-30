@@ -6,7 +6,7 @@ export function PorQue({ explicaciones, titulo = '¿Por qué?' }: { explicacione
   if (explicaciones.length === 0) return null
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer text-progreso">{titulo}</summary>
+      <summary className="flex min-h-11 cursor-pointer items-center text-progreso">{titulo}</summary>
       <ul className="mt-2 space-y-3">
         {explicaciones.map((x, i) => {
           const bases = basesDe([x])

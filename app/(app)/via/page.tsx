@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { FRACCION_INICIAL_REPEATERS, VALORES } from '@/motor'
-import { TARJETA } from '@/components/estilos'
+import { BOTON, TARJETA } from '@/components/estilos'
 import { PorQue } from '@/components/PorQue'
 import { textoLastre } from '@/lib/cronometro/test'
 import { enlacePreparar } from '@/lib/datos/huecos'
@@ -37,7 +37,7 @@ function FilaHueco({ h }: { h: HuecoPlan }) {
       {estado === 'libre' && <p className="text-texto-2">{h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
       {estado === 'sin-plan' && <p className="text-texto-2">Sin plan: prepáralo cuando llegue.</p>}
       {(estado === 'planeada' || estado === 'libre' || estado === 'sin-plan') && (
-        <Link href={enlacePreparar(hueco)} className="inline-block rounded bg-progreso px-3 py-1 text-sm font-medium text-fondo">Preparar</Link>
+        <Link href={enlacePreparar(hueco)} className={BOTON}>Preparar</Link>
       )}
     </li>
   )
@@ -124,7 +124,7 @@ export default async function PaginaPlan() {
   const cambios = cambiosPorResultados(datos, hoy)
   return (
     <div className="space-y-8">
-      <h1 className="text-xl font-semibold">Plan</h1>
+      <h1 className="text-xl font-semibold">Vía</h1>
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Próximos días</h2>
         {semanas[0] && <Semana s={semanas[0]} titulo="Esta semana" />}

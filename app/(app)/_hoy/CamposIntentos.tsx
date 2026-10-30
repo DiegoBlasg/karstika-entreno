@@ -25,7 +25,7 @@ export function CamposIntentos({ previos }: { previos?: readonly FilaIntento[] }
           </select>
         </label>
       ))}
-      <button type="button" onClick={() => setFilas((n) => Math.min(n + 1, MAX_INTENTOS))} disabled={filas >= MAX_INTENTOS} className="text-sm underline disabled:opacity-50">
+      <button type="button" onClick={() => setFilas((n) => Math.min(n + 1, MAX_INTENTOS))} disabled={filas >= MAX_INTENTOS} className="inline-flex min-h-11 items-center text-sm underline disabled:opacity-50">
         + intento
       </button>
     </fieldset>

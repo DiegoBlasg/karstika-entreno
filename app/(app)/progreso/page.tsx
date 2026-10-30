@@ -15,7 +15,7 @@ export default async function PaginaEvaluacion() {
   const fechaInicial = testsSinResultado(datos, hoy).at(-1) ?? hoy
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Evaluación</h1>
+      <h1 className="text-xl font-semibold">Progreso</h1>
       <p className="text-sm text-texto-2">
         Aquí se apunta el resultado del test de dedos <strong>después</strong> de hacerlo. ¿Aún no lo has hecho? No pasa
         nada: el entrenador te lo propondrá cuando toque. <Link href="/entrenar" className="underline">Ir a Entrenar</Link>

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { TARJETA } from '@/components/estilos'
+import { BOTON, TARJETA } from '@/components/estilos'
 import { enlacePreparar } from '@/lib/datos/huecos'
 import type { HuecoVista } from '@/lib/datos/semana'
 import { vistaSemana } from '@/lib/datos/semana'
@@ -34,7 +34,7 @@ function Fila({ h }: { h: HuecoVista }) {
       )}
       {pasado && estado.sesion && <p className="text-sm">{nombreSesion(estado.sesion.sesion)}</p>}
       {(estado.tipo === 'planeado' || estado.tipo === 'libre' || estado.tipo === 'sin-plan') && (
-        <Link href={enlacePreparar(fila)} className="inline-block rounded bg-progreso px-3 py-1 text-sm font-medium text-fondo">Preparar</Link>
+        <Link href={enlacePreparar(fila)} className={BOTON}>Preparar</Link>
       )}
     </li>
   )
@@ -58,8 +58,8 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
           {v.fase ? ` · ${v.fase.nombre}${v.fase.descarga ? ' (descarga)' : ''}` : ''}
         </p>
         {lunes === estaSemana
-          ? <Link href={`/semana?lunes=${siguiente}`} className="underline">Semana siguiente →</Link>
-          : <Link href="/semana" className="underline">← Esta semana</Link>}
+          ? <Link href={`/semana?lunes=${siguiente}`} className="inline-flex min-h-11 items-center underline">Semana siguiente →</Link>
+          : <Link href="/semana" className="inline-flex min-h-11 items-center underline">← Esta semana</Link>}
       </div>
       {v.huecos.length === 0 && (
         <p className="rounded bg-superficie-2 p-3 text-sm">

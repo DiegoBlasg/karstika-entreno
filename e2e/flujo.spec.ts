@@ -56,7 +56,7 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await page.getByRole('link', { name: 'Mi semana' }).first().click()
+  await page.getByRole('link', { name: 'Semana', exact: true }).click()
   await page.getByRole('link', { name: 'Semana siguiente →' }).click()
   // Esperar a que cargue la semana siguiente: si no, el hueco se añadiría a la semana actual.
   await expect(page.getByRole('link', { name: '← Esta semana' })).toBeVisible()
@@ -90,7 +90,7 @@ test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla',
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await page.getByRole('link', { name: 'Empezar con cronómetro' }).click()
+  await page.getByRole('link', { name: 'Empezar sesión' }).click()
   await expect(page).toHaveURL(new RegExp(`/sesion/${id}$`))
   await page.getByRole('button', { name: 'Empezar', exact: true }).click()
   await expect(page.getByText('Pies precisos · Suave')).toBeVisible()
@@ -173,9 +173,9 @@ test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra',
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page.getByText('¿Cómo llegas hoy?')).toBeVisible()
-  await page.getByLabel('Sueño').selectOption('1')
-  await page.getByLabel('Fatiga').selectOption('1')
-  await page.getByLabel('Ganas').selectOption('1')
+  await page.getByLabel('Sueño 1').check({ force: true })
+  await page.getByLabel('Fatiga 1').check({ force: true })
+  await page.getByLabel('Ganas 1').check({ force: true })
   await page.getByRole('button', { name: 'Guardar chequeo' }).click()
   await expect(page.getByText('Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:')).toBeVisible()
   await page.getByRole('link', { name: 'Cambiarla por otra' }).click()
@@ -183,9 +183,9 @@ test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra',
   await expect(page.getByText(/Vas a cambiar la sesión/)).toBeVisible()
   // Entrenar arranca con el chequeo ya guardado en Hoy (1/1/1) y no se toca: preparar no debe pisarlo con 3/3/3.
   await expect(page.getByText('Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.')).toBeVisible()
-  await expect(page.getByLabel('Sueño')).toHaveValue('1')
-  await expect(page.getByLabel('Fatiga')).toHaveValue('1')
-  await expect(page.getByLabel('Ganas')).toHaveValue('1')
+  await expect(page.getByLabel('Sueño 1')).toBeChecked()
+  await expect(page.getByLabel('Fatiga 1')).toBeChecked()
+  await expect(page.getByLabel('Ganas 1')).toBeChecked()
   await page.getByLabel('Casa').check()
   await page.getByRole('button', { name: 'Preparar sesión' }).click()
   // Con un chequeo tan bajo el motor puede proponer solo descanso (sin «Aceptar»): entonces no hay nada que aceptar y la
@@ -226,13 +226,13 @@ test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) =>
   await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
 })
 
-test('Plan: próximos días, el año y una fuente desde «¿Por qué?»', async ({ page }) => {
+test('Vía: próximos días, el año y una fuente desde «¿Por qué?»', async ({ page }) => {
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/\/$/)
-  await page.getByRole('link', { name: 'Plan', exact: true }).click()
-  await expect(page).toHaveURL(/\/plan$/)
+  await page.getByRole('link', { name: 'Vía', exact: true }).click()
+  await expect(page).toHaveURL(/\/via$/)
   await expect(page.getByRole('heading', { name: 'Próximos días' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'El año' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Qué ha cambiado por tus resultados' })).toBeVisible()
@@ -270,8 +270,9 @@ test('Biblioteca: desde una sesión, abrir «Cómo se hace» y ver los pasos', a
   await expect(page.getByText('Pies precisos: mira el pie hasta que se apoye y no lo recoloques.')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Cuándo parar' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Por qué se hace' })).toBeVisible()
-  // El índice de la biblioteca, desde el menú.
-  await page.getByRole('link', { name: 'Biblioteca', exact: true }).click()
+  // El índice de la biblioteca, desde Yo.
+  await page.getByRole('link', { name: 'Yo', exact: true }).click()
+  await page.getByRole('link', { name: 'Biblioteca de ejercicios' }).click()
   await expect(page).toHaveURL(/\/biblioteca$/)
   await expect(page.getByRole('heading', { name: 'Hombro y antagonistas' })).toBeVisible()
   await page.getByRole('link', { name: 'Rotación externa con banda' }).click()

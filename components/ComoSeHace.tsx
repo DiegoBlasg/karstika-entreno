@@ -9,7 +9,7 @@ export function ComoSeHace({ ids, conTitulo = false, className = '' }: { ids: re
   return (
     <span className={`flex flex-wrap gap-x-3 ${className}`}>
       {fichas.map((f) => (
-        <Link key={f.id} href={`/biblioteca/${f.id}`} className="underline">
+        <Link key={f.id} href={`/biblioteca/${f.id}`} className="inline-flex min-h-11 items-center underline">
           {conTitulo ? `Cómo se hace: ${f.titulo}` : 'Cómo se hace'}
         </Link>
       ))}

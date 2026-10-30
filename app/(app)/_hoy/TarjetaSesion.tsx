@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { Play } from 'lucide-react'
 import { useActionState, useState } from 'react'
 import { MOTIVO_DESCANSO, TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
-import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
+import { BOTON, BOTON_SECUNDARIO, CAMPO, TARJETA, TARJETA_DESTACADA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
 import type { FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { corregible, type Tarjeta } from '@/lib/datos/hoy'
@@ -25,6 +26,8 @@ const hhmm = (h: number): string => hhmmDeMinutos(Math.round(h * 60))
 const enlaceCambiar = (f: FilaSesion): string =>
   `/entrenar?${new URLSearchParams({ fecha: f.fecha, hora: hhmm(f.sesion.horaInicio), minutos: String(f.sesion.duracionMin), reemplaza: f.id })}`
 
+const TOQUE = 'inline-flex min-h-11 items-center'
+
 // Borra la sesión: «No la hice» (hoy y pasadas) o «Quitar» / «Quitarla» (futuras y las que ya no encajan).
 function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-rojo' }: {
   id: string
@@ -36,7 +39,7 @@ function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar e
   return (
     <form action={accion} onSubmit={(e) => { if (!confirm(confirmacion)) e.preventDefault() }}>
       <input type="hidden" name="sesion_id" value={id} />
-      <button className={clase} disabled={pendiente}>{etiqueta}</button>
+      <button className={`${TOQUE} ${clase}`} disabled={pendiente}>{etiqueta}</button>
       {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
@@ -109,7 +112,7 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
           {registro.molestias.length > 0 ? ` · molestias: ${registro.molestias.map((m) => `${NOMBRE_ZONA[m.zona]} ${m.dolor}`).join(', ')}` : ''}
         </p>
         {corregible(fila.fecha, hoy) && (
-          <button type="button" onClick={() => setCorrigiendo(!corrigiendo)} className="text-sm underline">
+          <button type="button" onClick={() => setCorrigiendo(!corrigiendo)} className={`${TOQUE} text-sm underline`}>
             {corrigiendo ? 'Cancelar' : 'Corregir'}
           </button>
         )}
@@ -120,15 +123,16 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
 }
 
 // `posicion`: dónde cae el día de la sesión en la temporada (se calcula en el servidor); solo se muestra si hay plan.
-export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null }) {
+export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null; destacada?: boolean }) {
   const { fila, registro } = tarjeta
   const s = fila.sesion
   const pasada = fila.fecha <= hoy
   const [cambiando, setCambiando] = useState(false)
   const [terminando, setTerminando] = useState(false)
   const cerrarRegistro = (): void => setTerminando(false)
+  const hayCronometro = fila.fecha === hoy && fila.propuesta !== null
   return (
-    <article className={TARJETA}>
+    <article className={destacada ? TARJETA_DESTACADA : TARJETA}>
       {fila.fecha !== hoy && <p className="text-sm text-texto-2">{fechaLarga(fila.fecha)}</p>}
       {tarjeta.noEncaja.length > 0 && (
         <div className="space-y-1 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
@@ -136,7 +140,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
           <ul className="list-disc pl-5">{tarjeta.noEncaja.map((m) => <li key={m}>{m}</li>)}</ul>
           {tarjeta.noEncaja.includes(MOTIVO_DESCANSO)
             ? <BotonNoLaHice id={s.id} etiqueta="Quitarla" confirmacion="¿Quitar esta sesión?" clase="underline" />
-            : <Link href={enlaceCambiar(fila)} className="inline-block underline">Cambiarla por otra</Link>}
+            : <Link href={enlaceCambiar(fila)} className={`${TOQUE} underline`}>Cambiarla por otra</Link>}
         </div>
       )}
       {fila.propuesta ? (
@@ -148,32 +152,32 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
         <h3 className="font-semibold">{NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min (lo que hiciste)</h3>
       )}
       {s.tipo === 'evaluacion-dedos' && (
-        <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/evaluacion" className="underline">Evaluación</Link>.</p>
+        <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/progreso" className="underline">Progreso</Link>.</p>
       )}
       {registro ? (
         <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
       ) : (
         <>
-          {fila.fecha === hoy && fila.propuesta && (
-            <Link href={`/sesion/${fila.id}`} className="inline-block rounded bg-progreso px-3 py-2 text-sm font-medium text-fondo">
-              Empezar con cronómetro
+          {hayCronometro && (
+            <Link href={`/sesion/${fila.id}`} className={`${destacada ? BOTON : BOTON_SECUNDARIO} w-full`}>
+              <Play size={18} aria-hidden /> Empezar sesión
             </Link>
           )}
           {pasada && !cambiando && !terminando && (
-            <button type="button" onClick={() => setTerminando(true)} className={BOTON}>Terminar</button>
+            <button type="button" onClick={() => setTerminando(true)} className={hayCronometro ? BOTON_SECUNDARIO : BOTON}>Terminar</button>
           )}
           {pasada && !cambiando && terminando && (
             <>
               <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} alTerminar={cerrarRegistro} />
-              <button type="button" onClick={cerrarRegistro} className="text-sm underline">Cancelar</button>
+              <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}
-          <div className="flex gap-4 text-sm">
+          <div className="flex flex-wrap gap-x-4 text-sm">
             {pasada
               ? <BotonNoLaHice id={s.id} />
               : <BotonNoLaHice id={s.id} etiqueta="Quitar" confirmacion="¿Quitar esta sesión?" />}
             {pasada && (
-              <button type="button" onClick={() => setCambiando(!cambiando)} className="underline">
+              <button type="button" onClick={() => setCambiando(!cambiando)} className={`${TOQUE} underline`}>
                 {cambiando ? 'Cancelar' : 'Hice otra cosa'}
               </button>
             )}

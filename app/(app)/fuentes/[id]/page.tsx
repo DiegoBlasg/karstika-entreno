@@ -19,7 +19,7 @@ export default async function PaginaFuente({ params }: { params: Promise<{ id: s
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Estudio no encontrado</h1>
-        <Link href="/" className="text-progreso underline">Volver a Hoy</Link>
+        <Link href="/" className="inline-flex min-h-11 items-center text-progreso underline">Volver a Hoy</Link>
       </div>
     )
   }
@@ -63,7 +63,7 @@ export default async function PaginaFuente({ params }: { params: Promise<{ id: s
         <p>{h.limitaciones}</p>
       </section>
       <p className="text-xs text-texto-2">Verificada el {h.verificada.fecha} con {METODO[h.verificada.metodo]}.</p>
-      <Link href="/" className="text-progreso underline">Volver a Hoy</Link>
+      <Link href="/" className="inline-flex min-h-11 items-center text-progreso underline">Volver a Hoy</Link>
     </div>
   )
 }

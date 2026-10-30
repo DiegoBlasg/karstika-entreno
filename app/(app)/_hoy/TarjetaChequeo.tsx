@@ -39,7 +39,7 @@ export function TarjetaChequeo({ hoy }: { hoy: string }) {
         <CamposChequeo />
         <div className="flex items-center gap-4">
           <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Guardar chequeo'}</button>
-          <button type="button" onClick={ahoraNo} className="text-sm underline">Ahora no</button>
+          <button type="button" onClick={ahoraNo} className="min-h-11 px-2 text-sm underline">Ahora no</button>
         </div>
         {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
       </form>

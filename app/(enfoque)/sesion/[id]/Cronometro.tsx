@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
 import { ComoSeHace } from '@/components/ComoSeHace'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
-import { BOTON, CAMPO } from '@/components/estilos'
+import { BOTON, BOTON_SECUNDARIO, CAMPO } from '@/components/estilos'
 import type { Paso } from '@/lib/cronometro/pasos'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
 import { intentoAbierto, lastre73, leerDatosTest, mejorLastre, textoLastre, type DatosTest, type Intento } from '@/lib/cronometro/test'
@@ -16,7 +16,7 @@ import {
 } from '@/lib/cronometro/reloj'
 import type { PosicionTemporada } from '@/lib/datos/temporada'
 import { DONDE_SE_HACE, NOMBRE_TIPO } from '@/lib/nombres'
-import { FormularioRegistro } from '../../_hoy/FormularioRegistro'
+import { FormularioRegistro } from '@/app/(app)/_hoy/FormularioRegistro'
 import { FormularioIntento } from './FormularioIntento'
 import { FormularioResultadoTest } from './FormularioResultadoTest'
 
@@ -28,8 +28,6 @@ const FONDO: Record<Paso['tipo'], string> = {
   manual: 'bg-superficie-2 text-texto',
   fallo: 'bg-progreso text-fondo',
 }
-
-const BOTON_SECUNDARIO = 'rounded border border-borde px-4 py-2'
 
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -314,7 +312,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
             <button type="button" className={BOTON} onClick={() => arrancar(guardado)}>Continuar donde ibas</button>
             <button
               type="button"
-              className="underline"
+              className="inline-flex min-h-11 items-center underline"
               onClick={() => {
                 escribir(clave, null)
                 // Empezar de nuevo también borra los intentos apuntados; el peso se queda.
@@ -355,7 +353,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         {esTest ? (
           yaEvaluado ? (
             <p className="rounded bg-superficie-2 p-3 text-sm">
-              Ya tienes la evaluación de hoy guardada. Si quieres cambiarla, hazlo en <Link href="/evaluacion" className="underline">Evaluación</Link>.
+              Ya tienes la evaluación de hoy guardada. Si quieres cambiarla, hazlo en <Link href="/progreso" className="underline">Progreso</Link>.
             </p>
           ) : mejor !== null ? (
             <FormularioResultadoTest
@@ -368,11 +366,11 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
               resistenciaS={estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
             />
           ) : (
-            <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Evaluación si quieres.</p>
+            <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Progreso si quieres.</p>
           )
         ) : estado.colgadoFalloS !== null && (
           <p className="rounded bg-superficie-2 p-3 text-sm">
-            Resistencia: {estado.colgadoFalloS} s. Apúntalo en Evaluación junto con el lastre de tu mejor intento.
+            Resistencia: {estado.colgadoFalloS} s. Apúntalo en Progreso junto con el lastre de tu mejor intento.
           </p>
         )}
         <FormularioRegistro
@@ -471,7 +469,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         >
           Terminar
         </button>
-        <button type="button" className="text-sm underline" onClick={() => setSilencio((v) => !v)}>
+        <button type="button" className="inline-flex min-h-11 items-center text-sm underline" onClick={() => setSilencio((v) => !v)}>
           {silencio ? 'Activar pitidos' : 'Silenciar'}
         </button>
       </div>

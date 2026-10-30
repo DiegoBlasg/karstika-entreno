@@ -51,9 +51,9 @@ export function FormularioIntento({ n, de, valor, alCambiar }: {
       <p className="text-sm">¿Aguantaste los 10 s?</p>
       <div className="flex gap-3">
         <button type="button" aria-pressed={valor?.completado === true} onClick={() => poner({ completado: true })}
-          className={`rounded px-4 py-2 ${valor?.completado === true ? 'bg-progreso text-fondo' : 'border border-borde'}`}>Sí</button>
+          className={`min-h-11 rounded px-4 py-2 ${valor?.completado === true ? 'bg-progreso text-fondo' : 'border border-borde'}`}>Sí</button>
         <button type="button" aria-pressed={valor?.completado === false} onClick={() => poner({ completado: false })}
-          className={`rounded px-4 py-2 ${valor?.completado === false ? 'bg-rojo text-fondo' : 'border border-borde'}`}>No</button>
+          className={`min-h-11 rounded px-4 py-2 ${valor?.completado === false ? 'bg-rojo text-fondo' : 'border border-borde'}`}>No</button>
       </div>
     </fieldset>
   )

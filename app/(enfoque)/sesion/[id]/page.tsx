@@ -24,7 +24,7 @@ export default async function PaginaSesion({ params }: { params: Promise<{ id: s
     return (
       <div className="space-y-3">
         <p>{motivo}</p>
-        <Link href="/" className="underline">Volver a Hoy</Link>
+        <Link href="/" className="inline-flex min-h-11 items-center underline">Volver a Hoy</Link>
       </div>
     )
   }
