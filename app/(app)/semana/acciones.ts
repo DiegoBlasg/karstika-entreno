@@ -6,6 +6,7 @@ import { MAX_HUECOS_DIA, MAX_HUECOS_SEMANA, validarHuecoNuevo } from '@/lib/dato
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid, lunesDe } from '@/lib/fecha'
 import { contexto, fecha, hora, mensajeDe, texto } from '@/lib/formulario'
+import { bd } from '@/lib/servidor/bd'
 import { borrarHuecoBd, insertarHueco, requerirDatos } from '@/lib/servidor/consultas'
 
 export async function anadirHueco(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
@@ -39,9 +40,12 @@ export async function anadirHueco(_previo: EstadoAccion, fd: FormData): Promise<
 
 // Borrar un hueco no borra la sesión que haya en él.
 export async function borrarHueco(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
-  const { sql } = await requerirDatos()
+  const ahora = ahoraMadrid(new Date())
+  const sql = await bd()
   try {
-    await borrarHuecoBd(sql, texto(fd, 'hueco_id', 'El hueco'))
+    const resultado = await borrarHuecoBd(sql, texto(fd, 'hueco_id', 'El hueco'), { fecha: ahora.fecha, minutos: Math.round(ahora.hora * 60) })
+    if (resultado === 'no-existe') return { error: 'Ese hueco ya no existe.' }
+    if (resultado === 'pasado') return { error: 'Ese hueco ya ha pasado.' }
   } catch (e) {
     return { error: `No se ha podido borrar el hueco: ${mensajeDe(e)}` }
   }

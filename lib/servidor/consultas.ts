@@ -159,6 +159,13 @@ export async function insertarHueco(
   return (filas as unknown[]).length > 0
 }
 
-export async function borrarHuecoBd(sql: Sql, id: string): Promise<void> {
-  await sql`delete from huecos where id = ${id}`
+// Solo borra huecos que no han pasado (la misma regla que `huecoPasado`: acabar justo ahora cuenta como pasado), en una
+// sola sentencia. Si no borra, mira si el hueco existe para decir por qué.
+export async function borrarHuecoBd(sql: Sql, id: string, ahora: { fecha: string; minutos: number }): Promise<'borrado' | 'pasado' | 'no-existe'> {
+  const borradas = await sql`delete from huecos
+    where id = ${id} and (fecha > ${ahora.fecha}::date or (fecha = ${ahora.fecha}::date and inicio_min + minutos > ${ahora.minutos}::int))
+    returning id`
+  if (borradas.length > 0) return 'borrado'
+  const existe = await sql`select 1 from huecos where id = ${id}`
+  return existe.length > 0 ? 'pasado' : 'no-existe'
 }

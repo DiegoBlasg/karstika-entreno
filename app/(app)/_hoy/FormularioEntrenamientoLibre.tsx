@@ -8,7 +8,6 @@ import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
 import { DIAS_CORRECCION } from '@/lib/datos/hoy'
 import type { EstadoAccion } from '@/lib/estado'
 import { sumarDias } from '@/lib/fecha'
-import { REGLETA_MM } from '@/lib/formulario'
 import {
   AGARRES, ETIQUETA_RPE, NOMBRE_AGARRE, NOMBRE_TIPO, TIPOS_CON_INTENTOS, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
@@ -50,7 +49,7 @@ function Formulario({ hoy, hora, alTerminar }: { hoy: string; hora: string; alTe
         <div className="flex gap-3">
           <label className="block flex-1">
             Regleta (mm)
-            <input type="number" name="regleta_mm" min={REGLETA_MM.min} max={REGLETA_MM.max} step="0.5" className={CAMPO} />
+            <input type="text" inputMode="decimal" name="regleta_mm" className={CAMPO} />
           </label>
           <label className="block flex-1">
             Agarre
