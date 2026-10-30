@@ -7,6 +7,7 @@ import { ahoraMadrid, fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonAlta } from './_hoy/BotonAlta'
+import { LimpiezaCronometro } from './_hoy/LimpiezaCronometro'
 import { FormularioEntrenamientoLibre } from './_hoy/FormularioEntrenamientoLibre'
 import { TarjetaChequeo } from './_hoy/TarjetaChequeo'
 import { TarjetaSesion } from './_hoy/TarjetaSesion'
@@ -26,6 +27,7 @@ export default async function PaginaHoy() {
   }
   return (
     <div className="space-y-6">
+      <LimpiezaCronometro pendientesHoy={v.hoy.filter((t) => !t.registro).map((t) => t.fila.id)} />
       <h1 className="text-xl font-semibold">Hoy, {fechaLarga(hoy)}</h1>
       {v.pedirChequeo && <TarjetaChequeo hoy={hoy} />}
       {proximo && (
