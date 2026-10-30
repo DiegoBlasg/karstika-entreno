@@ -1,12 +1,16 @@
-import Link from 'next/link'
 import { FRACCION_INICIAL_REPEATERS, VALORES } from '@/motor'
-import { BOTON, TARJETA } from '@/components/estilos'
+import { FondoTopo } from '@/components/FondoTopo'
+import { TARJETA } from '@/components/estilos'
 import { PorQue } from '@/components/PorQue'
+import { Aviso } from '@/components/ui/Aviso'
+import { Etiqueta } from '@/components/ui/Etiqueta'
+import { IrAlActual } from '@/components/via/IrAlActual'
+import { Via } from '@/components/via/Via'
 import { textoLastre } from '@/lib/cronometro/test'
-import { enlacePreparar } from '@/lib/datos/huecos'
-import { cambiosPorResultados, proximosDias, vistaAno, type CambiosResultados, type HuecoPlan, type SemanaPlanVista } from '@/lib/datos/plan'
-import { ahoraMadrid, fechaLarga, hhmmDeMinutos, sumarDias } from '@/lib/fecha'
-import { DESCANSO_ACTIVO, DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LIMITANTE, NOMBRE_LUGAR, NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
+import { cambiosPorResultados, type CambiosResultados } from '@/lib/datos/plan'
+import { vistaVia } from '@/lib/datos/via'
+import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
+import { NOMBRE_LIMITANTE, NOMBRE_ZONA } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 
 const CORTA = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' })
@@ -14,50 +18,6 @@ const corta = (fecha: string): string => CORTA.format(new Date(`${fecha}T12:00:0
 const numerica = (fecha: string): string => fecha.split('-').reverse().join('/')
 const SEMAFORO = { verde: 'verde', ambar: 'ámbar', rojo: 'rojo' } as const
 const MOTIVO_DESCARGA = { rpe: 'sesiones más duras de lo previsto', bienestar: 'cómo llegabas en los chequeos' } as const
-
-function FilaHueco({ h }: { h: HuecoPlan }) {
-  const { hueco, estado, sesion } = h
-  return (
-    <li className={TARJETA}>
-      <p className="text-sm">
-        {fechaLarga(hueco.fecha)} · {hhmmDeMinutos(hueco.inicio_min)} · {NOMBRE_LUGAR[hueco.lugar]} · {NOMBRE_COMPANIA[hueco.compania]} · {hueco.minutos} min
-      </p>
-      {estado === 'planeada' && sesion && (
-        <>
-          <p className="font-medium">{nombreSesion(sesion)}{h.cargaAlta ? ' ★' : ''}</p>
-          <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
-        </>
-      )}
-      {estado === 'aceptada' && sesion && (
-        <>
-          <p className="font-medium">{nombreSesion(sesion)} · {h.registrada ? 'Registrada' : 'Aceptada'}</p>
-          <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[sesion.tipo]}</p>
-        </>
-      )}
-      {estado === 'libre' && <p className="text-texto-2">{h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
-      {estado === 'sin-plan' && <p className="text-texto-2">Sin plan: prepáralo cuando llegue.</p>}
-      {(estado === 'planeada' || estado === 'libre' || estado === 'sin-plan') && (
-        <Link href={enlacePreparar(hueco)} className={BOTON}>Preparar</Link>
-      )}
-    </li>
-  )
-}
-
-function Semana({ s, titulo }: { s: SemanaPlanVista; titulo: string }) {
-  const pendientes = s.huecos.filter((h) => h.estado !== 'pasado')
-  return (
-    <section className="space-y-3">
-      <h3 className="font-medium">{titulo} · {corta(s.lunes)} – {corta(sumarDias(s.lunes, 6))}</h3>
-      {s.orientativo && (
-        <p className="rounded bg-superficie-2 p-3 text-sm">
-          Orientativo, con tu semana habitual: declara tus huecos en <Link href="/semana" className="underline">Mi semana</Link>.
-        </p>
-      )}
-      {s.aviso && <p className="rounded bg-ambar/10 p-3 text-sm">{s.aviso}</p>}
-      {pendientes.length > 0 && <ul className="space-y-3">{pendientes.map((h) => <FilaHueco key={h.hueco.id} h={h} />)}</ul>}
-    </section>
-  )
-}
 
 function Cambios({ c }: { c: CambiosResultados }) {
   return (
@@ -115,43 +75,26 @@ function Cambios({ c }: { c: CambiosResultados }) {
   )
 }
 
-export default async function PaginaPlan() {
+export default async function PaginaVia() {
   const { datos } = await requerirDatos()
-  const ahora = ahoraMadrid(new Date())
-  const hoy = ahora.fecha
-  const { semanas } = proximosDias(datos, { fecha: hoy, minutos: Math.round(ahora.hora * 60) })
-  const ano = vistaAno(datos, hoy)
+  const hoy = ahoraMadrid(new Date()).fecha
+  const vista = vistaVia(datos, hoy)
   const cambios = cambiosPorResultados(datos, hoy)
   return (
-    <div className="space-y-8">
-      <h1 className="text-xl font-semibold">Vía</h1>
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Próximos días</h2>
-        {semanas[0] && <Semana s={semanas[0]} titulo="Esta semana" />}
-        {semanas[1] && <Semana s={semanas[1]} titulo="Semana siguiente" />}
-        {semanas.some((s) => s.huecos.some((h) => h.estado === 'planeada' && h.cargaAlta)) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
-      </section>
+    <div className="space-y-6">
+      <header className="relative -mx-4 overflow-hidden px-4 pb-1 pt-2">
+        <FondoTopo />
+        <div className="relative">
+          <Etiqueta as="p">Temporada · objetivo {fechaLarga(vista.cima.lunes)}</Etiqueta>
+          <h1 className="font-titular text-4xl font-extrabold uppercase leading-none">
+            Tu <span className="text-progreso">vía</span>
+          </h1>
+        </div>
+      </header>
+      {vista.aviso && <Aviso tono="ambar">{vista.aviso}</Aviso>}
+      <Via vista={vista} inicio={datos.perfil.inicio_temporada} />
+      <IrAlActual />
       <Cambios c={cambios} />
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">El año</h2>
-        {ano.aviso && <p className="rounded bg-ambar/10 p-3 text-sm">{ano.aviso}</p>}
-        <ol className="divide-y divide-borde rounded border border-borde bg-superficie text-sm">
-          {ano.semanas.map((s) => (
-            <li
-              key={s.lunes}
-              aria-current={s.actual ? 'date' : undefined}
-              className={`flex flex-wrap gap-x-2 px-3 py-1.5 ${s.actual ? 'bg-ambar/20 font-medium' : ''}`}
-            >
-              <span className="w-14 shrink-0 tabular-nums">{corta(s.lunes)}</span>
-              <span className="text-texto-2">C{s.ciclo}</span>
-              <span>{s.fase}</span>
-              {s.descarga && <span className="text-texto-2">· descarga</span>}
-              {s.reevaluar && <span className="text-texto-2">· test</span>}
-              {s.actual && <span>· esta semana</span>}
-            </li>
-          ))}
-        </ol>
-      </section>
     </div>
   )
 }
