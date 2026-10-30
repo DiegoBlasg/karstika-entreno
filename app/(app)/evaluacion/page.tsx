@@ -16,7 +16,7 @@ export default async function PaginaEvaluacion() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Evaluación</h1>
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-texto-2">
         Aquí se apunta el resultado del test de dedos <strong>después</strong> de hacerlo. ¿Aún no lo has hecho? No pasa
         nada: el entrenador te lo propondrá cuando toque. <Link href="/entrenar" className="underline">Ir a Entrenar</Link>
       </p>
@@ -26,10 +26,10 @@ export default async function PaginaEvaluacion() {
       </section>
       <section className="space-y-2">
         <h2 className="font-medium">Historial</h2>
-        {lista.length === 0 && <p className="text-sm text-stone-600">Todavía no hay tests. El entrenador te propondrá el primero.</p>}
+        {lista.length === 0 && <p className="text-sm text-texto-2">Todavía no hay tests. El entrenador te propondrá el primero.</p>}
         <ul className="space-y-2">
           {lista.map((e) => (
-            <li key={e.id} className="flex items-start justify-between gap-3 rounded border border-stone-200 bg-white p-3 text-sm">
+            <li key={e.id} className="flex items-start justify-between gap-3 rounded border border-borde bg-superficie p-3 text-sm">
               <div>
                 <p className="font-medium">{fechaLarga(e.fecha)}</p>
                 <p>

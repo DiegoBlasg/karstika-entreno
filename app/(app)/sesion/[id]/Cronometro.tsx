@@ -21,15 +21,15 @@ import { FormularioIntento } from './FormularioIntento'
 import { FormularioResultadoTest } from './FormularioResultadoTest'
 
 const FONDO: Record<Paso['tipo'], string> = {
-  colgado: 'bg-emerald-600 text-white',
-  descanso: 'bg-sky-600 text-white',
-  preparate: 'bg-amber-400 text-stone-900',
-  bloque: 'bg-stone-200 text-stone-900',
-  manual: 'bg-stone-200 text-stone-900',
-  fallo: 'bg-emerald-600 text-white',
+  colgado: 'bg-progreso text-fondo',
+  descanso: 'bg-texto-2 text-fondo',
+  preparate: 'bg-ambar text-fondo',
+  bloque: 'bg-superficie-2 text-texto',
+  manual: 'bg-superficie-2 text-texto',
+  fallo: 'bg-progreso text-fondo',
 }
 
-const BOTON_SECUNDARIO = 'rounded border border-stone-300 px-4 py-2'
+const BOTON_SECUNDARIO = 'rounded border border-borde px-4 py-2'
 
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -281,13 +281,13 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">{NOMBRE_TIPO[plan.sesion.tipo]} · {plan.sesion.duracionMin} min</h1>
-        <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[plan.sesion.tipo]}</p>
+        <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[plan.sesion.tipo]}</p>
         {posicion && <ContextoTemporada posicion={posicion} />}
         <ol className="list-decimal space-y-1 pl-5 text-sm">
           {plan.bloques.map((b, i) => (
             <li key={`${b.nombre}-${i}`}>
               {b.nombre} · {b.minutos} min
-              <ComoSeHace ids={b.ejercicios.map((e) => e.ficha)} conTitulo className="text-sky-800" />
+              <ComoSeHace ids={b.ejercicios.map((e) => e.ficha)} conTitulo className="text-progreso" />
             </li>
           ))}
         </ol>
@@ -305,7 +305,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
               className={CAMPO}
             />
             {pesoValido(pesoTexto) === null && (
-              <span className="mt-1 block text-sm text-red-700">El peso tiene que estar entre 30 y 200 kg.</span>
+              <span className="mt-1 block text-sm text-rojo">El peso tiene que estar entre 30 y 200 kg.</span>
             )}
           </label>
         )}
@@ -354,7 +354,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         )}
         {esTest ? (
           yaEvaluado ? (
-            <p className="rounded bg-sky-50 p-3 text-sm">
+            <p className="rounded bg-superficie-2 p-3 text-sm">
               Ya tienes la evaluación de hoy guardada. Si quieres cambiarla, hazlo en <Link href="/evaluacion" className="underline">Evaluación</Link>.
             </p>
           ) : mejor !== null ? (
@@ -368,10 +368,10 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
               resistenciaS={estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
             />
           ) : (
-            <p className="rounded bg-amber-50 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Evaluación si quieres.</p>
+            <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Evaluación si quieres.</p>
           )
         ) : estado.colgadoFalloS !== null && (
-          <p className="rounded bg-sky-50 p-3 text-sm">
+          <p className="rounded bg-superficie-2 p-3 text-sm">
             Resistencia: {estado.colgadoFalloS} s. Apúntalo en Evaluación junto con el lastre de tu mejor intento.
           </p>
         )}
@@ -419,7 +419,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         {!estado.enMarcha && <p className="text-sm font-medium">En pausa</p>}
       </section>
       {/* Al abrir una ficha, el cronómetro queda en pausa y al volver se ofrece «Continuar donde ibas». */}
-      {paso.fichas && <ComoSeHace ids={paso.fichas} conTitulo={paso.fichas.length > 1} className="text-sm text-sky-800" />}
+      {paso.fichas && <ComoSeHace ids={paso.fichas} conTitulo={paso.fichas.length > 1} className="text-sm text-progreso" />}
       {abierto && (
         <FormularioIntento
           key={abierto.n}
@@ -430,9 +430,9 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         />
       )}
       {mejor !== null && <p className="text-sm">Mejor hasta ahora: {textoLastre(mejor)}</p>}
-      {siguientePaso && <p className="text-sm text-stone-500">Después: {siguientePaso.titulo}</p>}
+      {siguientePaso && <p className="text-sm text-texto-2">Después: {siguientePaso.titulo}</p>}
       {sinPantalla && (
-        <p className="text-xs text-amber-700">
+        <p className="text-xs text-ambar">
           Tu navegador no puede mantener la pantalla encendida: sube el tiempo de bloqueo automático del iPhone (Ajustes ›
           Pantalla y brillo) mientras entrenas.
         </p>

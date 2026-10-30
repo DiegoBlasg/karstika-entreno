@@ -14,7 +14,7 @@ export function FormularioEntrar() {
         <input type="password" name="clave" required autoComplete="current-password" className={CAMPO} />
       </label>
       <button className={BOTON} disabled={pendiente}>{pendiente ? 'Entrando…' : 'Entrar'}</button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
 }

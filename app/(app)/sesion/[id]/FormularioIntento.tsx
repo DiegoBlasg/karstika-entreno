@@ -25,7 +25,7 @@ export function FormularioIntento({ n, de, valor, alCambiar }: {
     alCambiar({ lastreKg: d && k > 0 ? -k : k, completado: cambios.completado ?? valor?.completado ?? null })
   }
   return (
-    <fieldset className="space-y-2 rounded border border-stone-200 bg-white p-3">
+    <fieldset className="space-y-2 rounded border border-borde bg-superficie p-3">
       <legend className="font-medium">Intento {n} de {de}</legend>
       <div className="flex gap-4 text-sm">
         <label className="inline-flex items-center gap-1">
@@ -45,15 +45,15 @@ export function FormularioIntento({ n, de, valor, alCambiar }: {
             const v = t.trim() === '' ? 0 : Number(t.replace(',', '.'))
             if (Number.isFinite(v) && v >= 0) poner({ kg: v })
           }}
-          className="mt-1 block w-full rounded border border-stone-300 px-3 py-2"
+          className="mt-1 block w-full rounded border border-borde px-3 py-2"
         />
       </label>
       <p className="text-sm">¿Aguantaste los 10 s?</p>
       <div className="flex gap-3">
         <button type="button" aria-pressed={valor?.completado === true} onClick={() => poner({ completado: true })}
-          className={`rounded px-4 py-2 ${valor?.completado === true ? 'bg-emerald-700 text-white' : 'border border-stone-300'}`}>Sí</button>
+          className={`rounded px-4 py-2 ${valor?.completado === true ? 'bg-progreso text-fondo' : 'border border-borde'}`}>Sí</button>
         <button type="button" aria-pressed={valor?.completado === false} onClick={() => poner({ completado: false })}
-          className={`rounded px-4 py-2 ${valor?.completado === false ? 'bg-red-700 text-white' : 'border border-stone-300'}`}>No</button>
+          className={`rounded px-4 py-2 ${valor?.completado === false ? 'bg-rojo text-fondo' : 'border border-borde'}`}>No</button>
       </div>
     </fieldset>
   )

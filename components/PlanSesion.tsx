@@ -22,20 +22,20 @@ export function PlanSesion({ plan }: { plan: SesionPlan }) {
       <h3 className="font-semibold">
         {NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min{s.intensidad === 'alta' ? ' · intensa' : ''}
       </h3>
-      <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[s.tipo]}</p>
+      <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[s.tipo]}</p>
       <PorQue explicaciones={plan.explicaciones} />
       <ol className="space-y-2">
         {plan.bloques.map((b, i) => (
-          <li key={`${b.nombre}-${i}`} className="rounded border border-stone-100 p-3">
+          <li key={`${b.nombre}-${i}`} className="rounded border border-borde p-3">
             <p className="font-medium">
-              {b.nombre} <span className="text-stone-500">· {b.minutos} min</span>
+              {b.nombre} <span className="text-texto-2">· {b.minutos} min</span>
             </p>
             <ul className="mt-1 space-y-1 text-sm">
               {b.ejercicios.map((ej, j) => (
                 <li key={`${ej.nombre}-${j}`}>
                   <span className="font-medium">{ej.nombre}</span>: {detalle(ej)}
-                  {ej.notas && <span className="block text-stone-500">{ej.notas}</span>}
-                  <ComoSeHace ids={[ej.ficha]} className="text-sky-800" />
+                  {ej.notas && <span className="block text-texto-2">{ej.notas}</span>}
+                  <ComoSeHace ids={[ej.ficha]} className="text-progreso" />
                 </li>
               ))}
             </ul>

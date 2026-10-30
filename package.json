@@ -12,7 +12,8 @@
     "migrar": "node --env-file-if-exists=.env.local scripts/migrar.ts",
     "migrar:pruebas": "node --env-file-if-exists=.env.local scripts/migrar.ts --pruebas",
     "probar-bd": "node --env-file-if-exists=.env.local scripts/probar-bd.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "iconos": "node scripts/generar-iconos.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
@@ -26,6 +27,7 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
+    "lucide-react": "^1.65.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

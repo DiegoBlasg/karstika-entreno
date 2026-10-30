@@ -13,7 +13,7 @@ export function FormularioHueco({ dias }: { dias: string[] }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(anadirHueco, null)
   const [minutos, setMinutos] = useState(60)
   return (
-    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 rounded border border-stone-200 bg-white p-4">
+    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 rounded border border-borde bg-superficie p-4">
       <h2 className="font-medium">Añadir hueco</h2>
       <div className="flex gap-3">
         <label className="block flex-1">
@@ -45,8 +45,8 @@ export function FormularioHueco({ dias }: { dias: string[] }) {
         />
       </label>
       <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Añadir hueco'}</button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
-      {estado?.ok && <p className="text-sm text-emerald-700">{estado.ok}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
+      {estado?.ok && <p className="text-sm text-progreso">{estado.ok}</p>}
     </form>
   )
 }

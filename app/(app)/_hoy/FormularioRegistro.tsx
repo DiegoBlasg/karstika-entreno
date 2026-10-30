@@ -20,7 +20,7 @@ export function FormularioRegistro({
     if (estado?.ok) alTerminar?.()
   }, [estado, alTerminar])
   return (
-    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 border-t border-stone-100 pt-3">
+    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 border-t border-borde pt-3">
       <input type="hidden" name="sesion_id" value={sesion.id} />
       <label className="block">
         Esfuerzo (RPE 0-10)
@@ -38,7 +38,7 @@ export function FormularioRegistro({
       <button className={BOTON} disabled={pendiente}>
         {pendiente ? 'Guardando…' : previo ? 'Guardar la corrección' : 'Registrar'}
       </button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
 }

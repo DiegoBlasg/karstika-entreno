@@ -17,7 +17,7 @@ export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS, a
   }, [estado, alGuardar])
   const fmt = (n: number): string => String(n).replace('.', ',')
   return (
-    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 rounded border border-sky-200 bg-sky-50 p-4">
+    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 rounded border border-borde bg-superficie-2 p-4">
       <h2 className="font-semibold">Resultado del test</h2>
       <input type="hidden" name="fecha" value={hoy} />
       <label className="block">Peso hoy (kg)<input name="peso_corporal_kg" type="text" inputMode="decimal" defaultValue={fmt(pesoKg)} required className={CAMPO} /></label>
@@ -31,11 +31,11 @@ export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS, a
         </select>
       </label>
       {estado?.ok ? (
-        <p className="text-sm text-emerald-700">{estado.ok}</p>
+        <p className="text-sm text-progreso">{estado.ok}</p>
       ) : (
         <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Guardar resultado'}</button>
       )}
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
 }

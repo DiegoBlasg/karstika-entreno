@@ -18,7 +18,7 @@ export function CamposChequeo({ iniciales, inicial }: { iniciales?: readonly Mol
     <>
       {ESCALAS.map((e) => (
         <label key={e.nombre} className="block">
-          {e.etiqueta} <span className="text-xs text-stone-500">(1 = {e.bajo}, 5 = {e.alto})</span>
+          {e.etiqueta} <span className="text-xs text-texto-2">(1 = {e.bajo}, 5 = {e.alto})</span>
           <select name={e.nombre} defaultValue={String(inicial?.[e.nombre] ?? 3)} className={CAMPO}>
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>

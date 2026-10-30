@@ -70,13 +70,13 @@ function Formulario({ hoy, hora, alTerminar }: { hoy: string; hora: string; alTe
       <CamposMolestias plegable />
       {TIPOS_CON_INTENTOS.includes(tipo) && <CamposIntentos />}
       {estado?.avisos && (
-        <div className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+        <div className="space-y-2 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
           <ul className="list-disc pl-5">{estado.avisos.map((a) => <li key={a}>{a}</li>)}</ul>
           <label className="flex items-center gap-2"><input type="checkbox" name="confirmar" /> Lo hice así de todos modos</label>
         </div>
       )}
       <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Guardar'}</button>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </form>
   )
 }
@@ -98,7 +98,7 @@ export function FormularioEntrenamientoLibre({ hoy, hora }: { hoy: string; hora:
       >
         {abierto ? 'Cancelar' : 'Apuntar un entrenamiento que no estaba planeado'}
       </button>
-      {hecho && <p role="status" className="text-sm text-emerald-700">{hecho}</p>}
+      {hecho && <p role="status" className="text-sm text-progreso">{hecho}</p>}
       {abierto && <Formulario hoy={hoy} hora={hora} alTerminar={alTerminar} />}
     </section>
   )

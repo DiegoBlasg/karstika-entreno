@@ -31,12 +31,12 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
   return (
     <div className="space-y-6">
       {antesDeTemporada && (
-        <p className="rounded bg-amber-50 p-3 text-sm">
+        <p className="rounded bg-ambar/10 p-3 text-sm">
           La temporada empieza el {fechaLarga(inicioTemporada)}. Puedes preparar sesiones desde ese día.
         </p>
       )}
       {inicial.reemplaza && (
-        <p className="rounded bg-amber-50 p-3 text-sm">
+        <p className="rounded bg-ambar/10 p-3 text-sm">
           Vas a cambiar la sesión de hoy a las {inicial.hora}: no se borrará hasta que aceptes la nueva.
         </p>
       )}
@@ -61,7 +61,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
         {dia === hoy && (
           <fieldset className="space-y-3">
             <legend className="font-medium">¿Cómo llegas hoy?</legend>
-            {chequeoHoy && <p className="text-sm text-stone-600">Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.</p>}
+            {chequeoHoy && <p className="text-sm text-texto-2">Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.</p>}
             <CamposChequeo inicial={chequeoHoy} />
           </fieldset>
         )}
@@ -69,7 +69,7 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
       </form>
       <div ref={resultado} className="scroll-mt-4 space-y-6">
         {estado && 'error' in estado && (
-          <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm">
+          <div role="alert" className="rounded border border-rojo/50 bg-rojo/10 p-3 text-sm">
             <p>{estado.error}</p>
             {estado.detalle && (
               <details>

@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+/* Estilo «Topo nocturno». Única fuente de los colores: lib/ui/contraste.test.ts comprueba valores y contraste. */
+@theme static {
+  --color-fondo: #0E1417;
+  --color-fondo-hundido: #0B1013;
+  --color-superficie: #172024;
+  --color-superficie-2: #22303A;
+  --color-borde: #26333A;
+  --color-pista: #2A3539;
+  --color-texto: #E8EDEA;
+  --color-texto-2: #9FB0A8;
+  --color-texto-3: #6E7F78;
+  --color-progreso: #C6F24E;
+  --color-cima: #FF7A45;
+  --color-ambar: #F5B83D;
+  --color-rojo: #FF5A5A;
+}
+
+/* Las variables las declara next/font en <html> (app/layout.tsx). */
+@theme inline {
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-titular: var(--font-barlow-condensed), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-progreso);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

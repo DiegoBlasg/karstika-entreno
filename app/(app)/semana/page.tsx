@@ -23,10 +23,10 @@ function Fila({ h }: { h: HuecoVista }) {
       {estado.tipo === 'planeado' && (
         <>
           <p className="font-medium">{nombreSesion(estado.sesion)}{estado.cargaAlta ? ' ★' : ''}</p>
-          <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[estado.sesion.tipo]}</p>
+          <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[estado.sesion.tipo]}</p>
         </>
       )}
-      {estado.tipo === 'libre' && <p className="text-stone-600">{estado.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
+      {estado.tipo === 'libre' && <p className="text-texto-2">{estado.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
       {estado.tipo === 'ocupado' && (
         <p>
           {nombreSesion(estado.sesion.sesion)} · {estado.registrada ? 'Registrada' : 'Aceptada'} · <Link href="/" className="underline">Ver en Hoy</Link>
@@ -34,7 +34,7 @@ function Fila({ h }: { h: HuecoVista }) {
       )}
       {pasado && estado.sesion && <p className="text-sm">{nombreSesion(estado.sesion.sesion)}</p>}
       {(estado.tipo === 'planeado' || estado.tipo === 'libre' || estado.tipo === 'sin-plan') && (
-        <Link href={enlacePreparar(fila)} className="inline-block rounded bg-stone-900 px-3 py-1 text-sm font-medium text-white">Preparar</Link>
+        <Link href={enlacePreparar(fila)} className="inline-block rounded bg-progreso px-3 py-1 text-sm font-medium text-fondo">Preparar</Link>
       )}
     </li>
   )
@@ -62,13 +62,13 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
           : <Link href="/semana" className="underline">← Esta semana</Link>}
       </div>
       {v.huecos.length === 0 && (
-        <p className="rounded bg-sky-50 p-3 text-sm">
+        <p className="rounded bg-superficie-2 p-3 text-sm">
           Declara los huecos que tienes esta semana. Cuantos más declares, mejor reparte el motor los días intensos.
         </p>
       )}
-      {v.aviso && <p className="rounded bg-amber-50 p-3 text-sm">{v.aviso}</p>}
+      {v.aviso && <p className="rounded bg-ambar/10 p-3 text-sm">{v.aviso}</p>}
       <ul className="space-y-3">{v.huecos.map((h) => <Fila key={h.fila.id} h={h} />)}</ul>
-      {v.huecos.some((h) => h.estado.tipo === 'planeado' && h.estado.cargaAlta) && <p className="text-xs text-stone-500">★ = carga alta.</p>}
+      {v.huecos.some((h) => h.estado.tipo === 'planeado' && h.estado.cargaAlta) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
       {dias.length > 0 && <FormularioHueco dias={dias} />}
     </div>
   )

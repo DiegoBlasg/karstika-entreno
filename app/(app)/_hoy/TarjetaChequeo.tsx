@@ -41,7 +41,7 @@ export function TarjetaChequeo({ hoy }: { hoy: string }) {
           <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Guardar chequeo'}</button>
           <button type="button" onClick={ahoraNo} className="text-sm underline">Ahora no</button>
         </div>
-        {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+        {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
       </form>
     </section>
   )

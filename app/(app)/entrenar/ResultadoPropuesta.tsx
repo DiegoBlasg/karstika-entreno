@@ -18,7 +18,7 @@ function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(aceptar, null)
   return (
     <section className={TARJETA}>
-      <p className="text-xs uppercase tracking-wide text-stone-500">{titulo}</p>
+      <p className="text-xs uppercase tracking-wide text-texto-2">{titulo}</p>
       <PlanSesion plan={plan} />
       <form action={accion}>
         <input type="hidden" name="entrada" value={JSON.stringify(entrada)} />
@@ -27,7 +27,7 @@ function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan
         {reemplaza && <input type="hidden" name="reemplaza" value={reemplaza} />}
         <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Aceptar esta sesión'}</button>
       </form>
-      {estado?.error && <p role="alert" className="text-sm text-red-700">{estado.error}</p>}
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </section>
   )
 }
@@ -35,7 +35,7 @@ function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan
 export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
   entrada: EntradaPeticion; prep: Preparacion; posicion: PosicionTemporada | null; reemplaza?: string
 }) {
-  if (prep.tipo === 'fuera-temporada') return <p className="rounded bg-amber-50 p-3">{prep.mensaje}</p>
+  if (prep.tipo === 'fuera-temporada') return <p className="rounded bg-ambar/10 p-3">{prep.mensaje}</p>
   const { propuesta, consejos, fase } = prep
   const estado = propuesta.estado
   const noVerdes = estado ? ZONAS.filter((z) => estado.zonas[z] !== 'verde') : []
@@ -45,12 +45,12 @@ export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
   ]
   return (
     <div className="space-y-4">
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-texto-2">
         {fechaLarga(entrada.fecha)}{posicion ? '' : ` · fase ${fase.nombre}${fase.descarga ? ' · semana de descarga' : ''}`}
       </p>
       {posicion && <ContextoTemporada posicion={posicion} />}
       {noVerdes.length > 0 && (
-        <section className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm">
+        <section className="space-y-2 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
           <ul>
             {noVerdes.map((z) => <li key={z}>{NOMBRE_ZONA[z]}: {estado!.zonas[z] === 'rojo' ? 'rojo' : 'ámbar'}</li>)}
           </ul>
@@ -72,7 +72,7 @@ export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
         </section>
       )}
       {opciones.length === 0 && !propuesta.descanso && (
-        <p role="alert" className="rounded bg-red-50 p-3">El entrenador no encuentra ninguna sesión posible con este contexto.</p>
+        <p role="alert" className="rounded bg-rojo/10 p-3">El entrenador no encuentra ninguna sesión posible con este contexto.</p>
       )}
       {opciones.map((o) => <Opcion key={o.indice} {...o} entrada={entrada} reemplaza={reemplaza} />)}
       {propuesta.semana && propuesta.semana.length > 0 && (
@@ -80,13 +80,13 @@ export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
           <h2 className="font-medium">Así queda tu semana</h2>
           <ul className="space-y-1 text-sm">
             {propuesta.semana.map(({ hueco, sesion }) => (
-              <li key={`${hueco.fecha}-${hueco.horaInicio}`} className="rounded border border-stone-200 bg-white px-3 py-2">
+              <li key={`${hueco.fecha}-${hueco.horaInicio}`} className="rounded border border-borde bg-superficie px-3 py-2">
                 {fechaLarga(hueco.fecha)} · {hhmmDeMinutos(Math.round(hueco.horaInicio * 60))} ·{' '}
                 {sesion ? `${nombreSesion(sesion)}${esCargaAlta(sesion) ? ' ★' : ''}` : 'Libre'}
               </li>
             ))}
           </ul>
-          <p className="text-xs text-stone-500">★ = carga alta. El plan se recalcula cada vez que preparas una sesión.</p>
+          <p className="text-xs text-texto-2">★ = carga alta. El plan se recalcula cada vez que preparas una sesión.</p>
         </section>
       )}
       {consejos.length > 0 && (
@@ -94,7 +94,7 @@ export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
           <h2 className="font-medium">Consejos</h2>
           <ul className="space-y-2">
             {consejos.map((c) => (
-              <li key={c.id} className="rounded border border-stone-200 bg-white p-3 text-sm">
+              <li key={c.id} className="rounded border border-borde bg-superficie p-3 text-sm">
                 <p>{c.texto}</p>
                 <PorQue explicaciones={[c.explicacion]} />
               </li>

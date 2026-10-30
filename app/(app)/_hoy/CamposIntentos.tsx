@@ -18,7 +18,7 @@ export function CamposIntentos({ previos }: { previos?: readonly FilaIntento[] }
       {Array.from({ length: filas }, (_, i) => (
         <label key={i} className="flex items-center gap-3 text-sm">
           <span className="w-20">Intento {i + 1}</span>
-          <select name={`intento_${i}`} defaultValue={previo(i)} className="flex-1 rounded border border-stone-300 px-2 py-1">
+          <select name={`intento_${i}`} defaultValue={previo(i)} className="flex-1 rounded border border-borde px-2 py-1">
             <option value="">—</option>
             <option value="encadenado">Encadenado</option>
             {MOTIVOS_CAIDA.map((m) => <option key={m} value={m}>{NOMBRE_MOTIVO[m]}</option>)}

@@ -19,7 +19,7 @@ export default async function PaginaFuente({ params }: { params: Promise<{ id: s
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Estudio no encontrado</h1>
-        <Link href="/" className="text-sky-800 underline">Volver a Hoy</Link>
+        <Link href="/" className="text-progreso underline">Volver a Hoy</Link>
       </div>
     )
   }
@@ -32,7 +32,7 @@ export default async function PaginaFuente({ params }: { params: Promise<{ id: s
     <div className="space-y-4 text-sm">
       <h1 className="text-xl font-semibold">{h.id}</h1>
       <p>{h.afirmacion}</p>
-      <p className="text-stone-600">{NIVEL_TEXTO[h.nivel]}</p>
+      <p className="text-texto-2">{NIVEL_TEXTO[h.nivel]}</p>
       <section>
         <h2 className="font-medium">Fuentes</h2>
         <ul className="mt-1 space-y-2">
@@ -40,11 +40,11 @@ export default async function PaginaFuente({ params }: { params: Promise<{ id: s
             <li key={i}>
               {f.autores} ({f.anio}). {f.titulo}. <em>{f.publicacion}</em>.{' '}
               {f.doi ? (
-                <a href={`https://doi.org/${f.doi}`} target="_blank" rel="noopener noreferrer" className="text-sky-800 underline break-all">
+                <a href={`https://doi.org/${f.doi}`} target="_blank" rel="noopener noreferrer" className="text-progreso underline break-all">
                   doi:{f.doi}
                 </a>
               ) : f.url ? (
-                <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-sky-800 underline break-all">enlace</a>
+                <a href={f.url} target="_blank" rel="noopener noreferrer" className="text-progreso underline break-all">enlace</a>
               ) : null}
             </li>
           ))}
@@ -62,8 +62,8 @@ export default async function PaginaFuente({ params }: { params: Promise<{ id: s
         <h2 className="font-medium">Limitaciones</h2>
         <p>{h.limitaciones}</p>
       </section>
-      <p className="text-xs text-stone-500">Verificada el {h.verificada.fecha} con {METODO[h.verificada.metodo]}.</p>
-      <Link href="/" className="text-sky-800 underline">Volver a Hoy</Link>
+      <p className="text-xs text-texto-2">Verificada el {h.verificada.fecha} con {METODO[h.verificada.metodo]}.</p>
+      <Link href="/" className="text-progreso underline">Volver a Hoy</Link>
     </div>
   )
 }
