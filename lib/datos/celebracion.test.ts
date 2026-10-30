@@ -134,10 +134,13 @@ describe('resumenRegistro', () => {
       expect(titulos(d, uuid(2), '2026-11-10')).toEqual(['Primera semana cumplida'])
     })
 
-    it('la semana anterior ya cumplida no se anuncia al registrar en la siguiente (no depende de este registro)', () => {
-      const sesiones = [sesionFila(uuid(1), '2026-11-03'), sesionFila(uuid(2), '2026-11-10')]
-      const d = datosVacios({ sesiones, registros: [registro(uuid(1)), registro(uuid(2))] })
-      expect(titulos(d, uuid(2), '2026-11-10')).toEqual([])
+    it('la semana cerrada a tiempo se celebra en la primera chapa de la siguiente, y solo en esa', () => {
+      const sesiones = [sesionFila(uuid(1), '2026-11-03'), sesionFila(uuid(2), '2026-11-10'), sesionFila(uuid(3), '2026-11-11')]
+      const r1 = registro(uuid(1)) // registrado el 2026-11-03
+      const r2 = { ...registro(uuid(2)), registrado_en: '2026-11-10 20:00:00+00' }
+      const r3 = { ...registro(uuid(3)), registrado_en: '2026-11-11 20:00:00+00' }
+      expect(titulos(datosVacios({ sesiones, registros: [r1, r2] }), uuid(2), '2026-11-10')).toEqual(['Primera semana cumplida'])
+      expect(titulos(datosVacios({ sesiones, registros: [r1, r2, r3] }), uuid(3), '2026-11-11')).toEqual([])
     })
   })
 

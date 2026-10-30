@@ -55,11 +55,15 @@ export function resumenRegistro(d: DatosAtleta, sesionId: string, hoy: string): 
     d.sesiones
       .filter((s) => !registradas.has(s.id) && s.sesion.tipo !== 'descanso' && s.fecha >= hoy && despues(s, sesion))
       .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.sesion.horaInicio - b.sesion.horaInicio)[0] ?? null
-  // Logros nuevos: los conseguidos hoy que no lo estarían sin este registro. Así nunca se anuncia uno que luego pueda
-  // desaparecer (una semana solo está cumplida cuando ha terminado: se anuncia en la primera chapa tras cerrarla).
-  const sinEste = { ...d, registros: d.registros.filter((r) => r.sesion_id !== sesionId) }
-  const antes = new Set(logros(sinEste, hoy).filter((l) => l.conseguido).map((l) => l.id))
-  const logrosNuevos = logros(d, hoy).filter((l) => l.conseguido && !antes.has(l.id))
+  // Logros nuevos, siempre calculados con hoy (una semana solo está cumplida cuando ha terminado, así que nunca se anuncia
+  // uno que luego pueda desaparecer): los que este registro hace conseguir y los conseguidos después del registro anterior
+  // (una semana cerrada a tiempo se celebra en la primera chapa tras cerrarla, una sola vez).
+  const otros = d.registros.filter((r) => r.sesion_id !== sesionId)
+  const antes = new Set(logros({ ...d, registros: otros }, hoy).filter((l) => l.conseguido).map((l) => l.id))
+  const ultimoAnterior = otros.map((r) => r.registrado_en.slice(0, 10)).sort().at(-1)
+  const logrosNuevos = logros(d, hoy).filter(
+    (l) => l.conseguido && (!antes.has(l.id) || (ultimoAnterior !== undefined && l.fecha! > ultimoAnterior)),
+  )
   const objetivo = objetivoRpe(sesion.sesion) ?? null
   const estado = estadoAtleta(historialMotor(d.sesiones), seguimientoMotor(d), hoy > sesion.fecha ? hoy : sesion.fecha)
   const veredicto = veredictoDe(estado.sesionesNoValidas.includes(sesionId), sesion, registro, objetivo)
