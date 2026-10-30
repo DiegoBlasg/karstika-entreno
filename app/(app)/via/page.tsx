@@ -124,7 +124,7 @@ export default async function PaginaPlan() {
   const cambios = cambiosPorResultados(datos, hoy)
   return (
     <div className="space-y-8">
-      <h1 className="text-xl font-semibold">Plan</h1>
+      <h1 className="text-xl font-semibold">Vía</h1>
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Próximos días</h2>
         {semanas[0] && <Semana s={semanas[0]} titulo="Esta semana" />}

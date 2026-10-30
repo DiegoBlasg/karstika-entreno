@@ -148,7 +148,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
         <h3 className="font-semibold">{NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min (lo que hiciste)</h3>
       )}
       {s.tipo === 'evaluacion-dedos' && (
-        <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/evaluacion" className="underline">Evaluación</Link>.</p>
+        <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/progreso" className="underline">Progreso</Link>.</p>
       )}
       {registro ? (
         <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />

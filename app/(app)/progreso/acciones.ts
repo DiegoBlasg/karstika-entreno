@@ -34,7 +34,7 @@ export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Pr
   } catch (e) {
     return { error: `No se ha podido guardar la evaluación: ${mensajeDe(e)}` }
   }
-  revalidatePath('/evaluacion')
+  revalidatePath('/progreso')
   return { ok: 'Evaluación guardada.' }
 }
 
@@ -45,6 +45,6 @@ export async function borrarEvaluacion(_previo: EstadoAccion, fd: FormData): Pro
   } catch (e) {
     return { error: `No se ha podido borrar la evaluación: ${mensajeDe(e)}` }
   }
-  revalidatePath('/evaluacion')
+  revalidatePath('/progreso')
   return { ok: 'Evaluación borrada.' }
 }

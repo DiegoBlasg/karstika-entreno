@@ -41,7 +41,7 @@ export default async function PaginaHoy() {
       )}
       {sinResultado.map((f) => (
         <p key={f} className="rounded border border-borde bg-superficie-2 p-3 text-sm">
-          Te falta apuntar el resultado del test del {fechaLarga(f)}. <Link href="/evaluacion" className="underline">Apuntarlo en Evaluación</Link>
+          Te falta apuntar el resultado del test del {fechaLarga(f)}. <Link href="/progreso" className="underline">Apuntarlo en Progreso</Link>
         </p>
       ))}
       {v.zonasRojo.length > 0 && (

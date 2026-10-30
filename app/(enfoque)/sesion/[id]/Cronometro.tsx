@@ -16,7 +16,7 @@ import {
 } from '@/lib/cronometro/reloj'
 import type { PosicionTemporada } from '@/lib/datos/temporada'
 import { DONDE_SE_HACE, NOMBRE_TIPO } from '@/lib/nombres'
-import { FormularioRegistro } from '../../_hoy/FormularioRegistro'
+import { FormularioRegistro } from '@/app/(app)/_hoy/FormularioRegistro'
 import { FormularioIntento } from './FormularioIntento'
 import { FormularioResultadoTest } from './FormularioResultadoTest'
 
@@ -355,7 +355,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         {esTest ? (
           yaEvaluado ? (
             <p className="rounded bg-superficie-2 p-3 text-sm">
-              Ya tienes la evaluación de hoy guardada. Si quieres cambiarla, hazlo en <Link href="/evaluacion" className="underline">Evaluación</Link>.
+              Ya tienes la evaluación de hoy guardada. Si quieres cambiarla, hazlo en <Link href="/progreso" className="underline">Progreso</Link>.
             </p>
           ) : mejor !== null ? (
             <FormularioResultadoTest
@@ -368,11 +368,11 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
               resistenciaS={estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
             />
           ) : (
-            <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Evaluación si quieres.</p>
+            <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Progreso si quieres.</p>
           )
         ) : estado.colgadoFalloS !== null && (
           <p className="rounded bg-superficie-2 p-3 text-sm">
-            Resistencia: {estado.colgadoFalloS} s. Apúntalo en Evaluación junto con el lastre de tu mejor intento.
+            Resistencia: {estado.colgadoFalloS} s. Apúntalo en Progreso junto con el lastre de tu mejor intento.
           </p>
         )}
         <FormularioRegistro
