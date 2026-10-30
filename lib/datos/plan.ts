@@ -38,6 +38,7 @@ export interface HuecoPlan {
   sesion?: Sesion
   cargaAlta?: boolean
   registrada?: boolean      // solo en las aceptadas
+  descansoActivo?: boolean  // solo en las libres: el plan deja libre un hueco en casa
 }
 
 export interface SemanaPlanVista {
@@ -70,7 +71,7 @@ function semanaPlan(d: DatosAtleta, lunes: string, ahora: { fecha: string; minut
       case 'pasado': return { hueco, estado: 'pasado', ...(e.sesion ? { sesion: e.sesion.sesion } : {}) }
       case 'ocupado': return { hueco, estado: 'aceptada', sesion: e.sesion.sesion, registrada: e.registrada }
       case 'planeado': return { hueco, estado: 'planeada', sesion: e.sesion, cargaAlta: e.cargaAlta }
-      case 'libre': return { hueco, estado: 'libre' }
+      case 'libre': return { hueco, estado: 'libre', descansoActivo: e.descansoActivo }
       case 'sin-plan': return { hueco, estado: 'sin-plan' }
     }
   })

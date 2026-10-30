@@ -103,7 +103,10 @@ describe('simulación con seguimiento: base y 8 semanas de fuerza', () => {
   })
   it('con el chequeo bajo no hay dominadas', () => {
     for (const p of pasos.filter((x) => BAJOS.has(x.fecha))) {
-      for (const plan of planes(p.r)) expect(plan.sesion.incluye ?? [], p.fecha).not.toContain('dominadas')
+      for (const plan of planes(p.r)) {
+        expect(plan.sesion.incluye ?? [], p.fecha).not.toContain('dominadas')
+        expect(plan.sesion.tipo, p.fecha).not.toBe('dominadas')
+      }
     }
   })
   it('cada sesión lleva como mucho 2 consejos y ninguno general se repite en 7 días', () => {

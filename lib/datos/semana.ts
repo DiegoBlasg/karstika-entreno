@@ -10,7 +10,7 @@ export type EstadoHueco =
   | { tipo: 'pasado'; sesion?: FilaSesion }
   | { tipo: 'ocupado'; sesion: FilaSesion; registrada: boolean }
   | { tipo: 'planeado'; sesion: Sesion; cargaAlta: boolean }
-  | { tipo: 'libre' }
+  | { tipo: 'libre'; descansoActivo: boolean } // descansoActivo: el plan lo deja libre y es en casa (DESCANSO_ACTIVO)
   | { tipo: 'sin-plan' }
 
 export interface HuecoVista {
@@ -73,7 +73,11 @@ export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: strin
   const { propuesta } = prep
   fase = { nombre: prep.fase.nombre, descarga: prep.fase.descarga === true }
   const principal = propuesta.principal
-  primero.estado = principal ? { tipo: 'planeado', sesion: principal.sesion, cargaAlta: esCargaAlta(principal.sesion) } : { tipo: 'libre' }
+  // Solo cuando es el plan quien deja libre el hueco (no un rojo, el estado o el descanso recomendado).
+  const delPlan = propuesta.descanso?.regla === 'plan.semana-libre'
+  primero.estado = principal
+    ? { tipo: 'planeado', sesion: principal.sesion, cargaAlta: esCargaAlta(principal.sesion) }
+    : { tipo: 'libre', descansoActivo: delPlan && primero.fila.lugar === 'casa' }
   if (!propuesta.semana) {
     const rojo = propuesta.estado ? ZONAS.some((z) => propuesta.estado!.zonas[z] === 'rojo') : false
     const aviso = rojo
@@ -88,7 +92,7 @@ export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: strin
     const k = clave(h.fila.fecha, h.fila.inicio_min)
     if (!plan.has(k)) continue
     const s = plan.get(k)!
-    h.estado = s ? { tipo: 'planeado', sesion: s, cargaAlta: esCargaAlta(s) } : { tipo: 'libre' }
+    h.estado = s ? { tipo: 'planeado', sesion: s, cargaAlta: esCargaAlta(s) } : { tipo: 'libre', descansoActivo: h.fila.lugar === 'casa' }
   }
   return { lunes, domingo, fase, huecos }
 }

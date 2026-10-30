@@ -3,6 +3,10 @@ import { NOMBRE_TIPO } from '../motor/nombres'
 
 export { NOMBRE_TIPO }
 
+// Descanso activo opcional (decisión de Diego del 2026-10-29): lo que se muestra cuando el plan deja libre un hueco en
+// casa. Solo texto: no crea sesiones ni ocupa cupos.
+export const DESCANSO_ACTIVO = 'Libre. Si te apetece: movilidad suave 10–15 min (cadera, hombro, muñecas), sin carga. Opcional: no cuenta para el plan.'
+
 // «Técnica + ARC»: el tipo y sus complementos.
 export function nombreSesion(s: Sesion): string {
   return [s.tipo, ...(s.incluye ?? [])].map((t) => NOMBRE_TIPO[t]).join(' + ')

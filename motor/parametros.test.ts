@@ -121,7 +121,8 @@ describe('VALORES del diagnóstico', () => {
 
 describe('VALORES de la autorregulación', () => {
   it('P-39, P-43, P-45, P-50, P-63, P-65 y P-66 coinciden con el documento', () => {
-    expect(columnas('P-39')[2]).toMatch(/complemento de 15 min en las fases de fuerza: 4 series de 4 repeticiones con un lastre que deje 2 repeticiones en reserva y 3 min de descanso; como mucho 1 en 7 días/)
+    expect(columnas('P-39')[2]).toMatch(/como sesión \(en casa o en el rocódromo, máximo 1 por semana en fuerza y resistencia, prioridad mínima\) o como complemento de 15 min en la fuerza: 4 series de 4 repeticiones con un lastre que deje 2 repeticiones en reserva y 3 min de descanso; como mucho 1 en 7 días/)
+    expect(columnas('P-41')[2]).toMatch(/Al repartir la semana se prefieren días no consecutivos \(decisión de diseño\)/)
     expect(VALORES['P-39']).toEqual({ minutos: 15, series: 4, repeticiones: 4, repeticionesEnReserva: 2, descansoMin: 3, max7Dias: 1 })
     expect(columnas('P-43')[2]).toMatch(/^Verde: 0-1 .*Ámbar: 2-3 .*Rojo: 4 o más/)
     expect(VALORES['P-43']).toEqual({ verdeMax: 1, ambarMax: 3 })

@@ -36,6 +36,7 @@ describe('motivosNoEncaja', () => {
   it('dominadas incluidas cuando hoy no tocan', () => {
     expect(motivosNoEncaja(sesion('tecnica', { intensidad: 'suave', incluye: ['dominadas'] }), estado({ dedos: 'ambar' })))
       .toContain('Hoy no tocan dominadas: sáltate ese complemento.')
+    expect(motivosNoEncaja(sesion('dominadas', { intensidad: 'suave' }), estado({ codo: 'ambar' }))).toEqual(['Hoy no tocan dominadas: no hagas esta sesión.'])
   })
   it('coherente con bloqueadaPorEstado: si el entrenador la bloquearía, hay motivos', () => {
     const AL_LIMITE: TipoSesion[] = ['bloque-limite', 'via-cuerda-limite', 'pegues-proyecto', 'board']

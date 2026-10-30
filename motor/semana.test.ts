@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { peticion } from './_fabrica'
-import { FASE_FUERZA, FASE_RESISTENCIA } from './fases'
+import { FASE_BASE, FASE_FUERZA, FASE_RESISTENCIA } from './fases'
 import { proponerSesion } from './propuesta'
 import type { Hueco, Peticion } from './propuesta-tipos'
-import { esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
+import { conDominadas, esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
 import { validarHuecos } from './semana'
 import { diaNumero, fechaDesdeDia } from './tiempo'
 import type { Contexto, Sesion } from './tipos'
@@ -178,12 +178,39 @@ describe('plan semanal con un rojo antiguo sin alta (falla cerrado)', () => {
 
 describe('hueco libre (P-67)', () => {
   it('si la única opción de hoy es carga alta y quitaría la vía de mañana, hoy queda libre y sin alternativas de carga alta', () => {
+    // Con las dominadas de la semana ya hechas (P-39, cupo 1), en casa solo queda la multipresa.
     const hombro = (id: string, fecha: string): Sesion => ({ id, tipo: 'hombro', intensidad: 'suave', fecha, horaInicio: 9, duracionMin: 40 })
-    const p = lunes({ fecha: '2026-11-11', historial: [hombro('h1', '2026-11-09'), hombro('h2', '2026-11-10')], huecos: [{ fecha: '2026-11-12', horaInicio: 19, contexto: AMIGOS }] })
+    const conDom: Sesion = { ...hombro('h1', '2026-11-09'), duracionMin: 55, incluye: ['dominadas'] }
+    const p = lunes({ fecha: '2026-11-11', historial: [conDom, hombro('h2', '2026-11-10')], huecos: [{ fecha: '2026-11-12', horaInicio: 19, contexto: AMIGOS }] })
     const r = proponerSesion(p)
     expect(r.principal).toBeNull()
     expect(r.descanso?.regla).toBe('plan.semana-libre')
     expect(r.semana?.[0]?.sesion?.tipo).toBe('via-cuerda-limite')
     for (const a of r.alternativas) expect(esCargaAlta(a.sesion)).toBe(false)
+  })
+})
+
+describe('mañanas en casa (P-41, P-39)', () => {
+  // Cuatro mañanas de lunes a jueves en casa con solo barra; nada más en la semana.
+  const BARRA: Contexto = { ...CASA, multipresaEnCasa: false }
+  const mananas: Hueco[] = ['2026-11-10', '2026-11-11', '2026-11-12'].map((fecha) => ({ fecha, horaInicio: 9, contexto: BARRA }))
+  const plan = (fase: Peticion['fase']) => {
+    const r = proponerSesion(lunes({ contexto: BARRA, fase, huecos: mananas }))
+    return [{ fecha: '2026-11-09', sesion: r.principal?.sesion ?? null }, ...(r.semana ?? []).map((e) => ({ fecha: e.hueco.fecha, sesion: e.sesion }))]
+  }
+  const diasHombro = (dias: ReturnType<typeof plan>) =>
+    dias.filter((d) => d.sesion && (d.sesion.tipo === 'hombro' || (d.sesion.incluye ?? []).includes('hombro'))).map((d) => diaNumero(d.fecha))
+  it.each([FASE_BASE, FASE_FUERZA, FASE_RESISTENCIA])('$id: el hombro va 2 veces y en días no seguidos', (fase) => {
+    const dias = diasHombro(plan(fase))
+    expect(dias).toHaveLength(2)
+    expect(dias[1]! - dias[0]!).toBeGreaterThan(1)
+  })
+  it.each([FASE_FUERZA, FASE_RESISTENCIA])('$id: las dominadas salen como sesión en una de las mañanas libres, una sola vez', (fase) => {
+    const dias = plan(fase)
+    expect(dias.filter((d) => d.sesion && conDominadas(d.sesion))).toHaveLength(1)
+    expect(dias.filter((d) => d.sesion?.tipo === 'dominadas')).toHaveLength(1)
+  })
+  it('en la base no hay dominadas', () => {
+    expect(plan(FASE_BASE).filter((d) => d.sesion && conDominadas(d.sesion))).toEqual([])
   })
 })

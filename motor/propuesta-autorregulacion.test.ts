@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
 import type { Chequeo, Molestia, RegistroSesion, Seguimiento } from './autorregulacion-tipos'
-import { descargar, FASE_BASE, FASE_FUERZA } from './fases'
+import { descargar, FASE_BASE, FASE_FUERZA, FASE_RESISTENCIA } from './fases'
 import { proponerSesion } from './propuesta'
 import type { Peticion, Propuesta, SesionPlan } from './propuesta-tipos'
 import { esCargaAlta } from './seguridad'
@@ -250,5 +250,47 @@ describe('test caducado tras un rojo (P-46)', () => {
     const plan = planes(r).find((x) => x.sesion.tipo === 'multipresa-resistencia')!
     expect(plan.bloques.find((b) => b.nombre.startsWith('Bloque'))!.ejercicios[0]!.cargaKg).toBeUndefined()
     expect(r.estado?.retestDesde).toBe('2026-11-05')
+  })
+})
+
+describe('dominadas como sesión principal (P-39, mañanas en casa)', () => {
+  // Jueves 2026-11-12 por la mañana en casa sin multipresa, con las 2 de hombro de la semana ya hechas.
+  const CASA_BARRA: Contexto = { ...CASA, multipresaEnCasa: false }
+  const hombro = (id: string, fecha: string, incluye?: Sesion['incluye']) =>
+    ses(id, fecha, 9, { tipo: 'hombro', intensidad: 'suave', duracionMin: 40, ...(incluye ? { incluye } : {}) })
+  const semana = [hombro('h1', '2026-11-09'), hombro('h2', '2026-11-10')]
+  const jueves = (extra: Partial<Peticion> = {}) =>
+    proponerSesion(pet('2026-11-12', CASA_BARRA, { horaInicio: 9, historial: semana, seguimiento: seg(), ...extra }))
+  const conDominadas = (r: Propuesta) => planes(r).filter((x) => x.sesion.tipo === 'dominadas' || (x.sesion.incluye ?? []).includes('dominadas'))
+  it('en la fuerza y en la resistencia, sin cupo de hombro pendiente, la principal son las dominadas', () => {
+    for (const fase of [FASE_FUERZA, FASE_RESISTENCIA]) {
+      const r = jueves({ fase })
+      expect(r.principal?.sesion.tipo, fase.id).toBe('dominadas')
+      expect(r.principal!.sesion.incluye ?? [], fase.id).toEqual([])
+      expect(r.principal!.sesion.duracionMin, fase.id).toBeLessThanOrEqual(60)
+    }
+  })
+  it('no el día de una sesión intensa de dedos ni con dominadas en los últimos 7 días', () => {
+    expect(conDominadas(jueves({ historial: [...semana, multipresa('hoy', '2026-11-12')] }))).toEqual([])
+    expect(conDominadas(jueves({ historial: [...semana, hombro('h0', '2026-11-06', ['dominadas'])] }))).toEqual([])
+  })
+  it('si ese día ya van como complemento, no se repiten', () => {
+    const r = jueves({ historial: [hombro('h1', '2026-11-09'), hombro('h2', '2026-11-12', ['dominadas'])], horaInicio: 19 })
+    expect(conDominadas(r)).toEqual([])
+  })
+  it('no con el chequeo bajo ni con zonas en ámbar', () => {
+    expect(conDominadas(jueves({ seguimiento: seg({ chequeos: [chq('2026-11-12', 1)] }) }))).toEqual([])
+    for (const zona of ['dedos', 'muneca', 'codo', 'hombro'] as const) {
+      expect(conDominadas(jueves({ seguimiento: seg({ chequeos: [chq('2026-11-12', 4, [{ zona, dolor: 2 }])] }) })), zona).toEqual([])
+    }
+  })
+  it('no en la base ni en la descarga', () => {
+    expect(conDominadas(jueves({ fase: FASE_BASE }))).toEqual([])
+    expect(conDominadas(jueves({ fase: descargar(FASE_FUERZA) }))).toEqual([])
+    expect(conDominadas(jueves({ fase: descargar(FASE_RESISTENCIA) }))).toEqual([])
+  })
+  it('con el cupo de hombro pendiente, el hombro va antes que las dominadas', () => {
+    const r = jueves({ historial: [hombro('h1', '2026-11-09')] })
+    expect(r.principal?.sesion.tipo).toBe('hombro')
   })
 })

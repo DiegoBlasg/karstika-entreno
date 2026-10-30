@@ -3,7 +3,21 @@ import { TIPOS_COMPLEMENTO, TIPOS_SESION, type Sesion } from './tipos'
 const FECHA = /^(\d{4})-(\d{2})-(\d{2})$/
 const MS_POR_DIA = 86_400_000
 
+// diaNumero se llama muchísimo al planificar la semana (P-67): se recuerdan las fechas ya convertidas. Solo las válidas
+// (una mal formada lanza siempre) y con tope, para que la memoria no crezca sin límite.
+const DIAS = new Map<string, number>()
+const MAX_DIAS_RECORDADOS = 20_000
+
 export function diaNumero(fecha: string): number {
+  const visto = DIAS.get(fecha)
+  if (visto !== undefined) return visto
+  const d = calcularDia(fecha)
+  if (DIAS.size >= MAX_DIAS_RECORDADOS) DIAS.clear()
+  DIAS.set(fecha, d)
+  return d
+}
+
+function calcularDia(fecha: string): number {
   const m = FECHA.exec(fecha)
   if (!m) throw new Error(`Fecha mal formada (se espera AAAA-MM-DD): ${fecha}`)
   const año = Number(m[1])

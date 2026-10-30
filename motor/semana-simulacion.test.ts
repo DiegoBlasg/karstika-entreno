@@ -3,6 +3,7 @@ import {
   diaNumero, esCargaAlta, esIntensaDedos, estadoAtleta, faseEnFecha, fechaDesdeDia, objetivoRpe, planificarTemporada, proponerSesion,
   validarSesion,
 } from './index'
+import { conDominadas } from './seguridad'
 import type { Contexto, EvaluacionDedos, Hueco, RegistroSesion, Sesion, TipoSesion } from './index'
 
 // 16 semanas con los huecos reales de Diego (2026-10-27): mañanas de lunes a jueves en casa, tardes de lunes y jueves
@@ -54,7 +55,7 @@ for (const s of temporada.semanas.slice(0, 16)) {
 
 if (process.env.SIMULACION) {
   for (const s of semanas) {
-    const t = s.sesiones.map((x) => `${x.hueco.fecha.slice(8)}${x.hueco.horaInicio < 14 ? 'm' : 't'}:${x.sesion ? `${x.sesion.tipo}${esCargaAlta(x.sesion) ? '*' : ''}` : '—'}`)
+    const t = s.sesiones.map((x) => `${x.hueco.fecha.slice(8)}${x.hueco.horaInicio < 14 ? 'm' : 't'}:${x.sesion ? `${x.sesion.tipo}${(x.sesion.incluye ?? []).map((t) => `+${t}`).join('')}${esCargaAlta(x.sesion) ? '*' : ''}` : '—'}`)
     console.log(`${s.lunes} ${s.fase}${s.descarga ? '(d)' : ''} ${t.join(' ')}`)
   }
 }
@@ -78,6 +79,23 @@ describe('simulación de 16 semanas con huecos (P-67)', () => {
     for (const s of semanas) {
       const dias = new Set(s.sesiones.filter((x) => x.sesion && esIntensaDedos(x.sesion)).map((x) => x.hueco.fecha))
       expect(dias.size, s.lunes).toBeLessThanOrEqual(3)
+    }
+  })
+  it('las dominadas salen como sesión en casa, como mucho 1 por semana y nunca el día de dedos intensos (P-39)', () => {
+    const todas = semanas.flatMap((s) => s.sesiones)
+    expect(todas.some((x) => x.sesion?.tipo === 'dominadas' && x.hueco.contexto === CASA)).toBe(true)
+    for (const s of semanas) {
+      const con = s.sesiones.filter((x) => x.sesion && conDominadas(x.sesion))
+      expect(con.length, s.lunes).toBeLessThanOrEqual(1)
+      const diasDedos = new Set(s.sesiones.filter((x) => x.sesion && esIntensaDedos(x.sesion)).map((x) => x.hueco.fecha))
+      for (const x of con) expect(diasDedos.has(x.hueco.fecha), `${s.lunes} ${x.hueco.fecha}`).toBe(false)
+      if (s.descarga) expect(con, s.lunes).toEqual([])
+    }
+  })
+  it('fuera de las descargas, el hombro nunca cae en días seguidos (P-41)', () => {
+    for (const s of semanas.filter((x) => !x.descarga)) {
+      const dias = [...new Set(s.sesiones.filter((x) => x.sesion && (x.sesion.tipo === 'hombro' || (x.sesion.incluye ?? []).includes('hombro'))).map((x) => diaNumero(x.hueco.fecha)))]
+      expect(dias.filter((d) => dias.includes(d + 1)), s.lunes).toEqual([])
     }
   })
   it('sin multipresa en casa, ninguna multipresa, test ni campus cae en casa: van al rocódromo', () => {

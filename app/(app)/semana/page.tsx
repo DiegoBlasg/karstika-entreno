@@ -4,7 +4,7 @@ import { enlacePreparar } from '@/lib/datos/huecos'
 import type { HuecoVista } from '@/lib/datos/semana'
 import { vistaSemana } from '@/lib/datos/semana'
 import { ahoraMadrid, fechaLarga, hhmmDeMinutos, lunesDe, sumarDias } from '@/lib/fecha'
-import { DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LUGAR, nombreSesion } from '@/lib/nombres'
+import { DESCANSO_ACTIVO, DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LUGAR, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonBorrarHueco } from './BotonBorrarHueco'
 import { FormularioHueco } from './FormularioHueco'
@@ -26,7 +26,7 @@ function Fila({ h }: { h: HuecoVista }) {
           <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[estado.sesion.tipo]}</p>
         </>
       )}
-      {estado.tipo === 'libre' && <p className="text-stone-600">Libre: no hace falta entrenar.</p>}
+      {estado.tipo === 'libre' && <p className="text-stone-600">{estado.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
       {estado.tipo === 'ocupado' && (
         <p>
           {nombreSesion(estado.sesion.sesion)} · {estado.registrada ? 'Registrada' : 'Aceptada'} · <Link href="/" className="underline">Ver en Hoy</Link>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { descargar, FASE_BASE, FASE_FUERZA, FASE_RENDIMIENTO, FASE_TRANSICION, FASES } from './fases'
+import { descargar, FASE_BASE, FASE_FUERZA, FASE_OBJETIVO, FASE_RENDIMIENTO, FASE_RESISTENCIA, FASE_TRANSICION, FASES } from './fases'
 import { VALORES } from './parametros'
 import { TIPOS_CON_PLANTILLA } from './plantillas'
 
@@ -90,5 +90,22 @@ describe('todas las fases de la temporada', () => {
       expect(d.prohibidos).toContain(t)
     }
     expect(d.prioridad).toContain('multipresa-resistencia')
+  })
+})
+
+describe('dominadas como sesión (P-39, mañanas en casa)', () => {
+  it('en la fuerza y la resistencia no están prohibidas, tienen cupo 1 y la prioridad más baja', () => {
+    for (const fase of [FASE_FUERZA, FASE_RESISTENCIA]) {
+      expect(fase.prohibidos, fase.id).not.toContain('dominadas')
+      expect(fase.cupos.dominadas, fase.id).toBe(1)
+      expect(fase.prioridad.at(-1), fase.id).toBe('dominadas')
+    }
+  })
+  it('siguen prohibidas en la base, el rendimiento, la transición, la semana objetivo y las descargas', () => {
+    for (const fase of [FASE_BASE, FASE_RENDIMIENTO, FASE_TRANSICION, FASE_OBJETIVO, descargar(FASE_FUERZA), descargar(FASE_RESISTENCIA)]) {
+      expect(fase.prohibidos, fase.nombre).toContain('dominadas')
+      expect(fase.prioridad, fase.nombre).not.toContain('dominadas')
+      expect(fase.cupos.dominadas, fase.nombre).toBeUndefined()
+    }
   })
 })
