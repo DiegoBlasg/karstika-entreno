@@ -40,3 +40,11 @@ test('la sesión a pantalla completa sigue exigiendo entrar', async ({ page, bro
   await expect(p).toHaveURL(/\/entrar/)
   await anonimo.close()
 })
+
+test('Hoy: mini-vía con el largo actual que lleva a Vía', async ({ page }) => {
+  const mini = page.getByRole('link', { name: /Largo \d+ de \d+/ })
+  await expect(mini).toBeVisible()
+  await expect(page.getByRole('progressbar', { name: 'Semanas del largo' })).toBeVisible()
+  await mini.click()
+  await expect(page).toHaveURL(/\/via$/)
+})

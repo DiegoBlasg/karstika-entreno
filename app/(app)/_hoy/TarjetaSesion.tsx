@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { Play } from 'lucide-react'
 import { useActionState, useState } from 'react'
 import { MOTIVO_DESCANSO, TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
-import { BOTON, CAMPO, TARJETA } from '@/components/estilos'
+import { BOTON, BOTON_SECUNDARIO, CAMPO, TARJETA, TARJETA_DESTACADA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
 import type { FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { corregible, type Tarjeta } from '@/lib/datos/hoy'
@@ -120,15 +121,16 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
 }
 
 // `posicion`: dónde cae el día de la sesión en la temporada (se calcula en el servidor); solo se muestra si hay plan.
-export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null }) {
+export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null; destacada?: boolean }) {
   const { fila, registro } = tarjeta
   const s = fila.sesion
   const pasada = fila.fecha <= hoy
   const [cambiando, setCambiando] = useState(false)
   const [terminando, setTerminando] = useState(false)
   const cerrarRegistro = (): void => setTerminando(false)
+  const hayCronometro = fila.fecha === hoy && fila.propuesta !== null
   return (
-    <article className={TARJETA}>
+    <article className={destacada ? TARJETA_DESTACADA : TARJETA}>
       {fila.fecha !== hoy && <p className="text-sm text-texto-2">{fechaLarga(fila.fecha)}</p>}
       {tarjeta.noEncaja.length > 0 && (
         <div className="space-y-1 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
@@ -154,13 +156,13 @@ export function TarjetaSesion({ tarjeta, hoy, posicion }: { tarjeta: Tarjeta; ho
         <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
       ) : (
         <>
-          {fila.fecha === hoy && fila.propuesta && (
-            <Link href={`/sesion/${fila.id}`} className="inline-block rounded bg-progreso px-3 py-2 text-sm font-medium text-fondo">
-              Empezar con cronómetro
+          {hayCronometro && (
+            <Link href={`/sesion/${fila.id}`} className={`${BOTON} w-full`}>
+              <Play size={18} aria-hidden /> Empezar sesión
             </Link>
           )}
           {pasada && !cambiando && !terminando && (
-            <button type="button" onClick={() => setTerminando(true)} className={BOTON}>Terminar</button>
+            <button type="button" onClick={() => setTerminando(true)} className={hayCronometro ? BOTON_SECUNDARIO : BOTON}>Terminar</button>
           )}
           {pasada && !cambiando && terminando && (
             <>

@@ -2,7 +2,6 @@
 
 import type { Molestia } from '@/motor'
 import { CamposMolestias } from '@/components/CamposMolestias'
-import { CAMPO } from '@/components/estilos'
 import type { ChequeoInicial } from '@/lib/formulario'
 
 const ESCALAS = [
@@ -17,12 +16,24 @@ export function CamposChequeo({ iniciales, inicial }: { iniciales?: readonly Mol
   return (
     <>
       {ESCALAS.map((e) => (
-        <label key={e.nombre} className="block">
-          {e.etiqueta} <span className="text-xs text-texto-2">(1 = {e.bajo}, 5 = {e.alto})</span>
-          <select name={e.nombre} defaultValue={String(inicial?.[e.nombre] ?? 3)} className={CAMPO}>
-            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </label>
+        <fieldset key={e.nombre} className="space-y-1.5">
+          <legend>
+            {e.etiqueta} <span className="text-xs text-texto-2">(1 = {e.bajo}, 5 = {e.alto})</span>
+          </legend>
+          <div className="grid grid-cols-5 gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <label key={n} className="block">
+                <input
+                  type="radio" name={e.nombre} value={n} defaultChecked={n === (inicial?.[e.nombre] ?? 3)}
+                  aria-label={`${e.etiqueta} ${n}`} className="peer sr-only"
+                />
+                <span className="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-borde bg-superficie-2 font-titular text-lg font-bold transition-colors peer-checked:border-progreso peer-checked:bg-progreso peer-checked:text-fondo peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-progreso">
+                  {n}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       ))}
       <CamposMolestias iniciales={inicial?.molestias ?? iniciales} plegable />
     </>
