@@ -243,3 +243,37 @@ test('Plan: próximos días, el año y una fuente desde «¿Por qué?»', async 
   await expect(page).toHaveURL(/\/fuentes\//)
   await expect(page.getByRole('heading', { name: 'Limitaciones' })).toBeVisible()
 })
+
+test('Biblioteca: desde una sesión, abrir «Cómo se hace» y ver los pasos', async ({ page }) => {
+  const sql = await sqlPruebas()
+  const hoy = ahoraMadrid(new Date()).fecha
+  const id = '00000000-0000-4000-8000-00000000c004'
+  // A las 6:00, libre: lo más temprano de las demás pruebas es lo apuntado a las 8:00.
+  const sesion = { id, tipo: 'tecnica', intensidad: 'suave', fecha: hoy, horaInicio: 6, duracionMin: 20 }
+  const explicacion = { regla: 'e2e.biblioteca', parametros: [], evidencias: [], nivelMinimo: 'sinEvidencia', origen: 'diseno', motivo: 'e2e' }
+  const propuesta = {
+    sesion,
+    bloques: [{ nombre: 'Técnica', minutos: 20, explicacion, ejercicios: [{ nombre: 'Pies precisos', cargaTexto: 'Suave', ficha: 'practica-tecnica' }] }],
+    explicaciones: [explicacion],
+  }
+  await sql`insert into sesiones (id, fecha, sesion, propuesta, origen)
+            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(propuesta)}::jsonb, 'propuesta')`
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.goto(`/sesion/${id}`)
+  await page.getByRole('link', { name: 'Cómo se hace: Práctica técnica' }).click()
+  await expect(page).toHaveURL(/\/biblioteca\/practica-tecnica$/)
+  await expect(page.getByRole('heading', { name: 'Práctica técnica' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Cómo se hace' })).toBeVisible()
+  await expect(page.getByText('Pies precisos: mira el pie hasta que se apoye y no lo recoloques.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Cuándo parar' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Por qué se hace' })).toBeVisible()
+  // El índice de la biblioteca, desde el menú.
+  await page.getByRole('link', { name: 'Biblioteca', exact: true }).click()
+  await expect(page).toHaveURL(/\/biblioteca$/)
+  await expect(page.getByRole('heading', { name: 'Hombro y antagonistas' })).toBeVisible()
+  await page.getByRole('link', { name: 'Rotación externa con banda' }).click()
+  await expect(page.getByRole('img', { name: /codo pegado al costado/ })).toBeVisible()
+})

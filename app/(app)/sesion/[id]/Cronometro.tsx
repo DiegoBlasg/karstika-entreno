@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
+import { ComoSeHace } from '@/components/ComoSeHace'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, CAMPO } from '@/components/estilos'
 import type { Paso } from '@/lib/cronometro/pasos'
@@ -283,7 +284,12 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         <p className="text-sm text-stone-600">Dónde: {DONDE_SE_HACE[plan.sesion.tipo]}</p>
         {posicion && <ContextoTemporada posicion={posicion} />}
         <ol className="list-decimal space-y-1 pl-5 text-sm">
-          {plan.bloques.map((b, i) => <li key={`${b.nombre}-${i}`}>{b.nombre} · {b.minutos} min</li>)}
+          {plan.bloques.map((b, i) => (
+            <li key={`${b.nombre}-${i}`}>
+              {b.nombre} · {b.minutos} min
+              <ComoSeHace ids={b.ejercicios.map((e) => e.ficha)} conTitulo className="text-sky-800" />
+            </li>
+          ))}
         </ol>
         {esTest && (
           <label className="block">
@@ -412,6 +418,8 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         )}
         {!estado.enMarcha && <p className="text-sm font-medium">En pausa</p>}
       </section>
+      {/* Al abrir una ficha, el cronómetro queda en pausa y al volver se ofrece «Continuar donde ibas». */}
+      {paso.fichas && <ComoSeHace ids={paso.fichas} conTitulo={paso.fichas.length > 1} className="text-sm text-sky-800" />}
       {abierto && (
         <FormularioIntento
           key={abierto.n}

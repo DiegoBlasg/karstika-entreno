@@ -8,7 +8,7 @@ export type Paso = (
   | { tipo: 'manual'; titulo: string; carga?: string; notas?: string }
   | { tipo: 'bloque'; segundos: number; titulo: string; detalle: string[] }
   | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string }
-) & { bloque: string }
+) & { bloque: string; fichas?: string[] }   // fichas: ids de la biblioteca («Cómo se hace»)
 
 export const SEGUNDOS_PREPARATE = 10
 
@@ -19,14 +19,20 @@ export function segundosDe(p: Paso): number | null {
   return p.tipo === 'manual' || p.tipo === 'fallo' ? null : p.segundos
 }
 
+// Las fichas de unos ejercicios, sin repetir y en orden; sin ninguna, el paso no lleva el campo.
+const conFichas = <P extends Paso>(p: P, ejercicios: readonly Ejercicio[]): P => {
+  const fichas = [...new Set(ejercicios.flatMap((e) => (e.ficha ? [e.ficha] : [])))]
+  return fichas.length > 0 ? { ...p, fichas } : p
+}
+
 export function pasosDeSesion(plan: SesionPlan): Paso[] {
   const out: Paso[] = []
   for (const b of plan.bloques) {
     if (!b.ejercicios.some(conTiempo)) {
-      out.push({ tipo: 'bloque', bloque: b.nombre, segundos: b.minutos * 60, titulo: b.nombre, detalle: b.ejercicios.map(detalleDe) })
+      out.push(conFichas({ tipo: 'bloque', bloque: b.nombre, segundos: b.minutos * 60, titulo: b.nombre, detalle: b.ejercicios.map(detalleDe) }, b.ejercicios))
       continue
     }
-    for (const e of b.ejercicios) out.push(...pasosDeEjercicio(b.nombre, e))
+    for (const e of b.ejercicios) out.push(...pasosDeEjercicio(b.nombre, e).map((p) => conFichas(p, [e])))
   }
   return out
 }
