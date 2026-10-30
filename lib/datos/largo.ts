@@ -1,6 +1,6 @@
 // El largo de la temporada en el que estás (fase seguida de un ciclo) y cuánto llevas. Puro.
 import { FASE_OBJETIVO, type FaseId, type SemanaPlan } from '../../motor'
-import { lunesDe } from '../fecha'
+import { lunesDe, sumarDias } from '../fecha'
 import type { DatosAtleta } from './filas'
 import { temporadaDe } from './peticion'
 import { posicionSiSePuede } from './temporada'
@@ -47,7 +47,8 @@ export function progresoLargo(d: DatosAtleta, hoy: string): ProgresoLargo | null
     const sesionesHechas = d.sesiones.filter(
       (s) => s.fecha >= inicio && s.fecha <= hoy && s.sesion.tipo !== 'descanso' && registradas.has(s.id),
     ).length
-    const test = posicion.semanaObjetivo ? undefined : t.semanas.find((s) => s.reevaluar && s.lunes >= lunes)
+    const hecho = (l: string): boolean => d.evaluaciones.some((e) => e.fecha >= l && e.fecha <= sumarDias(l, 6) && e.fecha <= hoy)
+    const test = posicion.semanaObjetivo ? undefined : t.semanas.find((s) => s.reevaluar && s.lunes >= lunes && !hecho(s.lunes))
     return {
       largo: indice + 1,
       totalLargos: largos.length,
