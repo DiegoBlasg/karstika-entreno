@@ -4,6 +4,7 @@ import { lunesDe } from '../fecha'
 import type { DatosAtleta } from './filas'
 import { temporadaDe } from './peticion'
 import { posicionSiSePuede } from './temporada'
+import { testDeVentana, ventanasReuniones } from './via'
 
 export interface ProgresoLargo {
   largo: number
@@ -47,7 +48,9 @@ export function progresoLargo(d: DatosAtleta, hoy: string): ProgresoLargo | null
     const sesionesHechas = d.sesiones.filter(
       (s) => s.fecha >= inicio && s.fecha <= hoy && s.sesion.tipo !== 'descanso' && registradas.has(s.id),
     ).length
-    const test = posicion.semanaObjetivo ? undefined : t.semanas.find((s) => s.reevaluar && s.lunes >= lunes)
+    // Un test cuenta para su reunión aunque se haga unos días antes o después de su semana (misma regla que la Vía).
+    const ventanas = ventanasReuniones(t.semanas.filter((s) => s.reevaluar).map((s) => s.lunes), t.inicio)
+    const test = posicion.semanaObjetivo ? undefined : ventanas.find((v) => v.lunes >= lunes && !testDeVentana(v, d.evaluaciones, hoy))
     return {
       largo: indice + 1,
       totalLargos: largos.length,

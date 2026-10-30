@@ -57,6 +57,7 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await page.getByRole('link', { name: 'Semana', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Próximos días' })).toBeVisible()
   await page.getByRole('link', { name: 'Semana siguiente →' }).click()
   // Esperar a que cargue la semana siguiente: si no, el hueco se añadiría a la semana actual.
   await expect(page.getByRole('link', { name: '← Esta semana' })).toBeVisible()
@@ -70,7 +71,8 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
   await expect(page).toHaveURL(/\/$/)
   await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
-  await expect(page.getByText(/Aceptada/)).toBeVisible()
+  // Sale en la lista de la semana y otra vez en «Próximos días».
+  await expect(page.getByText(/Aceptada/).first()).toBeVisible()
 })
 
 test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
@@ -226,18 +228,21 @@ test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) =>
   await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
 })
 
-test('Vía: próximos días, el año y una fuente desde «¿Por qué?»', async ({ page }) => {
+test('Vía: la vía con el largo actual, una reunión y una fuente desde «¿Por qué?»', async ({ page }) => {
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page).toHaveURL(/\/$/)
   await page.getByRole('link', { name: 'Vía', exact: true }).click()
   await expect(page).toHaveURL(/\/via$/)
-  await expect(page.getByRole('heading', { name: 'Próximos días' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'El año' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Tu vía' })).toBeVisible()
+  await expect(page.locator('[aria-current="step"]')).toHaveCount(1)
+  // El largo actual abre su hoja con el objetivo de la fase. aria-current va en el <li>; el disparador es su botón.
+  await page.locator('[aria-current="step"] button').first().click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('button', { name: 'Cerrar' }).click()
+  await expect(page.getByRole('dialog')).toBeHidden()
   await expect(page.getByRole('heading', { name: 'Qué ha cambiado por tus resultados' })).toBeVisible()
-  // La semana actual va marcada en el año.
-  await expect(page.locator('li[aria-current="date"]')).toHaveCount(1)
   await page.locator('summary', { hasText: '¿Por qué?' }).first().click()
   await page.getByRole('link', { name: 'detalle' }).first().click()
   await expect(page).toHaveURL(/\/fuentes\//)

@@ -8,6 +8,7 @@ import { DESCANSO_ACTIVO, DONDE_SE_HACE, NOMBRE_COMPANIA, NOMBRE_LUGAR, nombreSe
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonBorrarHueco } from './BotonBorrarHueco'
 import { FormularioHueco } from './FormularioHueco'
+import { ProximosDias } from './ProximosDias'
 
 function Fila({ h }: { h: HuecoVista }) {
   const { fila, estado } = h
@@ -47,7 +48,8 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
   const siguiente = sumarDias(estaSemana, 7)
   const pedido = (await searchParams).lunes
   const lunes = pedido === siguiente ? siguiente : estaSemana
-  const v = vistaSemana(datos, lunes, { fecha: ahora.fecha, minutos: Math.round(ahora.hora * 60) })
+  const momento = { fecha: ahora.fecha, minutos: Math.round(ahora.hora * 60) }
+  const v = vistaSemana(datos, lunes, momento)
   const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)).filter((d) => d >= ahora.fecha)
   return (
     <div className="space-y-4">
@@ -70,6 +72,7 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
       <ul className="space-y-3">{v.huecos.map((h) => <Fila key={h.fila.id} h={h} />)}</ul>
       {v.huecos.some((h) => h.estado.tipo === 'planeado' && h.estado.cargaAlta) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
       {dias.length > 0 && <FormularioHueco dias={dias} />}
+      <ProximosDias datos={datos} ahora={momento} />
     </div>
   )
 }
