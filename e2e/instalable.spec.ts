@@ -13,7 +13,7 @@ test('el manifest y los iconos se sirven sin sesión', async ({ request }) => {
 })
 
 test('las páginas siguen exigiendo sesión', async ({ request }) => {
-  for (const ruta of ['/', '/semana', '/perfil', '/icono-x', '/icono-x.png.html']) {
+  for (const ruta of ['/', '/semana', '/perfil', '/icono-x', '/icono-x.png.html', '/iconXsvg', '/apple-icon-png', '/faviconXico']) {
     const r = await request.get(ruta, { maxRedirects: 0 })
     expect(r.status(), ruta).toBe(307)
     expect(r.headers().location, ruta).toContain('/entrar')

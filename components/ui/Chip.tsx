@@ -6,7 +6,7 @@ const TONO = {
   progreso: 'bg-superficie-2 text-progreso',
   cima: 'bg-cima/15 text-cima',
   ambar: 'bg-ambar/15 text-ambar',
-  rojo: 'bg-rojo/15 text-rojo',
+  rojo: 'bg-rojo/10 text-rojo',
 } as const
 
 export function Chip({ tono = 'neutro', children }: { tono?: keyof typeof TONO; children: ReactNode }) {
