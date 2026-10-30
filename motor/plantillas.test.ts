@@ -302,6 +302,15 @@ describe('hombro: rutina concreta A/B (P-41)', () => {
       }
     }
   })
+  it('con dedos o muñeca en ámbar (sin colgarse, P-64) la rutina A cambia las retracciones colgado por face pull', () => {
+    for (const z of [{ dedos: 'ambar' }, { muneca: 'ambar' }] as const) {
+      const p = peticion({ contexto: casa(30), estado: estado(z) })
+      const b = rutina(construirSesion('hombro', p)!)
+      expect(fichas(b), JSON.stringify(z)).toEqual(['face-pull-banda', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+      expect(fichas(construirComplemento('hombro', p, 15)!)).toEqual(['face-pull-banda', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+      expect(b.ejercicios.map((e) => e.nombre).join(' ')).not.toMatch(/colgad/i)
+    }
+  })
   it('los ejercicios de la rutina no llevan series estructuradas: el cronómetro los guía como un bloque de 15 min', () => {
     const b = rutina(construirSesion('hombro', peticion({ contexto: casa(30) }))!)
     for (const e of b.ejercicios) {

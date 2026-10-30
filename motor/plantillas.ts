@@ -603,7 +603,19 @@ export function rutinaHombro(p: Peticion): RutinaHombro {
   return previas % 2 === 0 ? 'A' : 'B'
 }
 
-const ejerciciosHombro = (r: RutinaHombro): Ejercicio[] => RUTINAS_HOMBRO[r].map((e) => ({ ...e }))
+// Con dedos o muñeca fuera de verde (o chequeo bajo) el motor ya prohíbe colgarse en las dominadas (P-64, P-65): las
+// retracciones colgado de la rutina A se cambian por face pull con banda.
+const FACE_PULL_EN_LUGAR_DE_COLGARSE: Ejercicio = {
+  nombre: 'Face pull con banda',
+  cargaTexto: `3 × 12 · ${ESFUERZO_HOMBRO}`,
+  notas: 'En lugar de las retracciones colgado: hoy nada de colgarse de la barra.',
+  ficha: 'face-pull-banda',
+}
+
+const sinColgarse = (p: Peticion): boolean => p.estado !== undefined && restriccionesDe(p.estado).sinDominadas
+
+const ejerciciosHombro = (r: RutinaHombro, p: Peticion): Ejercicio[] =>
+  RUTINAS_HOMBRO[r].map((e) => (e.ficha === 'retracciones-escapulares' && sinColgarse(p) ? { ...FACE_PULL_EN_LUGAR_DE_COLGARSE } : { ...e }))
 
 const explicacionRutinaHombro = (r: RutinaHombro): Explicacion =>
   explicar(
@@ -654,7 +666,7 @@ function construirHombro(p: Peticion): SesionPlan | null {
     {
       nombre: 'Hombro y antagonistas',
       minutos: VALORES['P-41'].minutos,
-      ejercicios: ejerciciosHombro(r),
+      ejercicios: ejerciciosHombro(r, p),
       explicacion: explicacionRutinaHombro(r),
     },
     ...(largo
@@ -836,7 +848,7 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
       return {
         nombre: 'Complemento: hombro y antagonistas',
         minutos,
-        ejercicios: ejerciciosHombro(r),
+        ejercicios: ejerciciosHombro(r, p),
         explicacion: explicacionRutinaHombro(r),
       }
     }
