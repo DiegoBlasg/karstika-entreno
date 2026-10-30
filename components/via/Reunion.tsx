@@ -10,7 +10,7 @@ import { DISPARADOR_ESTIRADO, FilaVia, LINEA, corta } from './Rail'
 
 const pct = (r: ResultadoTest): number => Math.round(r.fuerzaRelativa)
 
-const CIRCULO: Record<ReunionVia['estado'], string> = {
+export const CIRCULO: Record<ReunionVia['estado'], string> = {
   hecha: 'border-progreso bg-progreso text-fondo',
   proxima: 'border-progreso bg-fondo',
   futura: 'border-texto-3 bg-fondo',
@@ -88,16 +88,42 @@ function DetalleReunion({ reunion, tests }: { reunion: ReunionVia; tests: Result
   )
 }
 
-// Reunión (semana de test) entre dos largos. `hecho`: el tramo que la cruza ya está escalado.
-export function Reunion({ reunion, numero, tests, lunesActual, hecho }: {
+// Reunión (semana de test). Por defecto, en el raíl entre dos largos (la del final de un largo); `dentro`: un test a
+// mitad de un largo, que se pinta dentro de la fila del largo (su círculo lo dibuja el raíl del largo, en su semana).
+// `hecho`: el tramo que la cruza ya está escalado.
+export function Reunion({ reunion, numero, tests, lunesActual, hecho, dentro = false }: {
   reunion: ReunionVia
   numero: number
   tests: ResultadoTest[]
   lunesActual: string | null
   hecho: boolean
+  dentro?: boolean
 }) {
   const { estado } = reunion
   const extra = estado === 'proxima' ? cuando(reunion.lunes, lunesActual) : estado === 'hecha' ? `semana del ${corta(reunion.lunes)}` : null
+  const hoja = (
+    <Hoja
+      titulo={`Reunión R${numero}`}
+      claseDisparador={DISPARADOR_ESTIRADO}
+      disparador={
+        <span className="flex items-center justify-between gap-2">
+          <span className="block">
+            <span className={`block font-titular text-xs font-medium uppercase tracking-[0.08em] ${estado === 'sin-hacer' ? 'text-ambar' : estado === 'proxima' || estado === 'hecha' ? 'text-progreso' : 'text-texto-2'}`}>
+              Reunión R{numero}{dentro ? ' · a mitad del largo' : ''} · {ESTADO[estado]}
+            </span>
+            <span className={`block tabular-nums ${estado === 'futura' ? 'text-texto-2' : ''}`}>
+              {textoFila(reunion, numero)}
+              {extra && <span className="text-texto-2"> · {extra}</span>}
+            </span>
+          </span>
+          <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-texto-3" />
+        </span>
+      }
+    >
+      <DetalleReunion reunion={reunion} tests={tests} />
+    </Hoja>
+  )
+  if (dentro) return <div className="relative">{hoja}</div>
   return (
     <FilaVia
       rail={
@@ -111,26 +137,7 @@ export function Reunion({ reunion, numero, tests, lunesActual, hecho }: {
         </>
       }
     >
-      <Hoja
-        titulo={`Reunión R${numero}`}
-        claseDisparador={DISPARADOR_ESTIRADO}
-        disparador={
-          <span className="flex items-center justify-between gap-2">
-            <span className="block">
-              <span className={`block font-titular text-xs font-medium uppercase tracking-[0.08em] ${estado === 'sin-hacer' ? 'text-ambar' : estado === 'proxima' || estado === 'hecha' ? 'text-progreso' : 'text-texto-2'}`}>
-                Reunión R{numero} · {ESTADO[estado]}
-              </span>
-              <span className={`block tabular-nums ${estado === 'futura' ? 'text-texto-2' : ''}`}>
-                {textoFila(reunion, numero)}
-                {extra && <span className="text-texto-2"> · {extra}</span>}
-              </span>
-            </span>
-            <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-texto-3" />
-          </span>
-        }
-      >
-        <DetalleReunion reunion={reunion} tests={tests} />
-      </Hoja>
+      {hoja}
     </FilaVia>
   )
 }

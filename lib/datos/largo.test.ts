@@ -44,6 +44,14 @@ describe('progresoLargo', () => {
     const evaluaciones = [{ id: uuid(100), fecha: '2027-01-19', peso_corporal_kg: 70, lastre_kg: 8, resistencia_s: null, tecnica: null }]
     expect(progresoLargo(datosVacios({ evaluaciones }), '2027-01-20')?.proximaReunion).toEqual({ lunes: '2027-03-01', enSemanas: 6 })
   })
+
+  it('un test hecho 4 días antes quita el «Test esta semana»', () => {
+    expect(textoReunion(progresoLargo(datosVacios(), '2027-01-18')!)).toBe('Test esta semana')
+    const evaluaciones = [{ id: uuid(100), fecha: '2027-01-14', peso_corporal_kg: 70, lastre_kg: 8, resistencia_s: null, tecnica: null }]
+    const p = progresoLargo(datosVacios({ evaluaciones }), '2027-01-18')!
+    expect(p.proximaReunion).toEqual({ lunes: '2027-03-01', enSemanas: 6 })
+    expect(textoReunion(p)).toBe('Test en 6 semanas')
+  })
 })
 
 describe('textos', () => {

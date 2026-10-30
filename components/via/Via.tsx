@@ -60,9 +60,9 @@ function Pie({ inicio, salida }: { inicio: string; salida: boolean }) {
 export function Via({ vista, inicio }: { vista: VistaVia; inicio: string }) {
   const { largos, cima, tests } = vista
   const lunesActual = largos.flatMap((l) => l.chapas).find((c) => c.estado === 'actual')?.lunes ?? null
-  // R1, R2…: posición de cada reunión entre los largos que tienen semana de test.
-  const numeros = new Map<number, number>()
-  for (const l of largos) if (l.reunion) numeros.set(l.numero, numeros.size + 1)
+  // R1, R2…: posición de cada reunión entre todas las de la temporada (un largo puede tener una a mitad).
+  const numeros = new Map<string, number>()
+  for (const r of largos.flatMap((l) => l.reuniones)) numeros.set(r.lunes, numeros.size + 1)
   const ultimo = largos.at(-1)
   return (
     <ol aria-label="Tu vía, de la cima al pie">
@@ -71,17 +71,33 @@ export function Via({ vista, inicio }: { vista: VistaVia; inicio: string }) {
       </li>
       {[...largos].reverse().flatMap((l) => {
         const filas = []
-        if (l.reunion) {
+        // La reunión de la última semana del largo va encima, en su propia fila del raíl; las de mitad, dentro del largo
+        // (de la más alta a la más baja, como se lee la vía).
+        const ultima = l.chapas.at(-1)?.lunes
+        const final = l.reuniones.find((r) => r.lunes === ultima)
+        const intermedias = l.reuniones.filter((r) => r !== final).reverse()
+        if (final) {
           filas.push(
-            <li key={`r${l.numero}`}>
-              <Reunion reunion={l.reunion} numero={numeros.get(l.numero)!} tests={tests} lunesActual={lunesActual} hecho={l.estado === 'hecho'} />
+            <li key={`r${final.lunes}`}>
+              <Reunion reunion={final} numero={numeros.get(final.lunes)!} tests={tests} lunesActual={lunesActual} hecho={l.estado === 'hecho'} />
             </li>,
           )
         }
         const actual = l.estado === 'actual'
         filas.push(
           <li key={`l${l.numero}`} id={actual ? 'largo-actual' : undefined} aria-current={actual ? 'step' : undefined} className="scroll-mt-24">
-            <Largo largo={l} />
+            <Largo
+              largo={l}
+              intermedias={
+                intermedias.length > 0 ? (
+                  <div className="mt-1 space-y-1">
+                    {intermedias.map((r) => (
+                      <Reunion key={r.lunes} reunion={r} numero={numeros.get(r.lunes)!} tests={tests} lunesActual={lunesActual} hecho={l.estado === 'hecho'} dentro />
+                    ))}
+                  </div>
+                ) : undefined
+              }
+            />
           </li>,
         )
         return filas
