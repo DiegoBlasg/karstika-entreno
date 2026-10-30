@@ -11,6 +11,7 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
         <Link href="/plan">Plan</Link>
         <Link href="/entrenar">Entrenar</Link>
         <Link href="/evaluacion">Evaluación</Link>
+        <Link href="/biblioteca">Biblioteca</Link>
         <Link href="/perfil">Perfil</Link>
         <form action={salir} className="ml-auto">
           <button className="text-stone-500">Salir</button>

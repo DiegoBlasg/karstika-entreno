@@ -34,6 +34,7 @@ export interface Ejercicio {
   cargaKg?: number                                // lastre (negativo = descarga); ausente si va por sensación
   cargaTexto: string
   notas?: string
+  ficha?: string                                  // id de la ficha de la biblioteca que explica cómo se hace (lib/biblioteca)
 }
 
 export interface Bloque {

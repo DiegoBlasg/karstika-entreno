@@ -52,23 +52,26 @@ export function estudio(id: string): Estudio | null {
 }
 
 export function basesDe(explicaciones: Explicacion[]): Base[] {
+  return basesDeParametros(explicaciones.flatMap((x) => x.parametros))
+}
+
+// Las bases de una lista de parámetros (p. ej. los de una ficha de la biblioteca), sin repetir.
+export function basesDeParametros(parametros: readonly string[]): Base[] {
   const vistos = new Set<string>()
   const bases: Base[] = []
-  for (const x of explicaciones) {
-    for (const p of x.parametros) {
-      if (vistos.has(p)) continue
-      vistos.add(p)
-      const m = METADATOS[p]
-      // Una propuesta guardada puede citar un parámetro que ya no existe: se omite en vez de romper la página.
-      if (!m) continue
-      bases.push({
-        parametro: p,
-        titulo: m.titulo,
-        nivel: m.nivelMinimo,
-        nivelTexto: NIVEL_TEXTO[m.nivelMinimo],
-        estudios: m.evidencia.map(estudio).filter((e): e is Estudio => e !== null),
-      })
-    }
+  for (const p of parametros) {
+    if (vistos.has(p)) continue
+    vistos.add(p)
+    // Una propuesta guardada puede citar un parámetro que ya no existe: se omite en vez de romper la página.
+    if (!Object.hasOwn(METADATOS, p)) continue
+    const m = METADATOS[p as keyof typeof METADATOS]
+    bases.push({
+      parametro: p,
+      titulo: m.titulo,
+      nivel: m.nivelMinimo,
+      nivelTexto: NIVEL_TEXTO[m.nivelMinimo],
+      estudios: m.evidencia.map(estudio).filter((e): e is Estudio => e !== null),
+    })
   }
   return bases
 }

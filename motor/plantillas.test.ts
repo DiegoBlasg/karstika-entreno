@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
 import { construirComplemento, construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
-import type { EvaluacionDedos } from './propuesta-tipos'
+import type { EstadoAtleta } from './autorregulacion-tipos'
+import type { EvaluacionDedos, SesionPlan } from './propuesta-tipos'
+import type { Sesion } from './tipos'
 
 const evaluacion: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 30 }
 const multipresasPrevias = (n: number) =>
@@ -220,6 +222,101 @@ describe('hombro', () => {
   })
   it('devuelve null si no caben 20 min', () => {
     expect(construirSesion('hombro', peticion({ contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 19 } }))).toBeNull()
+  })
+})
+
+describe('hombro: rutina concreta A/B (P-41)', () => {
+  const casa = (minutos: number) => ({ compania: 'solo' as const, lugar: 'casa' as const, minutosDisponibles: minutos })
+  const hombroPrevio = (i: number, fecha: string, extra: Partial<Sesion> = {}) =>
+    ses(`h${i}`, fecha, 9, { tipo: 'hombro', intensidad: 'suave', duracionMin: 20, ...extra })
+  const rutina = (plan: SesionPlan) => plan.bloques.find((b) => b.nombre === 'Hombro y antagonistas')!
+  const fichas = (b: { ejercicios: { ficha?: string }[] }) => b.ejercicios.map((e) => e.ficha)
+  const estado = (z: Partial<EstadoAtleta['zonas']>): EstadoAtleta =>
+    ({ zonas: { dedos: 'verde', muneca: 'verde', codo: 'verde', hombro: 'verde', otra: 'verde', ...z }, chequeoBajoHoy: false }) as unknown as EstadoAtleta
+
+  it('la A: retracciones 3×8, flexiones 3×8-12, rotación externa 3×12 con 3 s de bajada e Y-T-W 2×8 de cada', () => {
+    const b = rutina(construirSesion('hombro', peticion({ contexto: casa(30) }))!)
+    expect(fichas(b)).toEqual(['retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+    expect(b.ejercicios.map((e) => e.cargaTexto.split(' · ')[0])).toEqual(['3 × 8', '3 × 8-12', '3 × 12, bajada en 3 s', '2 × 8 de cada'])
+    expect(b.nombre).toBe('Hombro y antagonistas')
+    expect(b.minutos).toBe(15)
+  })
+  it('la B: face pull 3×12, plancha con toques 3×30 s, rotación externa 3×12 con 3 s de bajada y extensores 2×15 (opcional)', () => {
+    const b = rutina(construirSesion('hombro', peticion({ contexto: casa(30), historial: [hombroPrevio(1, '2026-10-20')] }))!)
+    expect(fichas(b)).toEqual(['face-pull-banda', 'plancha-toques-hombro', 'rotacion-externa-banda', 'extensores-dedos-banda'])
+    expect(b.ejercicios.map((e) => e.cargaTexto.split(' · ')[0])).toEqual(['3 × 12', '3 × 30 s', '3 × 12, bajada en 3 s', '2 × 15 (opcional)'])
+  })
+  it('alterna A, B, A… según las sesiones y los complementos de hombro anteriores', () => {
+    const historiales: Sesion[][] = [
+      [],
+      [hombroPrevio(1, '2026-10-20')],
+      [hombroPrevio(1, '2026-10-20'), ses('c', '2026-10-22', 19, { tipo: 'tecnica', intensidad: 'suave', incluye: ['hombro'] })],
+      [hombroPrevio(1, '2026-10-20'), hombroPrevio(2, '2026-10-22'), hombroPrevio(3, '2026-10-24')],
+    ]
+    const letras = historiales.map((historial) =>
+      rutina(construirSesion('hombro', peticion({ contexto: casa(30), historial }))!).ejercicios[0]!.ficha === 'retracciones-escapulares' ? 'A' : 'B',
+    )
+    expect(letras).toEqual(['A', 'B', 'A', 'B'])
+  })
+  it('las sesiones de otros tipos, las de hoy y las futuras no cuentan', () => {
+    const historial = [
+      ses('t', '2026-10-20', 19, { tipo: 'tecnica', intensidad: 'suave' }),
+      hombroPrevio(1, '2026-10-27'),
+      hombroPrevio(2, '2026-10-29'),
+    ]
+    expect(rutina(construirSesion('hombro', peticion({ contexto: casa(30), historial }))!).ejercicios[0]!.ficha).toBe('retracciones-escapulares')
+  })
+  it('el complemento de hombro usa la misma rutina y alterna igual', () => {
+    const a = construirComplemento('hombro', peticion(), 15)!
+    expect(a.nombre).toBe('Complemento: hombro y antagonistas')
+    expect(fichas(a)).toEqual(['retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+    const b = construirComplemento('hombro', peticion({ historial: [hombroPrevio(1, '2026-10-20')] }), 15)!
+    expect(fichas(b)).toEqual(['face-pull-banda', 'plancha-toques-hombro', 'rotacion-externa-banda', 'extensores-dedos-banda'])
+  })
+  it('la dosis es decisión de diseño, el tipo de ejercicio sigue a EV-LESION-007 y lo dice la explicación', () => {
+    for (const historial of [[], [hombroPrevio(1, '2026-10-20')]]) {
+      const e = rutina(construirSesion('hombro', peticion({ contexto: casa(30), historial }))!).explicacion
+      expect(e.parametros).toContain('P-41')
+      expect(e.motivo).toMatch(/decisión de diseño/)
+      expect(e.motivo).toMatch(/P-41 fija la frecuencia, no la dosis/)
+      expect(e.motivo).toMatch(/EV-LESION-007/)
+      expect(e.motivo).toMatch(/cadena cerrada, excéntricos y de fuerza/)
+    }
+  })
+  it('las duraciones no cambian: 5 + 15 (+ 20) en la sesión y 15 en el complemento', () => {
+    expect(construirSesion('hombro', peticion({ contexto: casa(39) }))!.bloques.map((b) => b.minutos)).toEqual([5, 15])
+    expect(construirSesion('hombro', peticion({ contexto: casa(45) }))!.bloques.map((b) => b.minutos)).toEqual([5, 15, 20])
+    expect(construirComplemento('hombro', peticion(), 15)!.minutos).toBe(15)
+  })
+  it('con hombroSinCarga (hombro o codo en ámbar, o soloHombro): solo movilidad y activación, sin bandas ni colgarse', () => {
+    for (const z of [{ hombro: 'ambar' }, { codo: 'ambar' }, { dedos: 'rojo' }, { muneca: 'rojo' }] as const) {
+      const p = peticion({ contexto: casa(60), estado: estado(z) })
+      const plan = construirSesion('hombro', p)!
+      const comp = construirComplemento('hombro', p, 15)!
+      expect(plan.sesion.detalle?.conCarga, JSON.stringify(z)).toBe(false)
+      expect(plan.bloques.map((b) => b.minutos)).toEqual([5, 15])
+      for (const e of [...plan.bloques.flatMap((b) => b.ejercicios), ...comp.ejercicios]) {
+        expect(e.ficha, e.nombre).toBe('movilidad')
+        expect(e.nombre).not.toMatch(/con banda|colgad/i)
+        expect(e.series).toBeUndefined()
+      }
+    }
+  })
+  it('con dedos o muñeca en ámbar (sin colgarse, P-64) la rutina A cambia las retracciones colgado por face pull', () => {
+    for (const z of [{ dedos: 'ambar' }, { muneca: 'ambar' }] as const) {
+      const p = peticion({ contexto: casa(30), estado: estado(z) })
+      const b = rutina(construirSesion('hombro', p)!)
+      expect(fichas(b), JSON.stringify(z)).toEqual(['face-pull-banda', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+      expect(fichas(construirComplemento('hombro', p, 15)!)).toEqual(['face-pull-banda', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+      expect(b.ejercicios.map((e) => e.nombre).join(' ')).not.toMatch(/colgad/i)
+    }
+  })
+  it('los ejercicios de la rutina no llevan series estructuradas: el cronómetro los guía como un bloque de 15 min', () => {
+    const b = rutina(construirSesion('hombro', peticion({ contexto: casa(30) }))!)
+    for (const e of b.ejercicios) {
+      expect(e.series, e.nombre).toBeUndefined()
+      expect(e.trabajoS, e.nombre).toBeUndefined()
+    }
   })
 })
 

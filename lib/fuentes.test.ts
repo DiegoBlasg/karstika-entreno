@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { METADATOS, PARAMETRO_IDS, type ParametroId } from '../motor'
 import type { Explicacion } from '@/motor'
-import { basesDe, citaCorta, estudio, NIVEL_TEXTO } from './fuentes'
+import { basesDe, basesDeParametros, citaCorta, estudio, NIVEL_TEXTO } from './fuentes'
 
 const expl = (parametros: Explicacion['parametros']): Explicacion => ({
   regla: 'r', parametros, evidencias: [], nivelMinimo: 'A', origen: 'evidencia', motivo: 'm',
@@ -49,5 +49,14 @@ describe('basesDe', () => {
     const [b] = basesDe([expl(['P-04'])])
     expect(b!.estudios).toEqual([])
     expect(b!.nivelTexto).toBe('decisión de diseño, sin estudio directo')
+  })
+})
+
+describe('basesDeParametros', () => {
+  it('da lo mismo que basesDe con esos parámetros', () => {
+    expect(basesDeParametros(['P-41', 'P-43'])).toEqual(basesDe([expl(['P-41', 'P-43'])]))
+  })
+  it('P-41 enlaza al ensayo de hombro EV-LESION-007', () => {
+    expect(basesDeParametros(['P-41'])[0]!.estudios.map((e) => e.id)).toContain('EV-LESION-007')
   })
 })

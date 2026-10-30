@@ -88,3 +88,30 @@ describe('pasosDeSesion', () => {
     }
   })
 })
+
+describe('pasosDeSesion: fichas de «Cómo se hace»', () => {
+  it('un bloque guiado como tiempo lleva las fichas de sus ejercicios, sin repetir', () => {
+    const ps = pasosDeSesion(plan('hombro', { ...CASA, minutosDisponibles: 30 }))
+    const rutina = ps.find((p) => p.bloque === 'Hombro y antagonistas')!
+    expect(rutina).toMatchObject({ tipo: 'bloque', segundos: 15 * 60 })
+    expect(rutina.fichas).toEqual(['retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda'])
+    expect(ps.find((p) => p.bloque === 'Movilidad y activación')!.fichas).toEqual(['movilidad'])
+  })
+  it('cada paso de un ejercicio con series lleva su ficha, también los descansos', () => {
+    const ps = pasosDeSesion(plan('multipresa-resistencia', CASA)).filter((p) => p.bloque.startsWith('Bloque de repeaters'))
+    expect(ps.length).toBeGreaterThan(0)
+    for (const p of ps) expect(p.fichas, p.titulo).toEqual(['repeaters-7-3'])
+  })
+  it('el test: la máxima y el 7:3 enlazan a su ficha', () => {
+    const ps = pasosDeSesion(plan('evaluacion-dedos', ROCO))
+    expect(ps.find((p) => p.tipo === 'colgado' && p.intento)!.fichas).toEqual(['suspension-maxima-10s'])
+    expect(ps.find((p) => p.tipo === 'fallo')!.fichas).toEqual(['test-7-3-fallo'])
+  })
+  it('sin ficha no hay campo `fichas`', () => {
+    const pl: SesionPlan = {
+      ...plan('tecnica', ROCO),
+      bloques: [{ ...plan('tecnica', ROCO).bloques[0]!, ejercicios: [{ nombre: 'Pies precisos', cargaTexto: 'Suave' }] }],
+    }
+    for (const p of pasosDeSesion(pl)) expect(p).not.toHaveProperty('fichas')
+  })
+})

@@ -29,6 +29,8 @@ const NECESITA_MULTIPRESA: readonly TipoSesion[] = [
 interface Semana { lunes: string; fase: string; descarga: boolean; sesiones: { hueco: Hueco; sesion: Sesion | null }[] }
 const semanas: Semana[] = []
 const historial: Sesion[] = []
+// Los bloques de hombro (sesión o complemento) de cada sesión aceptada, en orden.
+const bloquesHombro: { fecha: string; fichas: (string | undefined)[] }[] = []
 const registros: RegistroSesion[] = []
 let evaluacion: EvaluacionDedos | undefined
 
@@ -47,6 +49,9 @@ for (const s of temporada.semanas.slice(0, 16)) {
     semana.sesiones.push({ hueco: h, sesion })
     if (!sesion) return
     historial.push(sesion)
+    for (const b of r.principal!.bloques.filter((x) => x.nombre === 'Hombro y antagonistas' || x.nombre === 'Complemento: hombro y antagonistas')) {
+      bloquesHombro.push({ fecha: h.fecha, fichas: b.ejercicios.map((e) => e.ficha) })
+    }
     registros.push({ sesionId: sesion.id, fecha: h.fecha, rpe: objetivoRpe(sesion) ?? 5, duracionMin: sesion.duracionMin, molestias: [] })
     if (sesion.tipo === 'evaluacion-dedos') evaluacion = { fecha: h.fecha, pesoCorporalKg: 72, lastreKg: 15 }
   })
@@ -97,6 +102,11 @@ describe('simulación de 16 semanas con huecos (P-67)', () => {
       const dias = [...new Set(s.sesiones.filter((x) => x.sesion && (x.sesion.tipo === 'hombro' || (x.sesion.incluye ?? []).includes('hombro'))).map((x) => diaNumero(x.hueco.fecha)))]
       expect(dias.filter((d) => dias.includes(d + 1)), s.lunes).toEqual([])
     }
+  })
+  it('la rutina de hombro alterna A y B a lo largo de la temporada (P-41, decisión de diseño)', () => {
+    expect(bloquesHombro.length).toBeGreaterThan(10)
+    const letras = bloquesHombro.map((b) => (b.fichas[0] === 'retracciones-escapulares' ? 'A' : b.fichas[0] === 'face-pull-banda' ? 'B' : '?'))
+    expect(letras).toEqual(letras.map((_, i) => (i % 2 === 0 ? 'A' : 'B')))
   })
   it('sin multipresa en casa, ninguna multipresa, test ni campus cae en casa: van al rocódromo', () => {
     const todas = semanas.flatMap((s) => s.sesiones)

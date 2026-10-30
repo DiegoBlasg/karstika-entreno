@@ -1,5 +1,6 @@
 import type { Ejercicio, SesionPlan } from '@/motor'
 import { DONDE_SE_HACE, NOMBRE_TIPO } from '@/lib/nombres'
+import { ComoSeHace } from './ComoSeHace'
 import { PorQue } from './PorQue'
 
 function detalle(ej: Ejercicio): string {
@@ -34,6 +35,7 @@ export function PlanSesion({ plan }: { plan: SesionPlan }) {
                 <li key={`${ej.nombre}-${j}`}>
                   <span className="font-medium">{ej.nombre}</span>: {detalle(ej)}
                   {ej.notas && <span className="block text-stone-500">{ej.notas}</span>}
+                  <ComoSeHace ids={[ej.ficha]} className="text-sky-800" />
                 </li>
               ))}
             </ul>
