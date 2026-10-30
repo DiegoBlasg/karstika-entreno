@@ -11,7 +11,11 @@ const barlowCondensed = Barlow_Condensed({
   display: 'swap',
 })
 
-export const metadata: Metadata = { title: 'Karstika Entreno', description: 'Entrenador personal de escalada' }
+export const metadata: Metadata = {
+  title: 'Karstika Entreno',
+  description: 'Entrenador personal de escalada',
+  appleWebApp: { capable: true, title: 'Entreno', statusBarStyle: 'black-translucent' },
+}
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0E1417', viewportFit: 'cover' }
 
 export default function LayoutRaiz({ children }: { children: ReactNode }) {

@@ -20,5 +20,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Fuera del control de acceso: estáticos de Next, favicon, manifest e iconos (el navegador los pide sin cookies).
+  // Los ficheros públicos van anclados con $: solo esa ruta exacta queda libre, nunca algo que empiece igual.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest\\.webmanifest$|icon\\.svg$|apple-icon\\.png$|icono-[a-z0-9-]+\\.png$).*)'],
 }
