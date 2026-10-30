@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16.4 (App Router, `next/font/google`, `app/manifest.ts`), React 19, Tailwind CSS 4.3, vitest 2, Playwright 1.64, `lucide-react` (nuevo).
 
-Spec: `docs/superpowers/specs/2026-10-30-rediseno-movil-design.md`. Rama: `rediseno-0`, creada desde la rama donde está el spec (`mananas-casa`, commit `3a0fb0a` o posterior), salvo que Diego diga otra cosa.
+Spec: `docs/superpowers/specs/2026-10-30-rediseno-movil-design.md`. Rama: `rediseno-0`, creada desde `master` 7d3b84c (ya incluye mananas-casa, pulido y biblioteca).
 
 ## Global Constraints
 
@@ -19,7 +19,7 @@ Spec: `docs/superpowers/specs/2026-10-30-rediseno-movil-design.md`. Rama: `redis
 - Texto de cuerpo con contraste ≥ 4,5:1 (WCAG AA) sobre `fondo` y `superficie`. `texto-3` solo en texto grande o decorativo (≥ 3:1).
 - Fuentes: Barlow (400/500/600/700) para cuerpo y Barlow Condensed (500/700/800) para titulares, etiquetas y cifras, con `next/font/google`.
 - Zonas táctiles ≥ 44 × 44 px (`min-h-11`); foco visible; animaciones desactivadas con `prefers-reduced-motion`.
-- No tocar `lib/biblioteca/` (sin seguimiento en git, ajeno a este trabajo). No tocar el motor (`motor/`).
+- No tocar `lib/` salvo `lib/ui/` (nuevo), ni el motor (`motor/`). Hay otra rama en pausa (`escaladas`, worktree `D:/karstika-entreno-escaladas`): no tocarla.
 - Antes de escribir código de Next, leer la guía correspondiente en `node_modules/next/dist/docs/` (AGENTS.md).
 - Si `next dev` genera un `AGENTS.md` sin seguimiento en git, borrarlo; nunca commitearlo.
 - En cada tarea: `npm test`, `npm run tsc` y `npm run build` en verde. En la tarea 4 y la 6, también `npm run e2e`.
@@ -973,5 +973,5 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ## Cierre de la tanda
 
-- [ ] Revisión final de toda la rama (subagent-driven-development): estilo coherente con el spec, contraste, `proxy.ts` sin abrir más rutas de las previstas, nada de `lib/biblioteca/` ni `AGENTS.md` en los commits.
+- [ ] Revisión final de toda la rama (subagent-driven-development): estilo coherente con el spec, contraste, `proxy.ts` sin abrir más rutas de las previstas, nada fuera de lo previsto ni `AGENTS.md` en los commits.
 - [ ] Prueba en el iPhone de Diego tras desplegar la rama en una preview de Vercel: añadir a la pantalla de inicio, abrir a pantalla completa, icono correcto y barra de estado oscura.
