@@ -13,6 +13,12 @@ const sesion = (tipo: TipoSesion, extra: Partial<Sesion> = {}): Sesion =>
   ({ id: 'x', tipo, intensidad: 'alta', fecha: '2026-11-05', horaInicio: 19, duracionMin: 60, ...extra })
 
 describe('motivosNoEncaja', () => {
+  it('chequeo bajo y zona en ámbar a la vez: los dos motivos', () => {
+    expect(motivosNoEncaja(sesion('bloque-limite'), estado({ dedos: 'ambar' }, true))).toEqual([
+      'Tu chequeo de hoy es bajo: hoy nada de carga alta.',
+      'Tienes una zona de carga en ámbar: hoy nada de carga alta.',
+    ])
+  })
   it('en verde y sin chequeo bajo, todo encaja', () => {
     for (const t of TIPOS_SESION) expect(motivosNoEncaja(sesion(t), estado()), t).toEqual([])
   })

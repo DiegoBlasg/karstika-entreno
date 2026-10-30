@@ -63,13 +63,20 @@ function bloqueadaPorEstado(s: Sesion, r: Restricciones | undefined): boolean {
 
 // Por qué una sesión ya aceptada no encajaría con el estado de hoy: la misma regla que `bloqueadaPorEstado` (P-65,
 // P-45) y además las dominadas incluidas cuando hoy no tocan (P-39). Vacía si encaja.
+// El motivo de «hoy toca descansar»: con él no hay otra sesión posible y la tarjeta ofrece quitarla.
+export const MOTIVO_DESCANSO = 'Tienes el hombro u otra zona en rojo: hoy toca descansar.'
+
 export function motivosNoEncaja(s: Sesion, e: EstadoAtleta): string[] {
   const r = restriccionesDe(e)
   const out: string[] = []
-  if (r.soloDescanso) out.push('Tienes el hombro u otra zona en rojo: hoy toca descansar.')
+  if (r.soloDescanso) out.push(MOTIVO_DESCANSO)
   else if (r.soloHombro && s.tipo !== 'hombro') out.push('Tienes dedos, muñeca o codo en rojo: hoy solo trabajo de hombro.')
   if (r.sinCargaAlta && esCargaAlta(s)) {
-    out.push(e.chequeoBajoHoy ? 'Tu chequeo de hoy es bajo: hoy nada de carga alta.' : 'Tienes una zona de carga en ámbar: hoy nada de carga alta.')
+    // Los dos motivos a la vez si coinciden (chequeo bajo y una zona de carga en ámbar).
+    if (e.chequeoBajoHoy) out.push('Tu chequeo de hoy es bajo: hoy nada de carga alta.')
+    if ((['dedos', 'muneca', 'codo', 'hombro'] as const).some((z) => e.zonas[z] === 'ambar')) {
+      out.push('Tienes una zona de carga en ámbar: hoy nada de carga alta.')
+    }
   }
   if (r.sinLimite && AL_LIMITE.includes(s.tipo)) out.push('Tienes «otra zona» en ámbar: hoy nada al límite.')
   if (r.sinDominadas && s.tipo === 'dominadas') out.push('Hoy no tocan dominadas: no hagas esta sesión.')

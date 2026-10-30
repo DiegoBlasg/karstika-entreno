@@ -97,7 +97,11 @@ export function vistaSemana(d: DatosAtleta, lunes: string, ahora: { fecha: strin
   return { lunes, domingo, fase, huecos }
 }
 
-// El próximo hueco pendiente de la semana actual (para la pantalla Hoy).
+// El próximo hueco pendiente de la semana actual y, si no queda ninguno, el primero de la siguiente (para la pantalla Hoy).
 export function proximoHueco(d: DatosAtleta, ahora: { fecha: string; minutos: number }): HuecoVista | undefined {
-  return vistaSemana(d, lunesDe(ahora.fecha), ahora).huecos.find((h) => h.estado.tipo !== 'pasado' && h.estado.tipo !== 'ocupado')
+  const pendiente = (h: HuecoVista): boolean => h.estado.tipo !== 'pasado' && h.estado.tipo !== 'ocupado'
+  const lunes = lunesDe(ahora.fecha)
+  return (
+    vistaSemana(d, lunes, ahora).huecos.find(pendiente) ?? vistaSemana(d, sumarDias(lunes, 7), ahora).huecos.find(pendiente)
+  )
 }
