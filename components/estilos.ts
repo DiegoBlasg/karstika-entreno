@@ -10,5 +10,5 @@ export const CAMPO =
 export const TARJETA = 'space-y-3 rounded-2xl border border-borde bg-superficie p-4'
 export const TARJETA_DESTACADA = 'space-y-3 rounded-2xl border border-progreso bg-superficie p-4'
 export const ETIQUETA = 'font-titular text-xs font-medium uppercase tracking-[0.08em] text-texto-2'
-export const CHIP = 'inline-flex items-center rounded-full bg-superficie-2 px-2.5 py-1 text-xs text-texto'
+export const CHIP = 'inline-flex items-center rounded-full px-2.5 py-1 text-xs'
 export const ENLACE = 'text-progreso underline underline-offset-2'
