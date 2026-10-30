@@ -48,3 +48,11 @@ test('Hoy: mini-vía con el largo actual que lleva a Vía', async ({ page }) => 
   await mini.click()
   await expect(page).toHaveURL(/\/via$/)
 })
+
+test('Progreso: fuerza, grado, semanas cumplidas y logros', async ({ page }) => {
+  await page.goto('/progreso')
+  await expect(page.getByRole('heading', { name: 'Tu progreso' })).toBeVisible()
+  await expect(page.getByText('Fuerza de dedos · % del peso')).toBeVisible()
+  await expect(page.getByText('Semanas cumplidas')).toBeVisible()
+  await expect(page.getByText(/^Logros · \d+ de \d+$/)).toBeVisible()
+})
