@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BOTON, BOTON_SECUNDARIO } from '@/components/estilos'
-import { cifra, fechaCorta } from '@/components/progreso/formato'
+import { cifra, fechaCorta, firmado } from '@/components/progreso/formato'
 import { Aviso } from '@/components/ui/Aviso'
 import { CifraGrande } from '@/components/ui/CifraGrande'
 import { Etiqueta } from '@/components/ui/Etiqueta'
@@ -13,7 +13,6 @@ import { requerirDatos } from '@/lib/servidor/consultas'
 
 const TITULAR: Record<Exclude<Mejora, 'sube'>, string> = { igual: 'Te mantienes', baja: 'Hoy, algo menos', primera: 'Tu primera marca' }
 
-const firmado = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${cifra(Math.abs(n))}`
 
 export default async function PaginaReunion({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

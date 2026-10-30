@@ -11,6 +11,11 @@ export function cifra(n: number): string {
   return CIFRA.format(n)
 }
 
+// Cifra con signo (+ o −, el signo menos tipográfico); el cero va sin signo.
+export function firmado(n: number): string {
+  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${cifra(Math.abs(n))}`
+}
+
 export function plural(n: number, singular: string, varios: string): string {
   return `${n} ${n === 1 ? singular : varios}`
 }

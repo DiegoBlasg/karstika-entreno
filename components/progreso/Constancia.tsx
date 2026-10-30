@@ -16,7 +16,7 @@ function textoSemana(s: SemanaCumplida): string {
 function Bloque({ s }: { s: SemanaCumplida }) {
   const relleno =
     s.estado === 'cumplida' ? (s.descarga ? 'h-full bg-progreso/50' : 'h-full bg-progreso')
-      : s.estado === 'no-cumplida' ? 'h-1/3 bg-ambar/40'
+      : s.estado === 'no-cumplida' ? 'h-1/3 bg-ambar/60'
         : null
   return (
     <li title={textoSemana(s)} className={`relative flex h-8 min-w-0 max-w-6 flex-1 items-end overflow-hidden rounded-[4px] ${s.estado === 'actual' ? 'border-2 border-progreso' : 'bg-pista'}`}>
@@ -67,7 +67,7 @@ export function Constancia({ c }: { c: DatosConstancia }) {
             {LEYENDA.map((l) => (
               <li key={l.texto} className="flex items-center gap-1.5">
                 <span aria-hidden="true" className={`inline-flex size-3 items-end overflow-hidden rounded-[3px] ${l.clase}`}>
-                  {'toco' in l && <span className="block h-1/3 w-full bg-ambar/40" />}
+                  {'toco' in l && <span className="block h-1/3 w-full bg-ambar/60" />}
                 </span>
                 {l.texto}
               </li>

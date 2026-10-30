@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { fuerzaRelativa } from '@/motor'
 import { FondoTopo } from '@/components/FondoTopo'
 import { Constancia } from '@/components/progreso/Constancia'
-import { cifra, fechaCorta, plural } from '@/components/progreso/formato'
+import { cifra, fechaCorta, firmado, plural } from '@/components/progreso/formato'
 import { GraficaFuerza } from '@/components/progreso/GraficaFuerza'
 import { Logros } from '@/components/progreso/Logros'
 import { Aviso } from '@/components/ui/Aviso'
@@ -12,7 +12,7 @@ import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Tarjeta } from '@/components/ui/Tarjeta'
 import { testsSinResultado } from '@/lib/datos/hoy'
 import { evaluacionMotor } from '@/lib/datos/mapeo'
-import { constancia, logros, resumenEscalada } from '@/lib/datos/progreso'
+import { constancia, logros, resumenEscalada, UMBRAL_IGUAL } from '@/lib/datos/progreso'
 import type { ResultadoTest } from '@/lib/datos/via'
 import { vistaVia } from '@/lib/datos/via'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
@@ -51,14 +51,14 @@ function Fuerza({ tests }: { tests: ResultadoTest[] }) {
             valor={cifra(ultimo.fuerzaRelativa)}
             unidad="%"
             delta={{
-              texto: Math.abs(dif) < 1 ? 'igual' : `${dif > 0 ? '+' : '−'}${cifra(Math.abs(dif))} pts`,
-              sentido: Math.abs(dif) < 1 ? 'igual' : dif > 0 ? 'sube' : 'baja',
+              texto: Math.abs(dif) < UMBRAL_IGUAL ? 'igual' : `${firmado(dif)} pts`,
+              sentido: Math.abs(dif) < UMBRAL_IGUAL ? 'igual' : dif > 0 ? 'sube' : 'baja',
             }}
           />
           <p className="text-sm text-texto-2">
             Test del {fechaCorta(ultimo.fecha)} frente al del {fechaCorta(anterior.fecha)}.
-            {tests.length > 2 && <span className="block">{`Desde el primero (${fechaCorta(tests[0]!.fecha)}): ${desdeInicio >= 0 ? '+' : '−'}${cifra(Math.abs(desdeInicio))} puntos.`}</span>}
-            {dif <= -1 && <span className="block">Un test peor no borra lo entrenado: la descarga, el sueño o la fatiga del día pesan. Mira la tendencia.</span>}
+            {tests.length > 2 && <span className="block">{`Desde el primero (${fechaCorta(tests[0]!.fecha)}): ${firmado(desdeInicio)} puntos.`}</span>}
+            {dif <= -UMBRAL_IGUAL && <span className="block">Un test peor no borra lo entrenado: la descarga, el sueño o la fatiga del día pesan. Mira la tendencia.</span>}
           </p>
           <GraficaFuerza tests={tests} />
         </>

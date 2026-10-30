@@ -1,5 +1,5 @@
 import type { ResultadoTest } from '@/lib/datos/via'
-import { cifra, fechaCorta } from './formato'
+import { cifra, fechaCorta, firmado } from './formato'
 
 // Evolución de la fuerza de dedos (% del peso): una serie, un punto por test, el último destacado. SVG propio que escala
 // al ancho con viewBox (el texto escala con él: con ~360 px de ancho, 11 unidades ≈ 12 px). Solo con ≥ 2 tests.
@@ -25,8 +25,7 @@ export function resumenFuerza(tests: readonly ResultadoTest[]): string {
   const a = tests[0]!
   const b = tests.at(-1)!
   const dif = b.fuerzaRelativa - a.fuerzaRelativa
-  const signo = dif > 0 ? '+' : dif < 0 ? '−' : ''
-  return `De ${cifra(a.fuerzaRelativa)} % el ${fechaCorta(a.fecha)} a ${cifra(b.fuerzaRelativa)} % el ${fechaCorta(b.fecha)}: ${signo}${cifra(Math.abs(dif))} puntos`
+  return `De ${cifra(a.fuerzaRelativa)} % el ${fechaCorta(a.fecha)} a ${cifra(b.fuerzaRelativa)} % el ${fechaCorta(b.fecha)}: ${firmado(dif)} puntos`
 }
 
 export function GraficaFuerza({ tests }: { tests: ResultadoTest[] }) {
