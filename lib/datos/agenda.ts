@@ -19,8 +19,21 @@ export interface InicialGenerar {
 const POR_DEFECTO: InicialGenerar = { compania: 'solo', lugar: 'rocodromo', minutos: 90, franja: 'tarde' }
 const diaSemana = (fecha: string): number => new Date(`${fecha}T12:00:00Z`).getUTCDay()
 
-// Lo de la última sesión generada (con contexto guardado) del mismo día de la semana; si no hay, lo de por defecto.
+// Las franjas de ese día sin ninguna sesión (una por franja).
+export function franjasLibres(d: DatosAtleta, fecha: string): Franja[] {
+  const ocupadas = new Set(d.sesiones.filter((s) => s.fecha === fecha && s.sesion.tipo !== 'descanso').map((s) => franja(s.sesion.horaInicio)))
+  return (['manana', 'tarde'] as const).filter((f) => !ocupadas.has(f))
+}
+
+// Lo de la última sesión generada (con contexto guardado) del mismo día de la semana; si no hay, lo de por defecto. Si
+// esa franja ya está ocupada ese día, la otra.
 export function inicialGenerar(d: DatosAtleta, fecha: string): InicialGenerar {
+  const base = inicialHabitual(d, fecha)
+  const libres = franjasLibres(d, fecha)
+  return libres.length > 0 && !libres.includes(base.franja) ? { ...base, franja: libres[0]! } : base
+}
+
+function inicialHabitual(d: DatosAtleta, fecha: string): InicialGenerar {
   const ultima = d.sesiones
     .filter((s) => s.propuesta?.contexto && diaSemana(s.fecha) === diaSemana(fecha))
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
@@ -34,7 +47,8 @@ export function inicialGenerar(d: DatosAtleta, fecha: string): InicialGenerar {
 export interface DiaAgenda {
   fecha: string
   tarjetas: Tarjeta[]   // por hora: primero la de la mañana
-  generable: boolean    // desde hoy y dentro de la temporada
+  generable: boolean    // desde hoy, dentro de la temporada y con alguna franja libre
+  libres: Franja[]
   inicial: InicialGenerar
 }
 
@@ -57,7 +71,8 @@ export function vistaAgenda(d: DatosAtleta, lunes: string, hoy: string): VistaAg
   const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)).map((fecha) => ({
     fecha,
     tarjetas: todas.filter((t) => t.fila.fecha === fecha).sort((a, b) => a.fila.sesion.horaInicio - b.fila.sesion.horaInicio),
-    generable: fecha >= hoy && fecha >= d.perfil.inicio_temporada && fecha <= d.perfil.objetivo_temporada,
+    generable: fecha >= hoy && fecha >= d.perfil.inicio_temporada && fecha <= d.perfil.objetivo_temporada && franjasLibres(d, fecha).length > 0,
+    libres: franjasLibres(d, fecha),
     inicial: inicialGenerar(d, fecha),
   }))
   return { lunes, domingo: sumarDias(lunes, 6), fase, dias }

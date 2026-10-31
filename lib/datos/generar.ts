@@ -1,12 +1,12 @@
 // Generar un entreno: qué opción se guarda, la «otra opción» y el choque de franja. Puro.
 import { NOMBRE_TIPO, type Explicacion, type SesionPlan, type TipoSesion } from '../../motor'
-import { franja, type Franja } from './agenda'
+import { franja, HORA_FRANJA, type Franja } from './agenda'
 import type { DatosAtleta } from './filas'
 import type { Preparacion } from './peticion'
 
 export type ResultadoGenerar =
   | { tipo: 'sesion'; plan: SesionPlan }
-  | { tipo: 'descanso'; motivo: Explicacion; alternativas: SesionPlan[] }
+  | { tipo: 'descanso'; motivo: Explicacion; alternativas: SesionPlan[]; rojo: boolean }
   | { tipo: 'error'; mensaje: string }
 
 type ConPropuesta = Extract<Preparacion, { tipo: 'propuesta' }>
@@ -22,7 +22,8 @@ export function elegirGenerado(prep: Preparacion, tipo?: TipoSesion): ResultadoG
   }
   const { principal, alternativas, descanso } = prep.propuesta
   if (principal) return { tipo: 'sesion', plan: principal }
-  if (descanso) return { tipo: 'descanso', motivo: descanso, alternativas }
+  const rojo = prep.propuesta.estado ? Object.values(prep.propuesta.estado.zonas).includes('rojo') : false
+  if (descanso) return { tipo: 'descanso', motivo: descanso, alternativas, rojo }
   return { tipo: 'error', mensaje: 'El entrenador no encuentra ninguna sesión posible con este contexto.' }
 }
 
@@ -40,8 +41,13 @@ export function otraOpcion(prep: Preparacion, actual: TipoSesion): SesionPlan | 
 
 const NOMBRE_FRANJA: Record<Franja, string> = { manana: 'por la mañana', tarde: 'por la tarde' }
 
-// Una sesión por franja y día: con otra ya en esa franja, el mensaje para mostrar (`sinId`: la que se va a sustituir).
-export function conflictoFranja(d: DatosAtleta, fecha: string, f: Franja, sinId?: string): string | null {
-  const choca = d.sesiones.some((s) => s.fecha === fecha && s.id !== sinId && s.sesion.tipo !== 'descanso' && franja(s.sesion.horaInicio) === f)
-  return choca ? `Ya tienes una sesión ese día ${NOMBRE_FRANJA[f]}.` : null
+// Una sesión por franja y día, y que no se pise con otra (las antiguas tienen hora exacta y duración): el mensaje para
+// mostrar, o null (`sinId`: la que se va a sustituir).
+export function conflictoFranja(d: DatosAtleta, fecha: string, f: Franja, minutos: number, sinId?: string): string | null {
+  const delDia = d.sesiones.filter((s) => s.fecha === fecha && s.id !== sinId && s.sesion.tipo !== 'descanso')
+  if (delDia.some((s) => franja(s.sesion.horaInicio) === f)) return `Ya tienes una sesión ese día ${NOMBRE_FRANJA[f]}.`
+  const ini = HORA_FRANJA[f] * 60
+  const fin = ini + minutos
+  const pisa = delDia.find((s) => Math.round(s.sesion.horaInicio * 60) < fin && ini < Math.round(s.sesion.horaInicio * 60) + s.sesion.duracionMin)
+  return pisa ? `Choca con tu sesión de ese día ${NOMBRE_FRANJA[franja(pisa.sesion.horaInicio)]}: prueba con menos minutos.` : null
 }

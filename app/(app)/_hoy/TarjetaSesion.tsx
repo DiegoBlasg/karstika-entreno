@@ -16,15 +16,15 @@ import { fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
 import {
   AGARRES, NOMBRE_AGARRE, NOMBRE_TIPO, NOMBRE_ZONA, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
+import { OtraOpcion } from '@/components/OtraOpcion'
+import { franja } from '@/lib/datos/agenda'
 import { FormularioRegistro } from './FormularioRegistro'
 import { borrarRegistrada, noLaHice, otraCosa } from './acciones'
 
 // Hora decimal a HH:MM con dos dígitos (redondeando a minutos enteros, para que 9,9999 no dé «09:60»).
 const hhmm = (h: number): string => hhmmDeMinutos(Math.round(h * 60))
 
-// Entrenar con el mismo día, hora y minutos, para cambiar esta sesión por otra (no se borra hasta aceptar la nueva).
-const enlaceCambiar = (f: FilaSesion): string =>
-  `/entrenar?${new URLSearchParams({ fecha: f.fecha, hora: hhmm(f.sesion.horaInicio), minutos: String(f.sesion.duracionMin), reemplaza: f.id })}`
+const TEXTO_FRANJA = { manana: 'Mañana', tarde: 'Tarde' } as const
 
 const TOQUE = 'inline-flex min-h-11 items-center'
 
@@ -148,14 +148,14 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
   const hayCronometro = fila.fecha === hoy && fila.propuesta !== null
   return (
     <article className={destacada ? TARJETA_DESTACADA : TARJETA}>
-      {fila.fecha !== hoy && <p className="text-sm text-texto-2">{fechaLarga(fila.fecha)}</p>}
+      <p className="text-sm text-texto-2">{fila.fecha !== hoy ? `${fechaLarga(fila.fecha)} · ` : ''}{TEXTO_FRANJA[franja(s.horaInicio)]}</p>
       {tarjeta.noEncaja.length > 0 && (
         <div className="space-y-1 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
           <p className="font-medium">Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:</p>
           <ul className="list-disc pl-5">{tarjeta.noEncaja.map((m) => <li key={m}>{m}</li>)}</ul>
-          {tarjeta.noEncaja.includes(MOTIVO_DESCANSO)
+          {tarjeta.noEncaja.includes(MOTIVO_DESCANSO) || !fila.propuesta?.contexto
             ? <BotonNoLaHice id={s.id} etiqueta="Quitarla" confirmacion="¿Quitar esta sesión?" clase="underline" />
-            : <Link href={enlaceCambiar(fila)} className={`${TOQUE} underline`}>Cambiarla por otra</Link>}
+            : <OtraOpcion id={s.id} />}
         </div>
       )}
       {fila.propuesta && registro ? (
@@ -210,7 +210,8 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
               <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}
-          <div className="flex flex-wrap gap-x-4 text-sm">
+          <div className="flex flex-wrap items-start gap-x-4 text-sm">
+            {fila.fecha >= hoy && fila.propuesta?.contexto && tarjeta.noEncaja.length === 0 && <OtraOpcion id={s.id} />}
             {pasada
               ? <BotonNoLaHice id={s.id} />
               : <BotonNoLaHice id={s.id} etiqueta="Quitar" confirmacion="¿Quitar esta sesión?" />}

@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { NOMBRE_TIPO, TIPOS_SESION, validarSesion, type Explicacion, type TipoSesion } from '@/motor'
+import { NOMBRE_TIPO, TIPOS_SESION, VALORES, validarSesion, type Explicacion, type TipoSesion } from '@/motor'
 import { HORA_FRANJA, type Franja } from '@/lib/datos/agenda'
 import { conChequeo, conSesion, filaSesionAceptada, sinSesion } from '@/lib/datos/cambios'
 import type { DatosAtleta, FilaChequeo, FilaSesion } from '@/lib/datos/filas'
@@ -10,21 +10,29 @@ import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { prepararPropuesta, type EntradaPeticion } from '@/lib/datos/peticion'
 import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
-import { ahoraMadrid } from '@/lib/fecha'
+import { ahoraMadrid, lunesDe, sumarDias } from '@/lib/fecha'
 import { contexto, entero, fecha, mensajeDe, molestias, opcion, opcionOpcional, texto } from '@/lib/formulario'
-import { guardarChequeo, insertarSesion, requerirDatos, sustituirSesion } from '@/lib/servidor/consultas'
+import { guardarChequeo, insertarSesionConChequeo, requerirDatos, sustituirSesion } from '@/lib/servidor/consultas'
+
+export interface DescansoGenerado {
+  motivo: Explicacion
+  alternativas: { tipo: TipoSesion; nombre: string; minutos: number }[]
+  // Por qué no hay alternativa suave, para no dejar un callejón sin salida.
+  sinAlternativa?: 'rojo' | 'minutos'
+}
 
 export type EstadoGenerar =
   | null
   | { error: string }
   | { ok: string }
-  | { descanso: { motivo: Explicacion; alternativas: { tipo: TipoSesion; nombre: string; minutos: number }[] } }
+  | { descanso: DescansoGenerado }
 
 const FRANJAS = ['manana', 'tarde'] as const satisfies readonly Franja[]
 const TEXTO_FRANJA: Record<Franja, string> = { manana: 'mañana', tarde: 'tarde' }
 
-// «Generar entreno»: el motor propone y la sesión queda aceptada directamente. Si toca descansar no se guarda nada y se
-// devuelven las alternativas (la primera, «Core y movilidad», P-72), que se generan pasando su `tipo`.
+// «Generar entreno»: el motor propone y la sesión queda aceptada directamente. Si toca descansar no se guarda ninguna
+// sesión y se devuelven las alternativas (la primera, «Core y movilidad», P-72), que se generan pasando su `tipo`. El
+// chequeo de hoy se guarda siempre que haya propuesta, también si toca descansar (un dolor apuntado no se pierde).
 export async function generar(_previo: EstadoGenerar, fd: FormData): Promise<EstadoGenerar> {
   const hoy = ahoraMadrid(new Date()).fecha
   const { sql, datos } = await requerirDatos()
@@ -37,16 +45,21 @@ export async function generar(_previo: EstadoGenerar, fd: FormData): Promise<Est
     entrada = { fecha: fecha(fd, 'fecha', 'El día'), horaInicio: HORA_FRANJA[f], contexto: contexto(fd) }
     tipo = opcionOpcional(fd, 'tipo', 'El tipo de sesión', TIPOS_SESION)
     if (entrada.fecha < hoy) return { error: 'Solo puedes generar entrenos para hoy o días futuros.' }
-    const choque = conflictoFranja(datos, entrada.fecha, f)
+    if (entrada.fecha > sumarDias(lunesDe(hoy), 13)) return { error: 'Solo puedes generar entrenos para esta semana y la siguiente.' }
+    const choque = conflictoFranja(datos, entrada.fecha, f, entrada.contexto.minutosDisponibles)
     if (choque) return { error: choque }
-    // Hoy sin chequeo guardado, la hoja lo pide (P-65) y se guarda con la sesión.
-    if (entrada.fecha === hoy && fd.has('sueno')) {
-      chequeo = {
-        fecha: hoy,
-        sueno: entero(fd, 'sueno', 'El sueño', 1, 5),
-        fatiga: entero(fd, 'fatiga', 'La fatiga', 1, 5),
-        ganas: entero(fd, 'ganas', 'Las ganas', 1, 5),
-        molestias: molestias(fd),
+    if (entrada.fecha === hoy) {
+      // Hoy hace falta el chequeo (P-65): el de la hoja o uno ya guardado. Si la página se abrió ayer, no lo trae.
+      if (fd.has('sueno')) {
+        chequeo = {
+          fecha: hoy,
+          sueno: entero(fd, 'sueno', 'El sueño', 1, 5),
+          fatiga: entero(fd, 'fatiga', 'La fatiga', 1, 5),
+          ganas: entero(fd, 'ganas', 'Las ganas', 1, 5),
+          molestias: molestias(fd),
+        }
+      } else if (!datos.chequeos.some((c) => c.fecha === hoy)) {
+        return { error: 'Ya es el día: recarga la página para responder antes cómo llegas hoy.' }
       }
     }
   } catch (e) {
@@ -55,15 +68,17 @@ export async function generar(_previo: EstadoGenerar, fd: FormData): Promise<Est
   const base: DatosAtleta = chequeo ? conChequeo(datos, chequeo) : datos
   let fila: FilaSesion
   try {
-    const r = elegirGenerado(prepararPropuesta(base, entrada), tipo ?? undefined)
+    const prep = prepararPropuesta(base, entrada)
+    const r = elegirGenerado(prep, tipo ?? undefined)
     if (r.tipo === 'error') return { error: r.mensaje }
     if (r.tipo === 'descanso') {
-      return {
-        descanso: {
-          motivo: r.motivo,
-          alternativas: r.alternativas.map((a) => ({ tipo: a.sesion.tipo, nombre: NOMBRE_TIPO[a.sesion.tipo], minutos: a.sesion.duracionMin })),
-        },
-      }
+      if (chequeo) await guardarChequeo(sql, chequeo)
+      const alternativas = r.alternativas.map((a) => ({ tipo: a.sesion.tipo, nombre: NOMBRE_TIPO[a.sesion.tipo], minutos: a.sesion.duracionMin }))
+      const sinAlternativa = alternativas.length > 0
+        ? undefined
+        : r.rojo ? 'rojo' as const : entrada.contexto.minutosDisponibles < VALORES['P-72'].minutosMin ? 'minutos' as const : undefined
+      if (chequeo) revalidatePath('/')
+      return { descanso: { motivo: r.motivo, alternativas, ...(sinAlternativa ? { sinAlternativa } : {}) } }
     }
     fila = filaSesionAceptada(r.plan, crypto.randomUUID(), entrada.contexto)
     const violaciones = validarSesion(fila.sesion, historialMotor(base.sesiones), perfilMotor(base.perfil))
@@ -73,14 +88,13 @@ export async function generar(_previo: EstadoGenerar, fd: FormData): Promise<Est
     return { error: `No se ha podido generar: ${mensajeDe(e)}` }
   }
   try {
-    if (chequeo) await guardarChequeo(sql, chequeo)
-    await insertarSesion(sql, fila, [])
+    await insertarSesionConChequeo(sql, fila, chequeo)
   } catch (e) {
     return { error: `No se ha podido guardar: ${mensajeDe(e)}` }
   }
   revalidatePath('/')
   revalidatePath('/semana')
-  return { ok: `Listo: ${NOMBRE_TIPO[fila.sesion.tipo]} · ${TEXTO_FRANJA[f]} · ${fila.sesion.duracionMin} min` }
+  return { ok: `Listo: ${NOMBRE_TIPO[fila.sesion.tipo]} · ${TEXTO_FRANJA[f]} · ${fila.sesion.duracionMin} min.` }
 }
 
 // Cambia una sesión aceptada, sin registrar, de hoy o futura, por la siguiente opción del motor con su mismo contexto.

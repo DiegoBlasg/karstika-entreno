@@ -31,9 +31,14 @@ describe('generar', () => {
   })
   it('una sesión por franja y día', () => {
     const d = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-04', { horaInicio: 18 })] })
-    expect(conflictoFranja(d, '2026-11-04', 'tarde')).toBe('Ya tienes una sesión ese día por la tarde.')
-    expect(conflictoFranja(d, '2026-11-04', 'manana')).toBeNull()
-    expect(conflictoFranja(d, '2026-11-05', 'tarde')).toBeNull()
-    expect(conflictoFranja(d, '2026-11-04', 'tarde', uuid(1))).toBeNull()
+    expect(conflictoFranja(d, '2026-11-04', 'tarde', 90)).toBe('Ya tienes una sesión ese día por la tarde.')
+    expect(conflictoFranja(d, '2026-11-04', 'manana', 90)).toBeNull()
+    expect(conflictoFranja(d, '2026-11-05', 'tarde', 90)).toBeNull()
+    expect(conflictoFranja(d, '2026-11-04', 'tarde', 90, uuid(1))).toBeNull()
+  })
+  it('una sesión antigua con hora exacta que se pisa con la franja', () => {
+    // 13:30 cuenta como mañana y dura 300 min: llega a las 18:30 y pisa la tarde.
+    const d = datosVacios({ sesiones: [sesionFila(uuid(1), '2026-11-04', { horaInicio: 13.5, duracionMin: 300 })] })
+    expect(conflictoFranja(d, '2026-11-04', 'tarde', 60)).toBe('Choca con tu sesión de ese día por la mañana: prueba con menos minutos.')
   })
 })

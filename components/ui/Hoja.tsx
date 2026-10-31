@@ -2,15 +2,15 @@
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 
-// Hoja inferior: «¿Por qué?», fuentes y detalles. Cierra con Escape, con la X, al tocar fuera y cuando `cerrar` pasa a
-// true (p. ej. al terminar bien una acción hecha desde la hoja).
+// Hoja inferior: «¿Por qué?», fuentes y detalles. Cierra con Escape, con la X, al tocar fuera y cada vez que `cerrar`
+// cambia a un valor verdadero (p. ej. el resultado de cada acción que termina bien desde la hoja).
 export function Hoja({ disparador, titulo, children, claseDisparador = 'inline-flex min-h-11 items-center text-progreso underline underline-offset-2', etiquetaDisparador, cerrar }: {
   disparador: ReactNode
   titulo: string
   children: ReactNode
   claseDisparador?: string
   etiquetaDisparador?: string // nombre accesible del botón cuando el disparador es solo un icono
-  cerrar?: boolean
+  cerrar?: unknown
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {

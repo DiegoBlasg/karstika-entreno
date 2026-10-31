@@ -24,7 +24,7 @@ export function PieDeVia({ pasos, principal = true }: { pasos: PasosArranque; pr
     {
       hecho: pasos.sesion,
       titulo: 'Haz y registra tu primera sesión',
-      accion: (p) => <Link href="/entrenar" className={p ? BOTON : BOTON_SECUNDARIO}>Ir a entrenar</Link>,
+      accion: (p) => <Link href="/" className={p ? BOTON : BOTON_SECUNDARIO}>Ir a Hoy</Link>,
     },
     {
       hecho: pasos.test,

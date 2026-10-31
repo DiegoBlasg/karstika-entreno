@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { FilaSesion } from '@/components/FilaSesion'
+import { claveFila, FilaSesion } from '@/components/FilaSesion'
 import { GenerarEntreno } from '@/components/GenerarEntreno'
 import { BOTON_SECUNDARIO } from '@/components/estilos'
 import { Etiqueta } from '@/components/ui/Etiqueta'
@@ -67,15 +67,17 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
                 {esHoy && <p className="sr-only">hoy</p>}
               </div>
               <div className="min-w-0 space-y-2">
-                {d.tarjetas.map((t) => <FilaSesion key={t.fila.id} tarjeta={t} hoy={hoy} conDia={false} />)}
+                {d.tarjetas.map((t) => <FilaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} conDia={false} />)}
                 {d.tarjetas.length === 0 && !d.generable && <p className="flex min-h-11 items-center text-texto-2">Nada</p>}
                 {d.generable && (
                   <GenerarEntreno
                     fecha={d.fecha}
                     titulo={esHoy ? 'hoy' : nombreDia(d.fecha)}
                     inicial={d.inicial}
+                    libres={d.libres}
                     pedirChequeo={esHoy && !chequeoHoy}
                     principal={d.fecha === primero}
+                    compacto={d.tarjetas.length > 0}
                   />
                 )}
               </div>
