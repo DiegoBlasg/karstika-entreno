@@ -75,7 +75,7 @@ test('Mi semana: añadir un rato para entrenar, prepararlo y aceptarlo', async (
   await hoja.getByLabel('Hora').fill('19:00')
   await hoja.getByLabel('Rocódromo').check()
   await hoja.getByRole('button', { name: 'Añadir rato' }).click()
-  await expect(page.getByText('Rato añadido.')).toBeVisible()
+  await expect(page.getByText(/^Rato añadido el lunes \d+\.$/)).toBeVisible()
   await expect(hoja).toBeHidden()
   await page.getByRole('link', { name: 'Preparar' }).first().click()
   await expect(page).toHaveURL(/\/entrenar\?/)

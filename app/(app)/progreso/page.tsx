@@ -121,9 +121,10 @@ export default async function PaginaProgreso() {
           </Tarjeta>
         </section>
       ) : (
-        <details id="apuntar-test" className="scroll-mt-4 rounded-2xl border border-borde bg-superficie">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center px-4 text-texto-2 [&::-webkit-details-marker]:hidden">
+        <details id="apuntar-test" className="group scroll-mt-4 rounded-2xl border border-borde bg-superficie">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 text-texto-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso [&::-webkit-details-marker]:hidden">
             ¿Hiciste un test por tu cuenta?
+            <span aria-hidden className="text-xl text-texto-2 transition-transform group-open:rotate-90">›</span>
           </summary>
           <div className="space-y-3 p-4 pt-1">
             <p className="text-sm text-texto-2">El entrenador te propone el test cuando toca. Si lo hiciste por tu cuenta, apunta aquí el resultado.</p>

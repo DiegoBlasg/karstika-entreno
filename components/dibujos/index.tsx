@@ -13,12 +13,13 @@ function FiguraDePie({ x, y = 20, cabeza = 7 }: { x: number; y?: number; cabeza?
   )
 }
 
-const Flecha = ({ d }: { d: string }) => <path d={d} markerEnd="url(#punta)" strokeWidth={2} />
+// `punta`: id del <marker> de la punta de flecha de este dibujo (único en la página: ver `Dibujo`).
+const Flecha = ({ d, punta }: { d: string; punta: string }) => <path d={d} markerEnd={`url(#${punta})`} strokeWidth={2} />
 
 const SUELO = <path d="M6 108 H154" strokeWidth={2} />
 
-const DIBUJOS: Record<DibujoId, ReactNode> = {
-  'colgado-multipresa': (
+const DIBUJOS: Record<DibujoId, (punta: string) => ReactNode> = {
+  'colgado-multipresa': (punta) => (
     <>
       {/* Multipresa con la regleta */}
       <rect x="30" y="6" width="80" height="14" rx="2" />
@@ -34,19 +35,19 @@ const DIBUJOS: Record<DibujoId, ReactNode> = {
       <text x="134" y="78" fontSize="10" fill="currentColor" stroke="none">90°</text>
     </>
   ),
-  'retraccion-barra': (
+  'retraccion-barra': (punta) => (
     <>
       <path d="M30 14 H130" />
       <path d="M68 14 L71 44 M92 14 L89 44" />
       <circle cx="80" cy="38" r="7" />
       <path d="M80 45 V78 L73 108 M80 78 L87 108" />
       {/* Las escápulas bajan y el cuerpo sube un poco, sin doblar los codos */}
-      <Flecha d="M112 84 V54" />
-      <Flecha d="M60 40 V52" />
-      <Flecha d="M100 40 V52" />
+      <Flecha punta={punta} d="M112 84 V54" />
+      <Flecha punta={punta} d="M60 40 V52" />
+      <Flecha punta={punta} d="M100 40 V52" />
     </>
   ),
-  dominada: (
+  dominada: (punta) => (
     <>
       <path d="M30 30 H130" />
       <circle cx="80" cy="23" r="7" />
@@ -55,17 +56,17 @@ const DIBUJOS: Record<DibujoId, ReactNode> = {
       <path d="M80 44 V80 L72 112 M80 80 L88 112" />
     </>
   ),
-  flexion: (
+  flexion: (punta) => (
     <>
       {SUELO}
       <circle cx="26" cy="80" r="6" />
       {/* Cuerpo recto de la cabeza a los talones, pecho cerca del suelo */}
       <path d="M33 84 L142 102" />
       <path d="M40 86 L54 76 L44 106" />
-      <Flecha d="M60 70 V58" />
+      <Flecha punta={punta} d="M60 70 V58" />
     </>
   ),
-  'rotacion-externa': (
+  'rotacion-externa': (punta) => (
     <>
       {/* Anclaje de la banda */}
       <path d="M12 30 V108" />
@@ -75,10 +76,10 @@ const DIBUJOS: Record<DibujoId, ReactNode> = {
       {/* Codo pegado al costado, antebrazo girando hacia fuera */}
       <path d="M62 34 L68 58 L104 58" />
       <path d="M12 58 L104 58" strokeWidth={1.5} strokeDasharray="4 3" />
-      <Flecha d="M86 72 Q100 70 106 64" />
+      <Flecha punta={punta} d="M86 72 Q100 70 106 64" />
     </>
   ),
-  ytw: (
+  ytw: (punta) => (
     <>
       {[27, 80, 133].map((x, i) => (
         <g key={x}>
@@ -100,7 +101,7 @@ const DIBUJOS: Record<DibujoId, ReactNode> = {
       ))}
     </>
   ),
-  'face-pull': (
+  'face-pull': (punta) => (
     <>
       {/* Anclaje a la altura de la cara */}
       <path d="M148 14 V108" />
@@ -109,10 +110,10 @@ const DIBUJOS: Record<DibujoId, ReactNode> = {
       {/* Codos altos, manos hacia la cara */}
       <path d="M77 42 L60 32 L92 28" />
       <path d="M92 28 L148 32" strokeWidth={1.5} strokeDasharray="4 3" />
-      <Flecha d="M124 20 H100" />
+      <Flecha punta={punta} d="M124 20 H100" />
     </>
   ),
-  plancha: (
+  plancha: (punta) => (
     <>
       {SUELO}
       <circle cx="26" cy="56" r="6" />
@@ -122,12 +123,15 @@ const DIBUJOS: Record<DibujoId, ReactNode> = {
       {/* La otra mano toca el hombro contrario */}
       <path d="M40 64 L58 84 L46 66" />
       <circle cx="46" cy="66" r="2.5" fill="currentColor" />
-      <Flecha d="M70 60 Q60 48 48 54" />
+      <Flecha punta={punta} d="M70 60 Q60 48 48 54" />
     </>
   ),
 }
 
-export function Dibujo({ id, className = '' }: { id: DibujoId; className?: string }) {
+// `prefijo`: si en la página hay varios dibujos, uno distinto para cada uno, para que el id del <marker> no se repita
+// (con ids repetidos, las flechas de todos usarían el del primero). Sirve en componentes de servidor (sin useId).
+export function Dibujo({ id, className = '', prefijo }: { id: DibujoId; className?: string; prefijo?: string }) {
+  const punta = prefijo ? `${prefijo}-punta` : 'punta'
   return (
     <svg
       viewBox="0 0 160 120"
@@ -141,11 +145,11 @@ export function Dibujo({ id, className = '' }: { id: DibujoId; className?: strin
       strokeLinejoin="round"
     >
       <defs>
-        <marker id="punta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <marker id={punta} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
           <path d="M0 0 L10 5 L0 10 z" fill="currentColor" stroke="none" />
         </marker>
       </defs>
-      {DIBUJOS[id]}
+      {DIBUJOS[id](punta)}
     </svg>
   )
 }

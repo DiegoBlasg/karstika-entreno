@@ -8,10 +8,8 @@ import { ahoraMadrid, lunesDe } from '@/lib/fecha'
 import { contexto, fecha, hora, mensajeDe, texto } from '@/lib/formulario'
 import { bd } from '@/lib/servidor/bd'
 import { borrarHuecoBd, insertarHueco, requerirDatos } from '@/lib/servidor/consultas'
+import { enRatos } from './ratos'
 
-// Las reglas de lib/datos/huecos.ts hablan de «huecos»; en la interfaz se llaman «ratos para entrenar».
-const enRatos = (m: string): string => m.replace(/([Hh])uecos/g, (_, h: string) => `${h === 'H' ? 'R' : 'r'}atos para entrenar`)
-  .replace(/([Hh])ueco/g, (_, h: string) => `${h === 'H' ? 'R' : 'r'}ato para entrenar`)
 
 export async function anadirHueco(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const ahora = ahoraMadrid(new Date())

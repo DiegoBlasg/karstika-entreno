@@ -3,24 +3,35 @@
 import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
 import { Dibujo } from '@/components/dibujos'
-import { IconoCima, IconoMultipresa, IconoPresa } from '@/components/iconos/Escalada'
+import { IconoCima, IconoCuerda, IconoMultipresa } from '@/components/iconos/Escalada'
 import { ETIQUETA } from '@/components/estilos'
-import { FICHAS, GRUPOS, type Grupo } from '@/lib/biblioteca/fichas'
+import { FICHAS, GRUPOS, type FichaId, type Grupo } from '@/lib/biblioteca/fichas'
+import { resumenMaterial } from './material'
 
 // Sin tildes ni mayúsculas, para que «rotacion» encuentre «Rotación».
 const normaliza = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim()
 
-// Para las fichas sin dibujo.
+// Para las fichas sin miniatura propia.
 const ICONO_GRUPO: Record<Grupo['id'], ReactNode> = {
   suspensiones: <IconoMultipresa size={26} />,
-  escalada: <IconoPresa size={26} />,
+  escalada: <IconoCuerda size={26} />,
   barra: <IconoMultipresa size={26} />,
   hombro: <IconoCima size={26} />,
   movilidad: <IconoCima size={26} />,
 }
 
-// Primer elemento del material: «Multipresa, regleta de 20 mm» → «Multipresa».
-const resumen = (material: string): string => material.split(/[,;]/)[0]!.trim()
+// Miniatura de cada ficha: su dibujo solo si ninguna otra ficha del grupo lo comparte (cinco suspensiones con el mismo
+// dibujo no se distinguirían). Si no, la pauta del título («7:3», «10 s») y, si no tiene, el icono del grupo.
+type Miniatura = { tipo: 'dibujo' } | { tipo: 'pauta'; texto: string } | { tipo: 'icono' }
+const PAUTA = /\d+:\d+|\d+ s/
+const MINIATURA: Record<string, Miniatura> = Object.fromEntries(
+  GRUPOS.flatMap((g) => g.fichas.map((id): [FichaId, Miniatura] => {
+    const f = FICHAS[id]
+    if (f.dibujo && g.fichas.filter((otra) => FICHAS[otra].dibujo === f.dibujo).length === 1) return [id, { tipo: 'dibujo' }]
+    const pauta = PAUTA.exec(f.titulo)?.[0]
+    return [id, pauta ? { tipo: 'pauta', texto: pauta } : { tipo: 'icono' }]
+  })),
+)
 
 const CHIP = 'inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso'
 
@@ -65,11 +76,15 @@ export function ListaBiblioteca() {
                       className="flex min-h-14 items-center gap-3 rounded-2xl border border-borde bg-superficie p-2 pr-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso"
                     >
                       <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-fondo text-texto-2">
-                        {f.dibujo ? <Dibujo id={f.dibujo} className="p-1 text-texto" /> : ICONO_GRUPO[g.id]}
+                        {MINIATURA[id]?.tipo === 'dibujo' && f.dibujo
+                          ? <Dibujo id={f.dibujo} prefijo={`lista-${id}`} className="p-1 text-texto" />
+                          : MINIATURA[id]?.tipo === 'pauta'
+                            ? <span className="font-titular text-base font-extrabold tabular-nums text-texto">{MINIATURA[id].texto}</span>
+                            : ICONO_GRUPO[g.id]}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-titular text-base font-bold uppercase leading-tight">{f.titulo}</span>
-                        <span className="block truncate text-xs text-texto-2">{resumen(f.material)}</span>
+                        <span className="block truncate text-xs text-texto-2">{resumenMaterial(f.material)}</span>
                       </span>
                       <span aria-hidden className="text-xl text-texto-2">›</span>
                     </Link>

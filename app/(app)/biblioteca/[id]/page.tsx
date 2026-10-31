@@ -4,6 +4,7 @@ import { Aviso } from '@/components/ui/Aviso'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import { FICHA_IDS, GRUPOS, fichaDe } from '@/lib/biblioteca/fichas'
 import { basesDeParametros } from '@/lib/fuentes'
+import { piezasMaterial } from '@/components/biblioteca/material'
 
 // Las fichas son texto fijo: se generan en el build (un id desconocido se pinta al pedirlo, con «no encontrado»).
 export function generateStaticParams() {
@@ -28,7 +29,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
   }
   const bases = basesDeParametros(f.parametros)
   const grupo = GRUPOS.find((g) => (g.fichas as readonly string[]).includes(f.id))
-  const material = f.material.split(/[,;]\s*/).filter(Boolean)
+  const material = piezasMaterial(f.material)
   const PLEGABLE = 'group rounded-2xl border border-borde bg-superficie'
   const RESUMEN = 'flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso [&::-webkit-details-marker]:hidden'
   const FLECHA = <span aria-hidden className="text-xl text-texto-2 transition-transform group-open:rotate-90">›</span>

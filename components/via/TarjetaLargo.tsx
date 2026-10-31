@@ -82,7 +82,7 @@ function DetalleLargo({ largo }: { largo: LargoVia }) {
                 <span className={c.estado === 'futuro' ? 'text-texto-2' : ''}>Semana del {corta(c.lunes)}</span>
                 {c.descarga && <span className="text-texto-2">· descarga</span>}
                 {largo.reuniones.some((r) => r.lunes === c.lunes) && <span className="text-texto-2">· test</span>}
-                {texto && <span className={c.estado === 'actual' ? `font-medium ${color.texto}` : 'text-texto-2'}>· {texto}</span>}
+                {texto && <span className={c.estado === 'actual' ? `font-medium ${color.textoPequeno}` : 'text-texto-2'}>· {texto}</span>}
               </li>
             )
           })}
@@ -109,7 +109,7 @@ export function TarjetaLargo({ largo, numeros }: { largo: LargoVia; numeros: Rec
       disparador={
         <>
           <span className="block space-y-1.5">
-            <span className={`block font-titular text-xs font-medium uppercase tracking-[0.08em] ${actual ? color.texto : 'text-texto-2'}`}>
+            <span className={`block font-titular text-xs font-medium uppercase tracking-[0.08em] ${actual ? color.textoPequeno : 'text-texto-2'}`}>
               Largo {largo.numero} · ciclo {largo.ciclo} · {ESTADO[largo.estado]}
             </span>
             <span className={`block font-titular text-[1.65rem] font-extrabold uppercase leading-[0.95] ${color.texto}`}>{largo.fase}</span>

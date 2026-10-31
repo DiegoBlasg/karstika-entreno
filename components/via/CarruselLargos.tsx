@@ -17,6 +17,9 @@ function centrar(contenedor: HTMLElement, el: HTMLElement, suave: boolean) {
 // tarjeta; al deslizar, el paso de la tarjeta centrada queda marcado y a la vista.
 export function CarruselLargos({ pasos, tarjetas, inicial }: { pasos: PasoVia[]; tarjetas: ReactNode[]; inicial: number }) {
   const [visto, setVisto] = useState(inicial)
+  // Hasta centrar el largo actual (antes de pintar), la fila y el carrusel no se ven: si no, al cargar la página se
+  // verían un instante en el primer largo y luego saltarían. Solo con JavaScript (sin él no hay nada que centrar).
+  const [listo, setListo] = useState(false)
   const fila = useRef<HTMLDivElement>(null)
   const carrusel = useRef<HTMLOListElement>(null)
   const marco = useRef(0)
@@ -35,6 +38,7 @@ export function CarruselLargos({ pasos, tarjetas, inicial }: { pasos: PasoVia[];
     const sobra = f ? f.scrollWidth - f.clientWidth : 0
     if (f && sobra > 0 && sobra < 24) f.scrollLeft = sobra / 2
     else if (f && p) centrar(f, p, false)
+    setListo(true)
   }, [inicial])
 
   // Mantiene a la vista el círculo del paso de la tarjeta centrada (la fila se desliza si no caben todos).
@@ -82,7 +86,7 @@ export function CarruselLargos({ pasos, tarjetas, inicial }: { pasos: PasoVia[];
   }
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${listo ? '' : '[@media(scripting:enabled)]:invisible'}`}>
       <div ref={fila} onClick={alTocarPaso} className={`relative -mx-4 overflow-x-auto ${SIN_BARRA}`}>
         <PasosVia pasos={pasos} visto={visto} />
       </div>

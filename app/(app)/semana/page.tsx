@@ -10,11 +10,11 @@ import { DESCANSO_ACTIVO, NOMBRE_LUGAR, nombreSesion } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { AnadirRato } from './AnadirRato'
 import { BotonBorrarHueco } from './BotonBorrarHueco'
+import { ConfirmacionRatos } from './Confirmacion'
+import { enRatos } from './ratos'
 
 const AVISO_SEMANA_VACIA = 'Añade cuándo puedes entrenar esta semana con el + de cada día.'
 const AVISO_ORIENTATIVO = ' Mientras tanto, esto es lo que haría el entrenador con tu semana habitual:'
-// La agenda ya enseña que todos los ratos han pasado o tienen sesión: este aviso solo repetiría lo que se ve.
-const AVISO_REDUNDANTE = 'No te quedan huecos pendientes esta semana.'
 
 const fechaUTC = (fecha: string): Date => new Date(`${fecha}T12:00:00Z`)
 const ABREV = new Intl.DateTimeFormat('es-ES', { weekday: 'short', timeZone: 'UTC' })
@@ -36,7 +36,8 @@ function Cuando({ inicio, lugar, minutos }: { inicio: number; lugar: keyof typeo
   return <p className="text-sm text-texto-2">{hhmmDeMinutos(inicio)} · <span className="capitalize">{NOMBRE_LUGAR[lugar]}</span> · {minutos} min</p>
 }
 
-// Un rato declarado, con lo que toca, «Preparar» (si aún se puede) y borrar.
+// Un rato declarado: hora y sitio con el ✕ de borrar a su derecha (si aún no ha pasado), lo que toca y «Preparar» (o
+// «Entrenar igualmente» si el plan lo deja libre).
 // `atenuado`: ya ha pasado en un día que no va atenuado entero (hoy).
 function Rato({ h, principal, atenuado }: { h: HuecoVista; principal: boolean; atenuado: boolean }) {
   const { fila, estado } = h
@@ -44,7 +45,10 @@ function Rato({ h, principal, atenuado }: { h: HuecoVista; principal: boolean; a
   const preparable = estado.tipo === 'planeado' || estado.tipo === 'libre' || estado.tipo === 'sin-plan'
   return (
     <div className={atenuado ? 'opacity-50' : ''}>
-      <Cuando inicio={fila.inicio_min} lugar={fila.lugar} minutos={fila.minutos} />
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1"><Cuando inicio={fila.inicio_min} lugar={fila.lugar} minutos={fila.minutos} /></div>
+        {!pasado && <BotonBorrarHueco id={fila.id} conSesion={estado.tipo === 'ocupado'} />}
+      </div>
       {estado.tipo === 'planeado' && <p className="font-semibold">{nombreSesion(estado.sesion)} {estado.cargaAlta && ESTRELLA}</p>}
       {estado.tipo === 'libre' && <p className="text-sm text-texto-2">{estado.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
       {estado.tipo === 'sin-plan' && <p className="text-texto-2">Sin plan: prepáralo cuando llegue.</p>}
@@ -55,10 +59,11 @@ function Rato({ h, principal, atenuado }: { h: HuecoVista; principal: boolean; a
         </p>
       )}
       {pasado && estado.sesion && <p>{nombreSesion(estado.sesion.sesion)}</p>}
-      {!pasado && (
-        <div className="mt-1.5 flex items-center gap-2">
-          {preparable && <Link href={enlacePreparar(fila)} className={principal ? PREPARAR_PRINCIPAL : PREPARAR}>Preparar</Link>}
-          <BotonBorrarHueco id={fila.id} conSesion={estado.tipo === 'ocupado'} />
+      {preparable && (
+        <div className="mt-1.5">
+          <Link href={enlacePreparar(fila)} className={principal ? PREPARAR_PRINCIPAL : PREPARAR}>
+            {estado.tipo === 'libre' ? 'Entrenar igualmente' : 'Preparar'}
+          </Link>
         </div>
       )}
     </div>
@@ -92,10 +97,16 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
   // Sin ratos declarados: lo que haría el entrenador con la semana habitual (lo que ya ha pasado no se enseña).
   const orientativa = vacia ? proximosDias(datos, momento).semanas.find((s) => s.lunes === lunes && s.orientativo) : undefined
   const conPlan = orientativa?.huecos.some((h) => h.estado !== 'pasado') ?? false
+  // Sin nada pendiente (todo ha pasado o ya tiene sesión), el aviso del plan («no te quedan… pendientes») solo repetiría
+  // lo que ya enseña la agenda: no se pinta. Se mira en los datos, no en el texto del aviso.
+  const sinPendientes = vacia
+    ? (orientativa !== undefined && orientativa.huecos.length > 0 && orientativa.huecos.every((h) => h.estado === 'pasado' || h.estado === 'aceptada'))
+    : v.huecos.every((h) => h.estado.tipo === 'pasado' || h.estado.tipo === 'ocupado')
   const avisoPlan = vacia ? orientativa?.aviso : v.aviso
-  const aviso = avisoPlan === AVISO_REDUNDANTE ? undefined : avisoPlan
-  // El primer rato que se puede preparar lleva el único botón principal de la pantalla.
-  const primero = v.huecos.find((h) => h.estado.tipo === 'planeado' || h.estado.tipo === 'libre' || h.estado.tipo === 'sin-plan')
+  const aviso = avisoPlan && !sinPendientes ? enRatos(avisoPlan) : undefined
+  // El único botón principal de la pantalla: el primer rato con sesión planeada y, si no hay, el primero sin plan.
+  // Los libres («Entrenar igualmente») van siempre en secundario.
+  const primero = v.huecos.find((h) => h.estado.tipo === 'planeado') ?? v.huecos.find((h) => h.estado.tipo === 'sin-plan')
   const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))
   const conEstrella = vacia
     ? orientativa?.huecos.some((h) => h.estado !== 'pasado' && h.cargaAlta)
@@ -111,16 +122,18 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
           </Etiqueta>
         </p>
         <nav aria-label="Cambiar de semana" className="flex justify-between gap-2">
+          {/* Solo hay dos semanas: el enlace que no lleva a ninguna parte deja su sitio vacío (no un botón apagado). */}
           {lunes === estaSemana
-            ? <span aria-disabled="true" className={`${NAVEGAR} opacity-40`}>‹ Anterior</span>
+            ? <span aria-hidden="true" />
             : <Link href="/semana" className={NAVEGAR}>‹ Anterior</Link>}
           {lunes === estaSemana
             ? <Link href={`/semana?lunes=${siguiente}`} className={NAVEGAR}>Siguiente ›</Link>
-            : <span aria-disabled="true" className={`${NAVEGAR} opacity-40`}>Siguiente ›</span>}
+            : <span aria-hidden="true" />}
         </nav>
       </header>
       {vacia && <Aviso tono="info">{AVISO_SEMANA_VACIA}{conPlan && AVISO_ORIENTATIVO}</Aviso>}
       {aviso && <Aviso tono="ambar">{aviso}</Aviso>}
+      <ConfirmacionRatos>
       <ol className="border-t border-borde">
         {dias.map((fecha) => {
           const esHoy = fecha === hoy
@@ -143,13 +156,14 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
                   ? ratos.map((h) => <Rato key={h.fila.id} h={h} principal={h === primero} atenuado={!pasadoDia && h.estado.tipo === 'pasado'} />)
                   : plan.length > 0
                     ? plan.map((h) => <RatoOrientativo key={h.hueco.id} h={h} />)
-                    : <p className="flex min-h-11 items-center text-texto-3">Sin ratos para entrenar</p>}
+                    : <p className="flex min-h-11 items-center text-texto-2">Sin ratos para entrenar</p>}
               </div>
               {!pasadoDia && <AnadirRato fecha={fecha} dia={nombreDia(fecha)} />}
             </li>
           )
         })}
       </ol>
+      </ConfirmacionRatos>
       {conEstrella && <p className="text-xs text-texto-2"><span className="text-cima">★</span> = carga alta.</p>}
     </div>
   )

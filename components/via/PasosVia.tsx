@@ -19,7 +19,7 @@ function Circulo({ paso }: { paso: PasoVia }) {
   const contenido = paso.numero === null ? <IconoCima size={18} /> : paso.numero
   if (paso.estado === 'actual') {
     return (
-      <span className={`flex size-9 items-center justify-center rounded-full border-[3px] bg-fondo font-titular text-lg font-extrabold ${color.borde} ${color.texto}`}>
+      <span className={`flex size-9 items-center justify-center rounded-full border-[3px] bg-fondo font-titular text-lg font-extrabold ${color.borde} ${color.textoPequeno}`}>
         {contenido}
       </span>
     )
