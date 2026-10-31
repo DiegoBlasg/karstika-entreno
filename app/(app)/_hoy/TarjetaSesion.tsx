@@ -101,7 +101,7 @@ function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
 }
 
 function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string }) {
-  const { fila, registro, intentos } = tarjeta
+  const { fila, registro } = tarjeta
   const [corrigiendo, setCorrigiendo] = useState(false)
   const cerrar = (): void => setCorrigiendo(false)
   return (
@@ -117,7 +117,7 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
           </button>
         )}
       </div>
-      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro, intentos }} alTerminar={cerrar} />}
+      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} />}
     </>
   )
 }

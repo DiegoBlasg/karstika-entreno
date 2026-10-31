@@ -1,13 +1,13 @@
 // Arma la Peticion del motor a partir de los datos guardados y devuelve la propuesta con sus consejos. Puro.
 import {
   ajusteCiclo2, diagnosticar, elegirConsejos, estadoAtleta, faseEnFecha, planificarTemporada, proponerSesion,
-  type Consejo, type Contexto, type Fase, type Peticion, type Propuesta, type SesionPlan, type Temporada,
+  type Consejo, type Contexto, type Diagnostico, type Fase, type Peticion, type Propuesta, type SesionPlan, type Temporada,
 } from '../../motor'
 import { fechaLarga } from '../fecha'
 import type { DatosAtleta } from './filas'
 import { huecosPosteriores } from './huecos'
 import {
-  consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, intentosMotor, perfilMotor, seguimientoMotor,
+  consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor,
 } from './mapeo'
 import { validarDatos } from './validar'
 
@@ -28,8 +28,27 @@ export function temporadaDe(d: DatosAtleta): Temporada {
   const sinAjuste = planificarTemporada(inicio, objetivo)
   const ciclo2 = sinAjuste.semanas.find((s) => s.ciclo === 2)
   if (!ciclo2) return sinAjuste
-  const ajuste = ajusteCiclo2(diagnosticar(evaluacionesMotor(d.evaluaciones), intentosMotor(d.intentos), ciclo2.lunes))
+  const ajuste = ajusteCiclo2(diagnosticoCiclo2(d, ciclo2.lunes))
   return planificarTemporada(inicio, objetivo, { ajuste })
+}
+
+// El diagnóstico con el que se fija el ciclo 2: solo con lo que ya estaba guardado al empezar su lunes (tests por
+// `creada_en`, registros por `registrado_en`; el corte es a las 0:00 UTC, una hora no cambia nada). Así un test o una
+// respuesta apuntados más tarde con fecha anterior no cambian hacia atrás semanas ya entrenadas. Lo que no tiene
+// marca de tiempo legible (datos construidos a mano) cuenta como ya guardado.
+export function diagnosticoCiclo2(d: DatosAtleta, lunes: string): Diagnostico {
+  const corte = Date.parse(`${lunes}T00:00:00Z`)
+  const guardadoAntes = (t: string | undefined): boolean => {
+    if (t === undefined) return true
+    const ms = Date.parse(t.replace(' ', 'T').replace(/([+-]\d\d)$/, '$1:00'))
+    return Number.isNaN(ms) || ms < corte
+  }
+  const conocido: DatosAtleta = {
+    ...d,
+    evaluaciones: d.evaluaciones.filter((e) => guardadoAntes(e.creada_en)),
+    registros: d.registros.filter((r) => guardadoAntes(r.registrado_en)),
+  }
+  return diagnosticar(evaluacionesMotor(conocido.evaluaciones), frenosMotor(conocido), lunes)
 }
 
 export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparacion {
@@ -49,7 +68,7 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     throw err
   }
   const evaluaciones = evaluacionesMotor(d.evaluaciones)
-  const diagnostico = diagnosticar(evaluaciones, intentosMotor(d.intentos), e.fecha)
+  const diagnostico = diagnosticar(evaluaciones, frenosMotor(d), e.fecha)
   const evaluacion = evaluacionParaFecha(evaluaciones, e.fecha)
   const huecos = huecosPosteriores(d, e)
   const peticion: Peticion = {

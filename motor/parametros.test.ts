@@ -117,6 +117,15 @@ describe('VALORES del diagnóstico', () => {
     expect(columnas('P-31')[2]).toMatch(/^Fuerza de dedos: 4-10 semanas\. Resistencia de fuerza: 4-8 semanas/)
     expect(VALORES['P-31']).toEqual({ fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 })
   })
+  it('P-69 coincide con el documento; P-70 y P-71 existen', () => {
+    expect(columnas('P-69')[2]).toMatch(/^Una pregunta al terminar cada sesión al límite/)
+    expect(columnas('P-69')[2]).toMatch(/56 días/)
+    expect(columnas('P-69')[2]).toMatch(/al menos 6 respuestas/)
+    expect(columnas('P-69')[2]).toMatch(/al menos el 40 %/)
+    expect(VALORES['P-69']).toEqual({ ventanaDias: 56, minRespuestas: 6, mayoriaPct: 40 })
+    expect(columnas('P-70')[2]).toMatch(/^Los tests corrigen la respuesta física/)
+    expect(columnas('P-71')[2]).toMatch(/^La fortaleza solo se muestra con datos propios/)
+  })
 })
 
 describe('VALORES de la autorregulación', () => {

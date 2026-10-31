@@ -22,7 +22,7 @@ export { descargar, FASES, FASE_OBJETIVO, FASE_RENDIMIENTO, FASE_RESISTENCIA, FA
 export type { FaseId } from './propuesta-tipos'
 export {
   ajusteCiclo2, diagnosticar,
-  type AjusteCiclo2, type Diagnostico, type IntentoLimite, type Limitante, type MotivoCaida, type Progreso, type Tendencia,
+  type AjusteCiclo2, type Diagnostico, type Fortaleza, type Freno, type FuenteDiagnostico, type RespuestaFreno, type Limitante, type MotivoCaida, type Progreso, type Tendencia,
 } from './diagnostico'
 export { validarEvaluacion } from './evaluacion'
 export type { OpcionesFase, OpcionesTemporada } from './temporada'

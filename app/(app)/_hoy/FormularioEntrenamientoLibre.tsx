@@ -9,9 +9,9 @@ import { DIAS_CORRECCION } from '@/lib/datos/hoy'
 import type { EstadoAccion } from '@/lib/estado'
 import { sumarDias } from '@/lib/fecha'
 import {
-  AGARRES, ETIQUETA_RPE, NOMBRE_AGARRE, NOMBRE_TIPO, TIPOS_CON_INTENTOS, TIPOS_CON_REGLETA,
+  AGARRES, ETIQUETA_RPE, NOMBRE_AGARRE, NOMBRE_TIPO, TIPOS_AL_LIMITE, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
-import { CamposIntentos } from './CamposIntentos'
+import { CamposFreno } from './CamposFreno'
 import { apuntarEntrenamiento } from './acciones'
 
 // La sesión y su registro en un solo formulario. Se envía sin vaciar: tras los avisos, «Lo hice así de todos modos»
@@ -68,7 +68,7 @@ function Formulario({ hoy, hora, alTerminar }: { hoy: string; hora: string; alTe
         </select>
       </label>
       <CamposMolestias plegable />
-      {TIPOS_CON_INTENTOS.includes(tipo) && <CamposIntentos />}
+      {TIPOS_AL_LIMITE.includes(tipo) && <CamposFreno />}
       {estado?.avisos && (
         <div className="space-y-2 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
           <ul className="list-disc pl-5">{estado.avisos.map((a) => <li key={a}>{a}</li>)}</ul>

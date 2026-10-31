@@ -38,18 +38,15 @@ describe('vistaHoy', () => {
     const diaSiguiente = conAlta(d, { id: uuid(2), zona: 'hombro', fecha: '2026-11-04' })
     expect(vistaHoy(diaSiguiente, '2026-11-04').zonasRojo).toEqual([])
   })
-  it('recientes: registradas en los 7 días anteriores a hoy, con sus intentos', () => {
+  it('recientes: registradas en los 7 días anteriores a hoy', () => {
     const fechas = ['2026-11-02', '2026-11-03', '2026-11-08', '2026-11-09', '2026-11-10']
     const d = datosVacios({
       sesiones: fechas.map((f, i) => sesionFila(uuid(i + 1), f)),
       registros: [1, 2, 3, 5].map((n) => ({ sesion_id: uuid(n), rpe: 4, duracion_min: 60, molestias: [], registrado_en: 'x' })),
-      intentos: [{ id: uuid(20), sesion_id: uuid(3), fecha: '2026-11-08', encadenado: true, motivo_caida: null }],
     })
     const v = vistaHoy(d, '2026-11-10')
     // 02-nov queda fuera (hoy-8), 03-nov es hoy-7 y entra; 09-nov no está registrada; 10-nov es hoy.
     expect(v.recientes.map((t) => t.fila.fecha)).toEqual(['2026-11-03', '2026-11-08'])
-    expect(v.recientes[1]?.intentos.map((i) => i.id)).toEqual([uuid(20)])
-    expect(v.recientes[0]?.intentos).toEqual([])
     expect(v.pendientes.map((t) => t.fila.fecha)).toEqual(['2026-11-09'])
     expect(v.hoy[0]?.registro).toBeDefined()
   })

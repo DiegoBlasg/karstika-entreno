@@ -51,14 +51,14 @@ describe('cambios', () => {
   it('añadir y quitar sesiones', () => {
     const d = conSesion(datosVacios(), sesionFila(uuid(1), '2026-11-03'))
     expect(() => conSesion(d, sesionFila(uuid(1), '2026-11-04'))).toThrow(`La sesión ${uuid(1)} ya existe`)
-    const conTodo = conRegistro(d, registro(uuid(1)), [{ id: uuid(7), sesion_id: uuid(1), fecha: '2026-11-03', encadenado: true, motivo_caida: null }])
+    const conTodo = { ...conRegistro(d, registro(uuid(1))), intentos: [{ id: uuid(7), sesion_id: uuid(1), fecha: '2026-11-03', encadenado: true, motivo_caida: null }] }
     const sin = sinSesion(conTodo, uuid(1))
     expect([sin.sesiones, sin.registros, sin.intentos]).toEqual([[], [], []])
   })
   it('registrar: la sesión tiene que existir y solo se registra una vez', () => {
-    expect(() => conRegistro(datosVacios(), registro(uuid(1)), [])).toThrow('Esa sesión ya no existe.')
-    const d = conRegistro(conSesion(datosVacios(), sesionFila(uuid(1), '2026-11-03')), registro(uuid(1)), [])
-    expect(() => conRegistro(d, registro(uuid(1)), [])).toThrow('Esa sesión ya está registrada.')
+    expect(() => conRegistro(datosVacios(), registro(uuid(1)))).toThrow('Esa sesión ya no existe.')
+    const d = conRegistro(conSesion(datosVacios(), sesionFila(uuid(1), '2026-11-03')), registro(uuid(1)))
+    expect(() => conRegistro(d, registro(uuid(1)))).toThrow('Esa sesión ya está registrada.')
   })
   it('conAlta añade el alta sin tocar los datos originales', () => {
     const d = datosVacios()
@@ -66,27 +66,24 @@ describe('cambios', () => {
     expect(nuevo.altas).toEqual([{ id: uuid(9), zona: 'hombro', fecha: '2026-11-04' }])
     expect(d.altas).toEqual([])
   })
-  it('corregir un registro sustituye el registro y los intentos de esa sesión, nada más', () => {
-    const intento = (n: number, sesion: string, encadenado: boolean) => ({
-      id: uuid(n), sesion_id: sesion, fecha: '2026-11-03', encadenado, motivo_caida: encadenado ? null : ('bombeo' as const),
-    })
+  it('corregir un registro lo sustituye conservando cuándo se apuntó, guarda freno y encadene y no toca los intentos antiguos', () => {
     let d = conSesion(conSesion(datosVacios(), sesionFila(uuid(1), '2026-11-03')), sesionFila(uuid(2), '2026-11-03', { horaInicio: 10 }))
-    d = conRegistro(d, { ...registro(uuid(1)), registrado_en: 'antes' }, [intento(10, uuid(1), true), intento(11, uuid(1), false)])
-    d = conRegistro(d, registro(uuid(2)), [intento(12, uuid(2), true)])
-    const nuevo = { sesion_id: uuid(1), rpe: 8, duracion_min: 75, molestias: [{ zona: 'dedos' as const, dolor: 2 }], registrado_en: 'ahora' }
-    const c = conRegistroCorregido(d, nuevo, [intento(13, uuid(1), false)])
+    d = conRegistro(d, { ...registro(uuid(1)), registrado_en: 'antes' })
+    d = conRegistro(d, registro(uuid(2)))
+    d = { ...d, intentos: [{ id: uuid(10), sesion_id: uuid(1), fecha: '2026-11-03', encadenado: true, motivo_caida: null }] }
+    const nuevo = {
+      sesion_id: uuid(1), rpe: 8, duracion_min: 75, molestias: [{ zona: 'dedos' as const, dolor: 2 }], registrado_en: 'ahora',
+      freno: 'cabeza' as const, encadene: true,
+    }
+    const c = conRegistroCorregido(d, nuevo)
     expect(c.registros.find((r) => r.sesion_id === uuid(1))).toEqual({ ...nuevo, registrado_en: 'antes' })
     expect(c.registros.find((r) => r.sesion_id === uuid(2))).toEqual(registro(uuid(2)))
-    expect(c.intentos.map((i) => i.id).sort()).toEqual([uuid(12), uuid(13)])
+    expect(c.intentos).toEqual(d.intentos)
     expect(d.registros.find((r) => r.sesion_id === uuid(1))?.rpe).toBe(5) // no muta
-    expect(conRegistroCorregido(d, nuevo, []).intentos.map((i) => i.id)).toEqual([uuid(12)])
   })
-  it('corregir: la sesión tiene que estar registrada y los intentos ser suyos', () => {
+  it('corregir: la sesión tiene que estar registrada', () => {
     const d = conSesion(datosVacios(), sesionFila(uuid(1), '2026-11-03'))
-    expect(() => conRegistroCorregido(d, registro(uuid(1)), [])).toThrow('Esa sesión no está registrada.')
-    const r = conRegistro(d, registro(uuid(1)), [])
-    const ajeno = { id: uuid(5), sesion_id: uuid(2), fecha: '2026-11-03', encadenado: true, motivo_caida: null }
-    expect(() => conRegistroCorregido(r, registro(uuid(1)), [ajeno])).toThrow('Los intentos tienen que ser de la misma sesión.')
+    expect(() => conRegistroCorregido(d, registro(uuid(1)))).toThrow('Esa sesión no está registrada.')
   })
 })
 

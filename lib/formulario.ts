@@ -1,8 +1,8 @@
 // Lectura y validación de campos de formulario. Los errores llevan un mensaje en español listo para mostrar.
-import { ZONAS, type Agarre, type Compania, type Contexto, type Lugar, type Molestia, type MotivoCaida } from '../motor'
+import { ZONAS, type Agarre, type Compania, type Contexto, type Lugar, type Freno, type Molestia } from '../motor'
 import type { FilaChequeo } from './datos/filas'
 import type { EntradaPeticion } from './datos/peticion'
-import { AGARRES, MOTIVOS_CAIDA, NOMBRE_ZONA } from './nombres'
+import { AGARRES, FRENOS, NOMBRE_ZONA } from './nombres'
 
 export class ErrorFormulario extends Error {}
 
@@ -145,18 +145,13 @@ export function molestias(fd: FormData): Molestia[] {
   return out
 }
 
-export const MAX_INTENTOS = 6
+// «¿Qué te frenó hoy?»: opcional.
+export function freno(fd: FormData): Freno | null {
+  return opcionOpcional(fd, 'freno', 'Qué te frenó', FRENOS)
+}
 
-// Campos intento_0 … intento_5: '' (no hubo), 'encadenado' o un motivo de caída.
-export function intentos(fd: FormData): { encadenado: boolean; motivoCaida?: MotivoCaida }[] {
-  const out: { encadenado: boolean; motivoCaida?: MotivoCaida }[] = []
-  for (let i = 0; i < MAX_INTENTOS; i++) {
-    const v = textoOpcional(fd, `intento_${i}`)
-    if (v === null) continue
-    if (v === 'encadenado') out.push({ encadenado: true })
-    else out.push({ encadenado: false, motivoCaida: opcion(fd, `intento_${i}`, `Intento ${i + 1}`, MOTIVOS_CAIDA) })
-  }
-  return out
+export function encadene(fd: FormData): boolean {
+  return fd.get('encadene') === 'on'
 }
 
 export function mensajeDe(e: unknown): string {

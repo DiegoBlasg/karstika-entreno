@@ -10,9 +10,9 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
             objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
-      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica from evaluaciones order by fecha`,
+      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, creada_en::text as creada_en from evaluaciones order by fecha`,
       sql`select id::text as id, fecha::text as fecha, sesion, propuesta, origen from sesiones order by fecha, creada_en`,
-      sql`select sesion_id::text as sesion_id, rpe, duracion_min, molestias, registrado_en::text as registrado_en from registros`,
+      sql`select sesion_id::text as sesion_id, rpe, duracion_min, molestias, registrado_en::text as registrado_en, freno, encadene from registros`,
       sql`select fecha::text as fecha, sueno, fatiga, ganas, molestias from chequeos order by fecha`,
       sql`select id::text as id, zona, fecha::text as fecha from altas order by fecha, creada_en`,
       sql`select consejo_id, fecha::text as fecha from consejos_mostrados order by fecha`,
@@ -105,36 +105,25 @@ export async function sustituirSesion(sql: Sql, idViejo: string, nueva: FilaSesi
   return filas.length > 0
 }
 
-export async function insertarRegistro(sql: Sql, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
-  await sql.transaction([
-    sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb)`,
-    ...intentos.map(
-      (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
-    ),
-  ])
+export async function insertarRegistro(sql: Sql, r: FilaRegistro): Promise<void> {
+  await sql`insert into registros (sesion_id, rpe, duracion_min, molestias, freno, encadene)
+    values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb, ${r.freno ?? null}, ${r.encadene ?? false})`
 }
 
-// Un entrenamiento no planeado: la sesión, su registro y sus intentos en una transacción.
-export async function insertarSesionRegistrada(sql: Sql, f: FilaSesion, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
+// Un entrenamiento no planeado: la sesión y su registro en una transacción.
+export async function insertarSesionRegistrada(sql: Sql, f: FilaSesion, r: FilaRegistro): Promise<void> {
   await sql.transaction([
     consultaSesion(sql, f),
-    sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb)`,
-    ...intentos.map(
-      (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
-    ),
+    sql`insert into registros (sesion_id, rpe, duracion_min, molestias, freno, encadene)
+      values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb, ${r.freno ?? null}, ${r.encadene ?? false})`,
   ])
 }
 
-// Corrige un registro: actualiza el registro y sustituye todos los intentos de la sesión, en una transacción.
-export async function corregirRegistroBd(sql: Sql, r: FilaRegistro, intentos: FilaIntento[]): Promise<void> {
-  await sql.transaction([
-    sql`update registros set rpe = ${r.rpe}, duracion_min = ${r.duracion_min}, molestias = ${JSON.stringify(r.molestias)}::jsonb
-      where sesion_id = ${r.sesion_id}`,
-    sql`delete from intentos_limite where sesion_id = ${r.sesion_id}`,
-    ...intentos.map(
-      (i) => sql`insert into intentos_limite (id, sesion_id, fecha, encadenado, motivo_caida) values (${i.id}, ${i.sesion_id}, ${i.fecha}, ${i.encadenado}, ${i.motivo_caida})`,
-    ),
-  ])
+// Corrige un registro. Los intentos antiguos de la sesión (de antes de «¿Qué te frenó hoy?») no se tocan.
+export async function corregirRegistroBd(sql: Sql, r: FilaRegistro): Promise<void> {
+  await sql`update registros set rpe = ${r.rpe}, duracion_min = ${r.duracion_min}, molestias = ${JSON.stringify(r.molestias)}::jsonb,
+      freno = ${r.freno ?? null}, encadene = ${r.encadene ?? false}
+    where sesion_id = ${r.sesion_id}`
 }
 
 export async function insertarAlta(sql: Sql, a: Omit<FilaAlta, 'id'>): Promise<void> {

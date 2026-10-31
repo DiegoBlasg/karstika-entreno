@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ajusteCiclo2, diagnosticar, type IntentoLimite, type MotivoCaida } from './diagnostico'
+import { ajusteCiclo2, diagnosticar, type Freno, type MotivoCaida, type RespuestaFreno } from './diagnostico'
 import type { EvaluacionDedos } from './propuesta-tipos'
 import { faseEnFecha, planificarTemporada } from './temporada'
 import { diaNumero, fechaDesdeDia } from './tiempo'
@@ -9,8 +9,16 @@ const ev = (fecha: string, lastreKg: number, extra: Partial<EvaluacionDedos> = {
 })
 const HOY = '2027-03-10'
 const haceDias = (n: number) => fechaDesdeDia(diaNumero(HOY) - n)
-const caidas = (motivo: MotivoCaida, n: number, desdeHace = 1): IntentoLimite[] =>
-  Array.from({ length: n }, (_, i) => ({ fecha: haceDias(desdeHace + i), encadenado: false, motivoCaida: motivo }))
+const frenos = (freno: Freno, n: number, desdeHace = 1): RespuestaFreno[] =>
+  Array.from({ length: n }, (_, i) => ({ fecha: haceDias(desdeHace + i), freno }))
+// Tres tests: la fuerza mejora (+11 % y +15 %) y la resistencia no (80 → 81 → 80 s).
+const fuerzaSubeResistenciaNo = [
+  ev('2026-12-01', 20, { resistenciaS: 80 }), ev('2027-01-19', 30, { resistenciaS: 81 }), ev('2027-03-02', 34, { resistenciaS: 80 }),
+]
+// Tres tests: la resistencia mejora (80 → 90 → 95 s) y la fuerza no (20 → 20,5 → 21 kg de lastre: < 5 %).
+const resistenciaSubeFuerzaNo = [
+  ev('2026-12-01', 20, { resistenciaS: 80 }), ev('2027-01-19', 20.5, { resistenciaS: 90 }), ev('2027-03-02', 21, { resistenciaS: 95 }),
+]
 
 describe('diagnosticar: progreso frente a la propia línea base (P-19: una medición no basta)', () => {
   it('sin evaluaciones no hay datos', () => {
@@ -55,41 +63,140 @@ describe('diagnosticar: progreso frente a la propia línea base (P-19: una medic
   })
 })
 
-describe('diagnosticar: orden de limitantes', () => {
-  it('con menos de 10 caídas manda el orden de P-23, y la explicación declara el orden técnica/cabeza como diseño', () => {
-    const d = diagnosticar([], caidas('bombeo', 9), HOY)
+describe('diagnosticar: limitante principal (P-69, P-70, P-23)', () => {
+  it('sin respuestas ni tests manda P-23 y lo explica como orden general', () => {
+    const d = diagnosticar([], [], HOY)
     expect(d.fuente).toBe('evidencia')
     expect(d.limitantes).toEqual(['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'])
+    expect(d.explicaciones[1]!.parametros).toEqual(['P-23', 'P-69'])
     expect(d.explicaciones[1]!.motivo).toMatch(/decisión de diseño/)
   })
-  it('con 10 caídas o más manda el registro, y los empates siguen P-23', () => {
-    const d = diagnosticar([], [...caidas('bombeo', 6), ...caidas('tecnica-lectura', 6)], HOY)
-    expect(d.fuente).toBe('caidas')
-    expect(d.caidas).toEqual({ 'fuerza-dedos': 0, resistencia: 6, tecnica: 6, cabeza: 0 })
-    expect(d.limitantes).toEqual(['resistencia', 'tecnica', 'fuerza-dedos', 'cabeza'])
+  it('con 6 respuestas y mayoría ≥ 40 % manda la respuesta', () => {
+    const d = diagnosticar([], [...frenos('bombeo', 3), ...frenos('tecnica-lectura', 2, 10), ...frenos('cabeza', 1, 20)], HOY)
+    expect(d.fuente).toBe('respuestas')
+    expect(d.frenos).toEqual({ 'fuerza-dedos': 0, resistencia: 3, tecnica: 2, cabeza: 1 })
+    expect(d.limitantes).toEqual(['resistencia', 'fuerza-dedos', 'tecnica', 'cabeza'])
+    expect(d.explicaciones[1]!.motivo).toMatch(/la resistencia sale en el 50 %/)
   })
-  it('la ventana es de 8 semanas exactas: cuenta lo de hace 55 días y no lo de hace 56', () => {
-    const base = caidas('bombeo', 9, 1)
-    expect(diagnosticar([], [...base, { fecha: haceDias(55), encadenado: false, motivoCaida: 'bombeo' }], HOY).fuente).toBe('caidas')
-    expect(diagnosticar([], [...base, { fecha: haceDias(56), encadenado: false, motivoCaida: 'bombeo' }], HOY).fuente).toBe('evidencia')
-    expect(diagnosticar([], [...base, { fecha: haceDias(-1), encadenado: false, motivoCaida: 'bombeo' }], HOY).fuente).toBe('evidencia')
+  it('con 5 respuestas no basta; «nada» no cuenta para el mínimo', () => {
+    expect(diagnosticar([], frenos('cabeza', 5), HOY).fuente).toBe('evidencia')
+    const d = diagnosticar([], [...frenos('cabeza', 5), ...frenos('nada', 4, 10)], HOY)
+    expect(d.fuente).toBe('evidencia')
+    expect(d.nada).toBe(4)
   })
-  it('rechaza intentos mal formados', () => {
-    expect(() => diagnosticar([], [{ fecha: '2027-03-01', encadenado: true, motivoCaida: 'bombeo' }], HOY)).toThrow(/encadenado/)
-    expect(() => diagnosticar([], [{ fecha: '2027-03-01', encadenado: false, motivoCaida: 'sueño' as never }], HOY)).toThrow(/motivoCaida/)
-    expect(() => diagnosticar([], [{ fecha: '2027-02-30', encadenado: false }], HOY)).toThrow()
+  it('sin mayoría del 40 % no hay candidato por respuestas, y la explicación lo dice así', () => {
+    // 7 respuestas: 2 + 2 + 2 + 1 → el máximo es 28,6 %.
+    const r = [...frenos('bombeo', 2), ...frenos('paso-fuerza', 2, 5), ...frenos('tecnica-lectura', 2, 10), ...frenos('cabeza', 1, 15)]
+    const d = diagnosticar([], r, HOY)
+    expect(d.fuente).toBe('evidencia')
+    expect(d.explicaciones[1]!.motivo).toMatch(/7 respuestas, sin ningún motivo que llegue al 40 %/)
+    expect(diagnosticar([], frenos('cabeza', 4), HOY).explicaciones[1]!.motivo).toMatch(/4 de 6 respuestas/)
+  })
+  it('los empates de mayoría siguen P-23', () => {
+    const d = diagnosticar([], [...frenos('cabeza', 3), ...frenos('tecnica-lectura', 3, 10)], HOY)
+    expect(d.limitantes[0]).toBe('tecnica')
+  })
+  it('la ventana es de 56 días exactos: cuenta hace 55 y no hace 56 ni el futuro', () => {
+    const base = frenos('cabeza', 5, 1)
+    expect(diagnosticar([], [...base, { fecha: haceDias(55), freno: 'cabeza' }], HOY).fuente).toBe('respuestas')
+    expect(diagnosticar([], [...base, { fecha: haceDias(56), freno: 'cabeza' }], HOY).fuente).toBe('evidencia')
+    expect(diagnosticar([], [...base, { fecha: haceDias(-1), freno: 'cabeza' }], HOY).fuente).toBe('evidencia')
+  })
+  it('los tests corrigen una respuesta física contraria: dices bombeo, pero la resistencia mejora y la fuerza no', () => {
+    const d = diagnosticar(resistenciaSubeFuerzaNo, frenos('bombeo', 6), HOY)
+    expect(d.fuente).toBe('respuestas-y-tests')
+    expect(d.limitantes[0]).toBe('fuerza-dedos')
+    expect(d.explicaciones[1]!.parametros).toEqual(['P-23', 'P-69', 'P-70'])
+    expect(d.explicaciones[1]!.motivo).toMatch(/manda el test/)
+  })
+  it('y al revés: dices presas, pero la fuerza mejora y la resistencia no', () => {
+    const d = diagnosticar(fuerzaSubeResistenciaNo, frenos('paso-fuerza', 6), HOY)
+    expect(d.fuente).toBe('respuestas-y-tests')
+    expect(d.limitantes[0]).toBe('resistencia')
+  })
+  it('si los tests coinciden con la respuesta, la fuente sigue siendo la respuesta', () => {
+    const d = diagnosticar(fuerzaSubeResistenciaNo, frenos('bombeo', 6), HOY)
+    expect(d.fuente).toBe('respuestas')
+    expect(d.limitantes[0]).toBe('resistencia')
+  })
+  it('los tests no corrigen la técnica ni la cabeza', () => {
+    expect(diagnosticar(fuerzaSubeResistenciaNo, frenos('cabeza', 6), HOY).limitantes[0]).toBe('cabeza')
+    expect(diagnosticar(resistenciaSubeFuerzaNo, frenos('tecnica-lectura', 6), HOY).limitantes[0]).toBe('tecnica')
+  })
+  it('sin respuestas suficientes deciden los tests solos', () => {
+    const d = diagnosticar(fuerzaSubeResistenciaNo, frenos('bombeo', 2), HOY)
+    expect(d.fuente).toBe('tests')
+    expect(d.limitantes).toEqual(['resistencia', 'fuerza-dedos', 'tecnica', 'cabeza'])
+    expect(d.explicaciones[1]!.parametros).toEqual(['P-23', 'P-70'])
+  })
+  it('sin veredicto de los tests (ambas mejoran o falta una) no deciden', () => {
+    const ambas = [ev('2026-12-01', 20, { resistenciaS: 80 }), ev('2027-01-19', 30, { resistenciaS: 90 }), ev('2027-03-02', 34, { resistenciaS: 95 })]
+    expect(diagnosticar(ambas, [], HOY).fuente).toBe('evidencia')
+    const sinResistencia = [ev('2026-12-01', 20), ev('2027-01-19', 30), ev('2027-03-02', 34)]
+    expect(diagnosticar(sinResistencia, [], HOY).fuente).toBe('evidencia')
+  })
+  it('rechaza respuestas mal formadas', () => {
+    expect(() => diagnosticar([], [{ fecha: '2027-03-01', freno: 'sueño' as never }], HOY)).toThrow(/freno desconocido/)
+    expect(() => diagnosticar([], [{ fecha: '2027-02-30', freno: 'nada' }], HOY)).toThrow()
   })
   it('es determinista y no muta sus entradas', () => {
-    const evs = [ev('2027-01-19', 28), ev('2026-12-01', 20)]
-    const ints = [...caidas('bombeo', 6), ...caidas('paso-fuerza', 5)]
-    const antes = structuredClone({ evs, ints })
-    expect(diagnosticar(evs, ints, HOY)).toEqual(diagnosticar(evs, ints, HOY))
-    expect({ evs, ints }).toEqual(antes)
+    const evs = [...fuerzaSubeResistenciaNo]
+    const rs = [...frenos('bombeo', 6), ...frenos('nada', 2, 10)]
+    const antes = structuredClone({ evs, rs })
+    expect(diagnosticar(evs, rs, HOY)).toEqual(diagnosticar(evs, rs, HOY))
+    expect({ evs, rs }).toEqual(antes)
+  })
+})
+
+describe('diagnosticar: fortaleza (P-71)', () => {
+  it('sin datos propios no hay fortaleza', () => {
+    expect(diagnosticar([], [], HOY).fortaleza).toBeNull()
+  })
+  it('por tests: la que mejora cuando otra no', () => {
+    expect(diagnosticar(resistenciaSubeFuerzaNo, [], HOY).fortaleza).toEqual({ cualidad: 'resistencia', fuente: 'tests' })
+  })
+  it('por tests, la técnica cuenta (escala 1-7) y gana la de mayor cambio relativo', () => {
+    const evs = [
+      ev('2026-12-01', 20, { resistenciaS: 80, tecnica: 3 }), ev('2027-01-19', 30, { resistenciaS: 81, tecnica: 4 }),
+      ev('2027-03-02', 34, { resistenciaS: 80, tecnica: 5 }),
+    ]
+    // Fuerza: (106 − 92) / 92 ≈ +15 %; técnica: +2 / 3 ≈ +67 % → técnica.
+    expect(diagnosticar(evs, [], HOY).fortaleza).toEqual({ cualidad: 'tecnica', fuente: 'tests' })
+  })
+  it('nunca coincide con el limitante principal', () => {
+    // Fuerza mejora, técnica igual y resistencia sin datos: no hay veredicto, P-23 pone la fuerza primero → la
+    // fortaleza «fuerza» se descarta.
+    const evs = [ev('2026-12-01', 20, { tecnica: 4 }), ev('2027-01-19', 30, { tecnica: 4 }), ev('2027-03-02', 34, { tecnica: 4 })]
+    const d = diagnosticar(evs, [], HOY)
+    expect(d.limitantes[0]).toBe('fuerza-dedos')
+    expect(d.fortaleza).toBeNull()
+  })
+  it('por respuestas: el único motivo nunca marcado, con al menos 6 respuestas', () => {
+    const r = [...frenos('bombeo', 4), ...frenos('tecnica-lectura', 1, 10), ...frenos('cabeza', 1, 20)]
+    expect(diagnosticar([], r, HOY).fortaleza).toEqual({ cualidad: 'fuerza-dedos', fuente: 'respuestas' })
+  })
+  it('con varios motivos a cero no se sabe', () => {
+    expect(diagnosticar([], frenos('bombeo', 6), HOY).fortaleza).toBeNull()
+  })
+  it('si lo que más mejora es el limitante principal, la fortaleza es la siguiente que mejora', () => {
+    // Técnica (por respuestas) es el limitante; técnica y fuerza mejoran, la resistencia no → fuerza.
+    const evs = [
+      ev('2026-12-01', 20, { resistenciaS: 80, tecnica: 3 }), ev('2027-01-19', 30, { resistenciaS: 81, tecnica: 4 }),
+      ev('2027-03-02', 34, { resistenciaS: 80, tecnica: 5 }),
+    ]
+    const d = diagnosticar(evs, frenos('tecnica-lectura', 6), HOY)
+    expect(d.limitantes[0]).toBe('tecnica')
+    expect(d.fortaleza).toEqual({ cualidad: 'fuerza-dedos', fuente: 'tests' })
+  })
+  it('la explicación de la fortaleza cita P-71', () => {
+    const d = diagnosticar(resistenciaSubeFuerzaNo, [], HOY)
+    expect(d.explicaciones[2]!.parametros).toEqual(['P-71'])
+    expect(d.explicaciones[2]!.motivo).toMatch(/^Lo que mejor llevas es la resistencia/)
   })
 })
 
 describe('ajusteCiclo2', () => {
-  const con = (motivo: MotivoCaida) => ajusteCiclo2(diagnosticar([], caidas(motivo, 12), HOY))
+  const con = (motivo: MotivoCaida) => ajusteCiclo2(diagnosticar([], frenos(motivo, 12), HOY))
   it('bombeo: 6 + 8; fuerza: 10 + 4; técnica: 8 + 6 con refuerzo; cabeza: 8 + 6', () => {
     expect(con('bombeo')).toMatchObject({ fuerza: 6, resistencia: 8, refuerzoTecnica: false })
     expect(con('paso-fuerza')).toMatchObject({ fuerza: 10, resistencia: 4, refuerzoTecnica: false })
@@ -108,7 +215,7 @@ describe('ajusteCiclo2', () => {
 })
 
 describe('temporada ajustada con el diagnóstico', () => {
-  const ajuste = (motivo: MotivoCaida) => ajusteCiclo2(diagnosticar([], caidas(motivo, 12), HOY))
+  const ajuste = (motivo: MotivoCaida) => ajusteCiclo2(diagnosticar([], frenos(motivo, 12), HOY))
 
   it('acepta el ajuste directamente y reparte las 14 semanas del ciclo 2 sin mover el objetivo', () => {
     const t = planificarTemporada('2026-11-02', '2027-10-04', { ajuste: ajuste('bombeo') })

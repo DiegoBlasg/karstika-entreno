@@ -41,11 +41,13 @@ const casos: [string, () => Promise<unknown>][] = [
   ['hueco que cruza la medianoche', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 1400, 'solo', 'casa', 60)`],
   ['hueco con compañía desconocida', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 540, 'pareja', 'casa', 60)`],
   ['hueco con lugar desconocido', () => sql`insert into huecos (id, fecha, inicio_min, compania, lugar, minutos) values (${S2}, '2026-11-03', 540, 'solo', 'playa', 60)`],
+  ['registro con freno desconocido', () => sql`insert into registros (sesion_id, rpe, duracion_min, freno) values (${S1}, 5, 60, 'lluvia')`],
+  ['registro con encadene nulo', () => sql`insert into registros (sesion_id, rpe, duracion_min, encadene) values (${S1}, 5, 60, null)`],
 ]
 
-// Solo cuenta como rechazo una violación de restricción: 23514 (check) o 23505 (unique).
+// Solo cuenta como rechazo una violación de restricción: 23514 (check), 23505 (unique) o 23502 (not null).
 // Cualquier otro error (sintaxis, columna inexistente, conexión...) es un fallo del propio caso.
-const VIOLACIONES = new Set(['23514', '23505'])
+const VIOLACIONES = new Set(['23514', '23505', '23502'])
 const aceptados: string[] = []
 const inesperados: [string, unknown][] = []
 for (const [nombre, consulta] of casos) {
@@ -60,6 +62,12 @@ for (const [nombre, consulta] of casos) {
 
 // Un registro válido sí entra, y borrar la sesión lo borra en cascada.
 await sql`insert into registros (sesion_id, rpe, duracion_min, molestias) values (${S1}, 5, 60, ${JSON.stringify([{ zona: 'dedos', dolor: 2, alarma: true }])}::jsonb)`
+// Sin freno ni encadene: freno nulo y encadene falso por defecto.
+const [porDefecto] = await sql`select freno, encadene from registros where sesion_id = ${S1}`
+if (porDefecto?.freno !== null || porDefecto?.encadene !== false) {
+  console.error('valores por defecto de freno y encadene:', porDefecto)
+  process.exit(1)
+}
 await sql`delete from sesiones where id = ${S1}`
 const [quedan] = await sql`select count(*)::int as n from registros`
 await vaciar(sql)

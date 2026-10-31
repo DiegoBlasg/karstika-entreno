@@ -1,13 +1,12 @@
 // Lo que muestra la pantalla Hoy. Puro.
 import { estadoAtleta, motivosNoEncaja, ZONAS, type Molestia, type Zona } from '../../motor'
 import { sumarDias } from '../fecha'
-import type { DatosAtleta, FilaIntento, FilaRegistro, FilaSesion } from './filas'
+import type { DatosAtleta, FilaRegistro, FilaSesion } from './filas'
 import { historialMotor, seguimientoMotor } from './mapeo'
 
 export interface Tarjeta {
   fila: FilaSesion
   registro?: FilaRegistro
-  intentos: FilaIntento[]
   molestiasChequeo: Molestia[]   // las del chequeo de su día: el registro sale con ellas
   noEncaja: string[]             // con cómo llega hoy, por qué el entrenador ya no la propondría (solo hoy, aceptadas, sin registrar)
 }
@@ -38,10 +37,9 @@ export function vistaHoy(d: DatosAtleta, fecha: string): VistaHoy {
   const tarjetas: Tarjeta[] = historial.map((s) => {
     const fila = porId.get(s.id)!
     const registro = registros.get(s.id)
-    const intentos = d.intentos.filter((i) => i.sesion_id === s.id)
     const molestiasChequeo = chequeo.get(s.fecha) ?? []
     const noEncaja = s.fecha === fecha && fila.propuesta && !registro ? motivosNoEncaja(s, estado) : []
-    return registro ? { fila, registro, intentos, molestiasChequeo, noEncaja } : { fila, intentos, molestiasChequeo, noEncaja }
+    return registro ? { fila, registro, molestiasChequeo, noEncaja } : { fila, molestiasChequeo, noEncaja }
   })
   const desde = sumarDias(fecha, -DIAS_CORRECCION)
   return {

@@ -22,6 +22,12 @@ describe('validarDatos', () => {
   it('rechaza dos evaluaciones el mismo día', () => {
     expect(() => validarDatos(datosVacios({ evaluaciones: [ev(1, '2026-11-04'), ev(2, '2026-11-04')] }))).toThrow('Hay dos evaluaciones el mismo día')
   })
+  it('rechaza un freno desconocido (lo dice el motor)', () => {
+    expect(() => validarDatos(datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03')],
+      registros: [{ sesion_id: uuid(1), rpe: 6, duracion_min: 60, molestias: [], registrado_en: 'x', freno: 'lluvia' as never }],
+    }))).toThrow('freno desconocido')
+  })
   it('rechaza un intento sin sesión o con otra fecha', () => {
     const intento = { id: uuid(3), sesion_id: uuid(1), fecha: '2026-11-04', encadenado: true, motivo_caida: null }
     expect(() => validarDatos(datosVacios({ intentos: [intento] }))).toThrow(`El intento ${uuid(3)} no tiene sesión`)

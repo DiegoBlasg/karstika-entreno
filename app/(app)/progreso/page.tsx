@@ -4,6 +4,7 @@ import { Constancia } from '@/components/progreso/Constancia'
 import { cifra, fechaCorta, firmado, plural } from '@/components/progreso/formato'
 import { GraficaFuerza } from '@/components/progreso/GraficaFuerza'
 import { Logros } from '@/components/progreso/Logros'
+import { Perfil } from '@/components/progreso/Perfil'
 import { Aviso } from '@/components/ui/Aviso'
 import { CifraGrande } from '@/components/ui/CifraGrande'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
@@ -11,11 +12,12 @@ import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Tarjeta } from '@/components/ui/Tarjeta'
 import { testsSinResultado } from '@/lib/datos/hoy'
 import { evaluacionMotor } from '@/lib/datos/mapeo'
+import { vistaPerfil } from '@/lib/datos/perfil-limitantes'
 import { constancia, logros, resumenEscalada, UMBRAL_IGUAL } from '@/lib/datos/progreso'
 import type { ResultadoTest } from '@/lib/datos/via'
 import { vistaVia } from '@/lib/datos/via'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
-import { NOMBRE_MOTIVO } from '@/lib/nombres'
+import { NOMBRE_FRENO } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonBorrarEvaluacion } from './BotonBorrarEvaluacion'
 import { FormularioEvaluacion } from './FormularioEvaluacion'
@@ -74,6 +76,7 @@ export default async function PaginaProgreso() {
   const fechaInicial = sinResultado.at(-1) ?? hoy
   const tests = vistaVia(datos, hoy).tests.filter((t) => t.fecha <= hoy)
   const escalada = resumenEscalada(datos, hoy)
+  const perfil = vistaPerfil(datos, hoy)
   return (
     <div className="space-y-5">
       <header className="relative -mx-4 overflow-hidden px-4 pb-1 pt-2">
@@ -94,6 +97,8 @@ export default async function PaginaProgreso() {
 
       <Fuerza tests={tests} />
 
+      {perfil && <Perfil v={perfil} />}
+
       <Tarjeta aria-label="Grado">
         <Etiqueta as="h2">Grado</Etiqueta>
         <p className="flex items-baseline gap-3 font-titular text-4xl font-extrabold uppercase leading-none">
@@ -104,7 +109,7 @@ export default async function PaginaProgreso() {
         </p>
         <p className="text-sm text-texto-2">
           <span className="font-medium text-texto">{plural(escalada.encadenes, 'encadene', 'encadenes')}</span> al límite
-          {escalada.ultimaCaida && <><br />Última caída: {NOMBRE_MOTIVO[escalada.ultimaCaida]}</>}
+          {escalada.ultimoFreno && <><br />Lo último que te frenó: {NOMBRE_FRENO[escalada.ultimoFreno]}</>}
         </p>
       </Tarjeta>
 

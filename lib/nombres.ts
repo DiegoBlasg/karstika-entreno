@@ -1,4 +1,4 @@
-import type { Agarre, Compania, FaseId, Limitante, Lugar, MotivoCaida, Sesion, TipoSesion, Zona } from '../motor'
+import type { Agarre, Compania, FaseId, Freno, Limitante, Lugar, Sesion, TipoSesion, Zona } from '../motor'
 import { NOMBRE_TIPO } from '../motor/nombres'
 
 export { NOMBRE_TIPO }
@@ -20,13 +20,15 @@ export const NOMBRE_ZONA: Record<Zona, string> = {
   otra: 'Otra zona',
 }
 
-export const MOTIVOS_CAIDA = ['bombeo', 'paso-fuerza', 'tecnica-lectura', 'cabeza'] as const satisfies readonly MotivoCaida[]
+// Respuestas a «¿Qué te frenó hoy?» (P-69), en el orden en que se muestran.
+export const FRENOS = ['bombeo', 'paso-fuerza', 'tecnica-lectura', 'cabeza', 'nada'] as const satisfies readonly Freno[]
 
-export const NOMBRE_MOTIVO: Record<MotivoCaida, string> = {
-  bombeo: 'Caí por bombeo',
-  'paso-fuerza': 'Caí en un paso de fuerza',
-  'tecnica-lectura': 'Caí por técnica o lectura',
-  cabeza: 'Caí por la cabeza (miedo)',
+export const NOMBRE_FRENO: Record<Freno, string> = {
+  bombeo: 'Me bombeé',
+  'paso-fuerza': 'No aguantaba las presas',
+  'tecnica-lectura': 'No vi o no leí el movimiento',
+  cabeza: 'Miedo, no me atreví',
+  nada: 'Nada, buen día',
 }
 
 // Escala CR-10 de esfuerzo de sesión (P-34).
@@ -34,8 +36,8 @@ export const ETIQUETA_RPE: readonly string[] = [
   'reposo', 'muy, muy fácil', 'fácil', 'moderado', 'algo duro', 'duro', 'duro +', 'muy duro', 'muy duro +', 'casi máximo', 'máximo',
 ]
 
-// Sesiones en las que se apuntan los intentos al límite (alimentan el diagnóstico).
-export const TIPOS_CON_INTENTOS: readonly TipoSesion[] = ['via-cuerda-limite', 'pegues-proyecto', 'bloque-limite']
+// Sesiones al límite: al terminarlas se pregunta «¿Qué te frenó hoy?» (alimenta el diagnóstico, P-69).
+export const TIPOS_AL_LIMITE: readonly TipoSesion[] = ['via-cuerda-limite', 'pegues-proyecto', 'bloque-limite', 'board']
 
 // Sesiones colgado de la regleta: en «Hice otra cosa» se pregunta el canto y el agarre (el motor exige el canto a
 // los noveles, P-12).

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { datosVacios, PERFIL, sesionFila, uuid } from './_fabrica'
 import {
-  consejosMostradosMotor, evaluacionesMotor, evaluacionMotor, evaluacionParaFecha, historialMotor, intentosMotor, perfilMotor, seguimientoMotor,
+  consejosMostradosMotor, evaluacionesMotor, evaluacionMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor,
 } from './mapeo'
 
 describe('mapeo filas → motor', () => {
@@ -48,11 +48,14 @@ describe('mapeo filas → motor', () => {
     const d = datosVacios({ registros: [{ sesion_id: uuid(1), rpe: 6, duracion_min: 55, molestias: [], registrado_en: 'x' }] })
     expect(() => seguimientoMotor(d)).toThrow(`El registro de la sesión ${uuid(1)} no tiene sesión`)
   })
-  it('intentos y consejos', () => {
-    expect(intentosMotor([
-      { id: uuid(1), sesion_id: uuid(5), fecha: '2026-11-03', encadenado: true, motivo_caida: null },
-      { id: uuid(2), sesion_id: uuid(5), fecha: '2026-11-03', encadenado: false, motivo_caida: 'bombeo' },
-    ])).toEqual([{ fecha: '2026-11-03', encadenado: true }, { fecha: '2026-11-03', encadenado: false, motivoCaida: 'bombeo' }])
+  it('frenos y consejos', () => {
+    const r = (id: string) => ({ sesion_id: id, rpe: 6, duracion_min: 60, molestias: [], registrado_en: 'x' })
+    const d = datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03'), sesionFila(uuid(2), '2026-11-04'), sesionFila(uuid(3), '2026-11-05')],
+      registros: [{ ...r(uuid(1)), freno: 'bombeo' }, { ...r(uuid(2)), freno: null }, r(uuid(3)), { ...r(uuid(9)), freno: 'cabeza' }],
+    })
+    // Una respuesta por registro con freno, con la fecha de su sesión; sin sesión no cuenta.
+    expect(frenosMotor(d)).toEqual([{ fecha: '2026-11-03', freno: 'bombeo' }])
     expect(consejosMostradosMotor([{ consejo_id: 'sueno', fecha: '2026-11-03' }])).toEqual([{ id: 'sueno', fecha: '2026-11-03' }])
   })
 })
