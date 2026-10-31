@@ -7,7 +7,7 @@ export type Paso = (
   | { tipo: 'descanso'; segundos: number; titulo: string }
   | { tipo: 'manual'; titulo: string; carga?: string; notas?: string }
   | { tipo: 'bloque'; segundos: number; titulo: string; detalle: string[] }
-  | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string }
+  | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string; maxRepeticiones?: number }
 ) & { bloque: string; fichas?: string[] }   // fichas: ids de la biblioteca («Cómo se hace»)
 
 export const SEGUNDOS_PREPARATE = 10
@@ -15,8 +15,11 @@ export const SEGUNDOS_PREPARATE = 10
 const conTiempo = (e: Ejercicio): boolean => e.trabajoS !== undefined || e.series !== undefined
 const detalleDe = (e: Ejercicio): string => [e.nombre, e.cargaTexto, e.notas].filter(Boolean).join(' · ')
 
+// Un `fallo` sin máximo dura lo que aguantes (null); con máximo, como mucho esas repeticiones (sin el último descanso).
 export function segundosDe(p: Paso): number | null {
-  return p.tipo === 'manual' || p.tipo === 'fallo' ? null : p.segundos
+  if (p.tipo === 'manual') return null
+  if (p.tipo === 'fallo') return p.maxRepeticiones ? p.maxRepeticiones * (p.trabajoS + p.descansoS) - p.descansoS : null
+  return p.segundos
 }
 
 // Las fichas de unos ejercicios, sin repetir y en orden; sin ninguna, el paso no lleva el campo.
@@ -61,6 +64,14 @@ function pasosDeEjercicio(bloque: string, e: Ejercicio): Paso[] {
     return out
   }
   out.push(preparate)
+  if (e.hastaFallo && repeticiones !== undefined && descansoS !== undefined) {
+    // Cada serie hasta el fallo, como mucho `repeticiones` (avanza sola al llegar o con «No puedo más»).
+    for (let s = 1; s <= series; s++) {
+      out.push({ tipo: 'fallo', bloque, trabajoS, descansoS, maxRepeticiones: repeticiones, titulo: `Serie ${s} de ${series} · hasta ${repeticiones} repeticiones`, carga })
+      entreSeries(s)
+    }
+    return out
+  }
   for (let s = 1; s <= series; s++) {
     if (repeticiones !== undefined) {
       for (let r = 1; r <= repeticiones; r++) {

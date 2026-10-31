@@ -16,6 +16,14 @@ const PASOS: Paso[] = [
 const T0 = 1_000_000
 
 describe('reloj', () => {
+  it('un fallo con máximo avanza solo al completar sus repeticiones', () => {
+    const pasos: Paso[] = [{ ...B, tipo: 'fallo', trabajoS: 10, descansoS: 6, maxRepeticiones: 2, titulo: 'f' }, { ...B, tipo: 'manual', titulo: 'm' }]
+    let e = empezar(ESTADO_INICIAL, T0)
+    e = tick(pasos, e, T0 + 25_000)
+    expect(e.indice).toBe(0)
+    e = tick(pasos, e, T0 + 26_000)
+    expect(e.indice).toBe(1)
+  })
   it('avanza solo al llegar a cero y conserva el sobrante', () => {
     let e = empezar(ESTADO_INICIAL, T0)
     e = tick(PASOS, e, T0 + 9_999)

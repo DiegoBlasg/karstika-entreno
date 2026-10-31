@@ -31,6 +31,7 @@ export interface Ejercicio {
   trabajoS?: number
   descansoS?: number
   descansoSeriesS?: number
+  hastaFallo?: boolean                            // con series y repeticiones: cada serie hasta el fallo, como mucho `repeticiones`
   cargaKg?: number                                // lastre (negativo = descarga); ausente si va por sensación
   cargaTexto: string
   notas?: string

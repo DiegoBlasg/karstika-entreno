@@ -89,6 +89,17 @@ describe('pasosDeSesion', () => {
   })
 })
 
+describe('pasosDeSesion: series hasta el fallo con máximo', () => {
+  it('un paso «fallo» por serie con su máximo de repeticiones y descanso entre series', () => {
+    const e = { nombre: 'Susp 10:6', series: 2, repeticiones: 24, trabajoS: 10, descansoS: 6, descansoSeriesS: 360, hastaFallo: true, cargaTexto: 'x' }
+    const base = plan('multipresa-resistencia', CASA)
+    const ps = pasosDeSesion({ ...base, bloques: [{ ...base.bloques[0]!, nombre: 'R', minutos: 25, ejercicios: [e] }] })
+    expect(tipos(ps)).toEqual(['preparate', 'fallo', 'descanso', 'fallo'])
+    expect(ps[1]).toMatchObject({ tipo: 'fallo', trabajoS: 10, descansoS: 6, maxRepeticiones: 24, titulo: 'Serie 1 de 2 · hasta 24 repeticiones' })
+    expect(segundosDe(ps[1]!)).toBe(24 * 16 - 6)
+  })
+})
+
 describe('pasosDeSesion: fichas de «Cómo se hace»', () => {
   it('un bloque guiado como tiempo lleva las fichas de sus ejercicios, sin repetir', () => {
     const ps = pasosDeSesion(plan('hombro', { ...CASA, minutosDisponibles: 30 }))
