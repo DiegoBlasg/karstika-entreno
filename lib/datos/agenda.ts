@@ -10,6 +10,10 @@ export type Franja = 'manana' | 'tarde'
 export const HORA_FRANJA: Record<Franja, number> = { manana: 9, tarde: 18 }
 export const franja = (horaInicio: number): Franja => (horaInicio < 14 ? 'manana' : 'tarde')
 
+// La `key` de una fila de sesión: fecha y hora, que no cambian con «Otra opción» (así la fila no se pliega ni pierde su
+// aviso al cambiar la sesión).
+export const claveFila = (t: Tarjeta): string => `${t.fila.fecha}-${t.fila.sesion.horaInicio}`
+
 export interface InicialGenerar {
   compania: Compania
   lugar: Lugar

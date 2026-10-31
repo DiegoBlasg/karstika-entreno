@@ -19,9 +19,6 @@ const dia = (fecha: string): string => {
 }
 const TEXTO_FRANJA = { manana: 'Mañana', tarde: 'Tarde' } as const
 
-// La `key` de una fila: fecha y franja, para que «Otra opción» no la pliegue ni pierda su aviso al cambiar la sesión.
-export const claveFila = (t: Tarjeta): string => `${t.fila.fecha}-${franja(t.fila.sesion.horaInicio)}-${t.fila.sesion.horaInicio}`
-
 // Una sesión en una línea (día · mañana/tarde · nombre ★ · minutos) que se despliega con el plan y lo que se puede hacer.
 // `conDia`: en Semana el día ya va en la cabecera.
 export function FilaSesion({ tarjeta, hoy, conDia = true }: { tarjeta: Tarjeta; hoy: string; conDia?: boolean }) {
