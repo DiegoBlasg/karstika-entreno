@@ -1,11 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Molestia, SesionPlan } from '@/motor'
 import { ComoSeHace } from '@/components/ComoSeHace'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, BOTON_SECUNDARIO, CAMPO } from '@/components/estilos'
+import { BarraProgreso } from '@/components/ui/BarraProgreso'
+import { Etiqueta } from '@/components/ui/Etiqueta'
 import type { Paso } from '@/lib/cronometro/pasos'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
 import { intentoAbierto, lastre73, leerDatosTest, mejorLastre, textoLastre, type DatosTest, type Intento } from '@/lib/cronometro/test'
@@ -19,14 +22,30 @@ import { FormularioRegistro } from '@/app/(app)/_hoy/FormularioRegistro'
 import { FormularioIntento } from './FormularioIntento'
 import { FormularioResultadoTest } from './FormularioResultadoTest'
 
+// Fondo de cada fase (contraste AA comprobado con lib/ui/contraste.ts: fondo sobre ámbar 10,4:1 y sobre lima 14,3:1;
+// lima sobre superficie-2 10,4:1; texto sobre superficie-2 11,4:1). El borde de 2 px va en todas para que no salte el tamaño.
 const FONDO: Record<Paso['tipo'], string> = {
-  colgado: 'bg-progreso text-fondo',
-  descanso: 'bg-texto-2 text-fondo',
-  preparate: 'bg-ambar text-fondo',
-  bloque: 'bg-superficie-2 text-texto',
-  manual: 'bg-superficie-2 text-texto',
-  fallo: 'bg-progreso text-fondo',
+  colgado: 'border-progreso bg-progreso text-fondo',
+  descanso: 'border-progreso bg-superficie-2 text-progreso',
+  preparate: 'border-ambar bg-ambar text-fondo',
+  bloque: 'border-borde bg-superficie-2 text-texto',
+  manual: 'border-borde bg-superficie-2 text-texto',
+  fallo: 'border-progreso bg-progreso text-fondo',
 }
+
+const NOMBRE_FASE: Record<Paso['tipo'], string> = {
+  colgado: 'Colgado',
+  descanso: 'Descanso',
+  preparate: 'Prepárate',
+  bloque: 'Bloque',
+  manual: 'A tu ritmo',
+  fallo: 'Colgado',
+}
+
+// La cuenta atrás, legible a un brazo de distancia colgado de la tabla.
+const CIFRA = 'whitespace-nowrap font-titular text-[clamp(6rem,34vw,10rem)] font-extrabold leading-[0.85] tabular-nums'
+// Fila de controles fija abajo, al alcance del pulgar (por encima de la zona del indicador de inicio del iPhone).
+const PIE = 'sticky bottom-0 -mx-4 bg-fondo px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
 
 const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
@@ -264,15 +283,29 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
 
   if (!empezado) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-semibold">{NOMBRE_TIPO[plan.sesion.tipo]} · {plan.sesion.duracionMin} min</h1>
-        <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[plan.sesion.tipo]}</p>
+      <div className="space-y-5">
+        <header className="space-y-2">
+          <Etiqueta as="p">Sesión de hoy</Etiqueta>
+          <h1 className="font-titular text-5xl font-extrabold uppercase leading-none tracking-wide">{NOMBRE_TIPO[plan.sesion.tipo]}</h1>
+          <p className="font-titular text-xl font-medium tabular-nums">
+            {plan.sesion.duracionMin} min{plan.sesion.intensidad === 'alta' ? <span className="text-cima"> · intensa</span> : ''}
+          </p>
+          <p className="text-sm text-texto-2">Dónde: {DONDE_SE_HACE[plan.sesion.tipo]}</p>
+        </header>
         {posicion && <ContextoTemporada posicion={posicion} />}
-        <ol className="list-decimal space-y-1 pl-5 text-sm">
+        <ol className="space-y-2">
           {plan.bloques.map((b, i) => (
-            <li key={`${b.nombre}-${i}`}>
-              {b.nombre} · {b.minutos} min
-              <ComoSeHace ids={b.ejercicios.map((e) => e.ficha)} conTitulo className="text-progreso" />
+            <li key={`${b.nombre}-${i}`} className="flex gap-3 rounded-2xl border border-borde bg-superficie p-3">
+              <span aria-hidden className="font-titular text-2xl font-extrabold leading-none text-texto-3 tabular-nums">{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <p className="font-titular text-lg font-bold uppercase leading-tight tracking-wide">
+                  {b.nombre} <span className="font-medium text-texto-2 tabular-nums">· {b.minutos} min</span>
+                </p>
+                <ul className="mt-1 space-y-0.5 text-sm text-texto-2">
+                  {b.ejercicios.map((e, j) => <li key={`${e.nombre}-${j}`}>{e.nombre} · {e.cargaTexto}</li>)}
+                </ul>
+                <ComoSeHace ids={b.ejercicios.map((e) => e.ficha)} conTitulo className="text-sm text-progreso" />
+              </div>
             </li>
           ))}
         </ol>
@@ -295,11 +328,11 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           </label>
         )}
         {!cargado ? null : guardado ? (
-          <div className="flex flex-wrap gap-3">
-            <button type="button" className={BOTON} onClick={() => arrancar(guardado)}>Continuar donde ibas</button>
+          <div className={`${PIE} flex flex-col items-center gap-1`}>
+            <button type="button" className={`${BOTON} h-14 w-full`} onClick={() => arrancar(guardado)}>Continuar donde ibas</button>
             <button
               type="button"
-              className="inline-flex min-h-11 items-center underline"
+              className="inline-flex min-h-11 items-center px-3 text-texto-2 underline"
               onClick={() => {
                 escribir(clave, null)
                 // Empezar de nuevo también borra los intentos apuntados; el peso se queda.
@@ -312,7 +345,11 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
             </button>
           </div>
         ) : (
-          <button type="button" className={BOTON} onClick={() => arrancar(ESTADO_INICIAL)}>Empezar</button>
+          <div className={PIE}>
+            <button type="button" className={`${BOTON} h-14 w-full`} onClick={() => arrancar(ESTADO_INICIAL)}>
+              <Play size={20} aria-hidden /> Empezar
+            </button>
+          </div>
         )}
       </div>
     )
@@ -327,7 +364,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
     const ultimo = esTest && !yaEvaluado && resultadoTest === 'no' ? intentoAbierto(pasos, pasos.length) : null
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold">Sesión terminada</h1>
+        <h1 className="font-titular text-4xl font-extrabold uppercase leading-none tracking-wide">Sesión terminada</h1>
         {ultimo && (
           <FormularioIntento
             key={ultimo.n}
@@ -376,30 +413,68 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   // La carga del 7:3 sale del mejor intento de hoy, en el propio 7:3 y en su «Prepárate».
   const es73 = paso.tipo === 'fallo' || (paso.tipo === 'preparate' && siguientePaso?.tipo === 'fallo')
   const l73 = esTest && es73 && mejor !== null ? lastre73(hoy, test.pesoKg, mejor) : null
+  const fase = fallo ? fallo.fase : paso.tipo
+  // La acción principal de cada estado (la única en lima): en pausa, seguir; en marcha, la que hace avanzar el paso
+  // («Hecho», «No puedo más») o, en los pasos con reloj, la pausa.
+  const principal = !estado.enMarcha ? 'seguir' : paso.tipo === 'manual' ? 'hecho' : paso.tipo === 'fallo' ? 'no puedo' : 'pausa'
+  const claseDe = (accion: string): string => (accion === principal ? `${BOTON} h-16 w-full` : `${BOTON_SECUNDARIO} h-14`)
+  const botonHecho = (
+    <button type="button" className={claseDe('hecho')} onClick={() => pulsar((e, t) => siguiente(pasos, e, t))}>Hecho</button>
+  )
+  const botonNoPuedo = (
+    <button type="button" className={claseDe('no puedo')} onClick={() => pulsar((e, t) => noPuedoMas(pasos, e, t))}>No puedo más</button>
+  )
+  const botonPausa = estado.enMarcha ? (
+    <button type="button" className={claseDe('pausa')} onClick={() => actuar(pausar)}>
+      <Pause size={20} aria-hidden /> Pausa
+    </button>
+  ) : (
+    <button type="button" className={claseDe('seguir')} onClick={() => pulsar(empezar)}>
+      <Play size={20} aria-hidden /> Seguir
+    </button>
+  )
+  const botonPrincipal = principal === 'hecho' ? botonHecho : principal === 'no puedo' ? botonNoPuedo : botonPausa
   return (
-    <div className="space-y-4">
-      <section className={`space-y-2 rounded p-6 text-center ${fondo}`}>
-        <p className="text-sm opacity-80">{paso.bloque} · paso {estado.indice + 1} de {pasos.length}</p>
-        <p className="text-lg font-semibold">
-          {paso.tipo === 'preparate' ? `Prepárate: ${paso.titulo}` : paso.titulo}
-          {fallo ? ` · ${fallo.fase === 'colgado' ? 'COLGADO' : 'DESCANSO'}` : paso.tipo === 'colgado' ? ' · COLGADO' : ''}
-        </p>
+    <div className="flex min-h-[calc(100dvh-5.5rem)] flex-col gap-4">
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <Etiqueta as="p" className="min-w-0 truncate">{paso.bloque}</Etiqueta>
+          <p className="shrink-0 font-titular text-lg font-bold tabular-nums">Paso {estado.indice + 1} de {pasos.length}</p>
+        </div>
+        <BarraProgreso valor={(estado.indice + 1) / pasos.length} etiqueta="Pasos de la sesión" />
+      </div>
+      <section className={`flex flex-1 flex-col items-center justify-center gap-3 rounded-3xl border-2 px-4 py-6 text-center ${FONDO[fase]}`}>
+        <h1 className="font-titular text-3xl font-extrabold uppercase leading-none tracking-[0.08em]">
+          {NOMBRE_FASE[fase]}
+          {fallo && <span className="block pt-1 text-lg tracking-wide">hasta el fallo</span>}
+        </h1>
         {fallo ? (
           <>
-            <p className="font-mono text-7xl font-bold tabular-nums">{mmss(fallo.colgadoS)}</p>
-            <p className="text-sm opacity-80">colgado en total</p>
-            <p className="text-xl">{fallo.fase === 'colgado' ? 'Cuelga' : 'Descansa'}: {fallo.restanteS} s</p>
+            <p className={CIFRA}>{mmss(fallo.colgadoS)}</p>
+            <p className="text-sm font-medium">colgado en total</p>
+            <p className="font-titular text-4xl font-bold tabular-nums">{fallo.fase === 'colgado' ? 'Cuelga' : 'Descansa'}: {fallo.restanteS} s</p>
           </>
-        ) : (
-          restante !== null && <p className="font-mono text-7xl font-bold tabular-nums">{mmss(restante)}</p>
+        ) : restante !== null ? (
+          <p className={CIFRA}>{mmss(restante)}</p>
+        ) : null}
+        {/* El descanso entre repeticiones se titula «Descanso»: ya lo dice la fase. */}
+        {paso.titulo !== NOMBRE_FASE[fase] && (
+          <p className={restante === null && !fallo ? 'font-titular text-5xl font-extrabold uppercase leading-none' : 'text-2xl font-semibold leading-tight'}>
+            {paso.titulo}
+          </p>
         )}
-        {l73 !== null ? <p>Lastre para el 7:3: {textoLastre(l73)}</p> : 'carga' in paso && paso.carga && <p>{paso.carga}</p>}
-        {paso.tipo === 'manual' && paso.notas && <p className="text-sm">{paso.notas}</p>}
+        {l73 !== null
+          ? <p className="text-lg font-medium">Lastre para el 7:3: {textoLastre(l73)}</p>
+          : 'carga' in paso && paso.carga && <p className="text-lg font-medium">{paso.carga}</p>}
+        {paso.tipo === 'manual' && paso.notas && <p>{paso.notas}</p>}
         {paso.tipo === 'bloque' && (
-          <ul className="text-sm">{paso.detalle.map((d, i) => <li key={`${d}-${i}`}>{d}</li>)}</ul>
+          <ul className="space-y-0.5 text-lg">{paso.detalle.map((d, i) => <li key={`${d}-${i}`}>{d}</li>)}</ul>
         )}
-        {!estado.enMarcha && <p className="text-sm font-medium">En pausa</p>}
+        {!estado.enMarcha && (
+          <p className="rounded-full bg-fondo px-4 py-1 font-titular text-xl font-bold uppercase tracking-wide text-texto">En pausa</p>
+        )}
       </section>
+      {siguientePaso && <p className="text-texto-2">Después: <span className="text-texto">{siguientePaso.titulo}</span></p>}
       {/* Al abrir una ficha, el cronómetro queda en pausa y al volver se ofrece «Continuar donde ibas». */}
       {paso.fichas && <ComoSeHace ids={paso.fichas} conTitulo={paso.fichas.length > 1} className="text-sm text-progreso" />}
       {abierto && (
@@ -412,50 +487,50 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         />
       )}
       {mejor !== null && <p className="text-sm">Mejor hasta ahora: {textoLastre(mejor)}</p>}
-      {siguientePaso && <p className="text-sm text-texto-2">Después: {siguientePaso.titulo}</p>}
       {sinPantalla && (
         <p className="text-xs text-ambar">
           Tu navegador no puede mantener la pantalla encendida: sube el tiempo de bloqueo automático del iPhone (Ajustes ›
           Pantalla y brillo) mientras entrenas.
         </p>
       )}
-      <div className="flex flex-wrap gap-3">
-        {paso.tipo === 'manual' && (
-          <button type="button" className={BOTON} onClick={() => pulsar((e, t) => siguiente(pasos, e, t))}>Hecho</button>
-        )}
-        {paso.tipo === 'fallo' && (
-          <button type="button" className={BOTON} onClick={() => pulsar((e, t) => noPuedoMas(pasos, e, t))}>No puedo más</button>
-        )}
-        {estado.enMarcha ? (
-          <button type="button" className={BOTON_SECUNDARIO} onClick={() => actuar(pausar)}>Pausa</button>
-        ) : (
-          <button type="button" className={BOTON_SECUNDARIO} onClick={() => pulsar(empezar)}>Seguir</button>
-        )}
-        <button type="button" className={BOTON_SECUNDARIO} onClick={() => { reinicios.current += 1; pulsar(atras) }}>Atrás</button>
-        {/* En un `fallo` ya está «No puedo más»; saltarlo perdería el resultado. Saltar el último paso termina la sesión. */}
-        {paso.tipo !== 'fallo' && (
+      {/* Controles abajo, al alcance del pulgar: la acción principal a lo ancho y el resto debajo. */}
+      <div className={`${PIE} mt-auto space-y-2`}>
+        {botonPrincipal}
+        <div className="grid auto-cols-fr grid-flow-col gap-2">
+          <button type="button" className={claseDe('atras')} onClick={() => { reinicios.current += 1; pulsar(atras) }}>
+            <SkipBack size={18} aria-hidden /> Atrás
+          </button>
+          {principal !== 'pausa' && principal !== 'seguir' && botonPausa}
+          {principal === 'seguir' && paso.tipo === 'manual' && botonHecho}
+          {principal === 'seguir' && paso.tipo === 'fallo' && botonNoPuedo}
+          {/* En un `fallo` ya está «No puedo más»; saltarlo perdería el resultado. Saltar el último paso termina la sesión. */}
+          {paso.tipo !== 'fallo' && (
+            <button
+              type="button"
+              className={claseDe('saltar')}
+              onClick={() => {
+                if (estado.indice < pasos.length - 1 || window.confirm('¿Terminar la sesión ahora?')) {
+                  pulsar((e, t) => siguiente(pasos, e, t))
+                }
+              }}
+            >
+              Saltar <SkipForward size={18} aria-hidden />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <button type="button" className="inline-flex min-h-11 items-center gap-2 text-sm text-texto-2 underline" onClick={() => setSilencio((v) => !v)}>
+            {silencio ? <VolumeX size={18} aria-hidden /> : <Volume2 size={18} aria-hidden />}
+            {silencio ? 'Activar pitidos' : 'Silenciar'}
+          </button>
           <button
             type="button"
             className={BOTON_SECUNDARIO}
-            onClick={() => {
-              if (estado.indice < pasos.length - 1 || window.confirm('¿Terminar la sesión ahora?')) {
-                pulsar((e, t) => siguiente(pasos, e, t))
-              }
-            }}
+            onClick={() => { if (window.confirm('¿Terminar la sesión ahora?')) actuar(terminar) }}
           >
-            Saltar
+            Terminar
           </button>
-        )}
-        <button
-          type="button"
-          className={BOTON_SECUNDARIO}
-          onClick={() => { if (window.confirm('¿Terminar la sesión ahora?')) actuar(terminar) }}
-        >
-          Terminar
-        </button>
-        <button type="button" className="inline-flex min-h-11 items-center text-sm underline" onClick={() => setSilencio((v) => !v)}>
-          {silencio ? 'Activar pitidos' : 'Silenciar'}
-        </button>
+        </div>
       </div>
     </div>
   )

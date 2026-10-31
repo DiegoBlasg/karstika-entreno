@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BOTON_SECUNDARIO } from '@/components/estilos'
 import { pasosDeSesion } from '@/lib/cronometro/pasos'
 import { posicionSiSePuede } from '@/lib/datos/temporada'
 import { ahoraMadrid } from '@/lib/fecha'
@@ -22,9 +23,9 @@ export default async function PaginaSesion({ params }: { params: Promise<{ id: s
   if (!motivo && datos.registros.some((r) => r.sesion_id === id)) return <YaRegistrada id={id} />
   if (motivo || !fila?.propuesta) {
     return (
-      <div className="space-y-3">
-        <p>{motivo}</p>
-        <Link href="/" className="inline-flex min-h-11 items-center underline">Volver a Hoy</Link>
+      <div className="space-y-4">
+        <p className="text-lg">{motivo}</p>
+        <Link href="/" className={`${BOTON_SECUNDARIO} w-full`}>Volver a Hoy</Link>
       </div>
     )
   }
