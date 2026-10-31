@@ -94,7 +94,7 @@ export function ProximosDias({ datos, ahora, lunesVisto }: { datos: DatosAtleta;
   return (
     <section className="space-y-4 pt-2">
       <h2 className="text-lg font-semibold">Próximos días</h2>
-      {orientativa && <Semana s={orientativa} titulo={orientativa === semanas[0] ? 'Esta semana' : 'Semana siguiente'} />}
+      {orientativa && <Semana s={orientativa} titulo="Plan orientativo" />}
       {adelanto && <Adelanto s={adelanto} />}
       {orientativa?.huecos.some((h) => h.estado === 'planeada' && h.cargaAlta) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
     </section>
