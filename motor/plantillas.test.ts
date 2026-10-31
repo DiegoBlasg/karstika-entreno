@@ -191,6 +191,12 @@ describe('tecnica', () => {
     expect(textos).toMatch(/vídeo|graba/i)
     expect(plan.bloques[1]!.explicacion.parametros).toEqual(expect.arrayContaining(['P-53', 'P-54', 'P-55']))
   })
+  it('una vía de práctica hasta que fluya y 1-2 vías nuevas (P-54, Hacques 2022)', () => {
+    const ej = construirSesion('tecnica', peticion())!.bloques[1]!.ejercicios
+    expect(ej[0]).toMatchObject({ ficha: 'via-de-practica' })
+    expect(ej[0]!.nombre).toMatch(/tu vía de práctica/)
+    expect(ej[1]!.nombre).toMatch(/^1-2 vías nuevas/)
+  })
 })
 
 describe('arc', () => {
@@ -552,5 +558,15 @@ describe('dominadas como sesión (P-39)', () => {
     expect(construirSesion('dominadas', casa(45))!.sesion.duracionMin).toBeLessThanOrEqual(45)
     expect(construirSesion('dominadas', casa(30))).not.toBeNull()
     expect(construirSesion('dominadas', casa(29))).toBeNull()
+  })
+  it('alterna: tras unas lastradas, potencia (explosivas y excéntricas, P-73) en 10 + 20 + 5 = 35 min', () => {
+    const previa = ses('d1', '2026-11-02', 9, { tipo: 'dominadas' })
+    const b = construirSesion('dominadas', { ...casa(60), fecha: '2026-11-09', historial: [previa] })!
+    expect(b.sesion.duracionMin).toBe(35)
+    expect(b.bloques[1]!.ejercicios.map((e) => e.ficha)).toEqual(['dominadas-explosivas', 'dominadas-excentricas'])
+    expect(b.bloques[1]!.ejercicios[0]).toMatchObject({ series: 4, descansoSeriesS: 180 })
+    expect(b.bloques[1]!.explicacion.parametros).toEqual(expect.arrayContaining(['P-73', 'P-39']))
+    // Sin 35 min, las lastradas de siempre.
+    expect(construirSesion('dominadas', { ...casa(30), fecha: '2026-11-09', historial: [previa] })!.bloques[1]!.nombre).toBe('Dominadas lastradas')
   })
 })

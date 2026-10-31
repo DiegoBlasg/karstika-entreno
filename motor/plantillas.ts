@@ -532,7 +532,14 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     p,
     'Práctica técnica',
     [
-      { nombre: `${modalidad}, variando vías y tipos de presa`, series: 3, cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
+      {
+        nombre: `${modalidad}: tu vía de práctica, 2-3 pegues buscando que salga fluida`,
+        series: 3,
+        cargaTexto: 'Esfuerzo percibido 4–5 de 10',
+        notas: 'Repite la misma vía de una sesión a otra hasta que fluya; si ya fluye o llevas unas 7 sesiones con ella, elige otra.',
+        ficha: 'via-de-practica',
+      },
+      { nombre: '1-2 vías nuevas parecidas, a vista, variando el tipo de presa', cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
       {
         nombre: `Previsualiza la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes de cada intento`,
         cargaTexto: 'Sin esfuerzo',
@@ -543,7 +550,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     explicar(
       'plantilla.tecnica',
       ['P-53', 'P-54', 'P-55'],
-      'Práctica técnica variada, con lectura previa de hasta 3 min de la vía y vídeo para revisar la ejecución.',
+      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución.',
     ),
   )
   return base && plan(sesionDe('tecnica', p, base.total, 'suave'), base.bloques)
@@ -768,7 +775,67 @@ function construirHombro(p: Peticion): SesionPlan | null {
 // complemento. 10 + 15 + 5 = 30 min, que caben en una mañana de 45-60 min.
 const VUELTA_CALMA_DOMINADAS_MIN = 5
 
+// Dominadas: se alternan A (lastradas, P-39) y B (potencia, P-73) según cuántas hay en el historial antes de hoy.
+export function rutinaDominadas(p: Peticion): 'A' | 'B' {
+  const hoy = diaNumero(p.fecha)
+  return p.historial.filter((s) => s.tipo === 'dominadas' && diaNumero(s.fecha) < hoy).length % 2 === 0 ? 'A' : 'B'
+}
+
 function construirDominadas(p: Peticion): SesionPlan | null {
+  const b = rutinaDominadas(p) === 'B' ? construirDominadasPotencia(p) : null
+  return b ?? construirDominadasLastradas(p)
+}
+
+// B (P-73, Vigouroux y Devise 2024): explosivas y excéntricas en barra, lejos del fallo. Series y repeticiones, diseño.
+function construirDominadasPotencia(p: Peticion): SesionPlan | null {
+  const v = VALORES['P-73']
+  const total = CALENTAMIENTO_MIN + v.minutos + VUELTA_CALMA_DOMINADAS_MIN
+  if (total > p.contexto.minutosDisponibles) return null
+  const explicacion = explicar(
+    'plantilla.dominadas-potencia',
+    ['P-73', 'P-39'],
+    `Sesión opcional, alternando con las lastradas: potencia de tirón sin campus. En escaladores avanzados, las dominadas excéntricas y pliométricas 2 veces por semana durante 5 semanas subieron la fuerza y la velocidad de tirón (Vigouroux y Devise 2024); las series y repeticiones son decisión de diseño. Mismas reglas que las lastradas: como mucho 1 por semana y nunca el día de dedos intensos.`,
+  )
+  return plan(sesionDe('dominadas', p, total, 'suave'), [
+    {
+      nombre: 'Calentamiento en barra',
+      minutos: CALENTAMIENTO_MIN,
+      ejercicios: [{ nombre: 'Movilidad de hombro y escápulas, colgarse de la barra y dominadas sin lastre de menos a más', cargaTexto: 'Esfuerzo percibido 2–4 de 10', ficha: 'calentamiento-barra' }],
+      explicacion: explicar('plantilla.dominadas-calentamiento', ['P-39', 'P-49'], 'Unos 10 minutos de calentamiento de menos a más antes de las dominadas.'),
+    },
+    {
+      nombre: 'Potencia en barra',
+      minutos: v.minutos,
+      ejercicios: [
+        {
+          nombre: 'Dominadas explosivas',
+          series: v.explosivasSeries,
+          descansoSeriesS: v.explosivasDescansoMin * 60,
+          cargaTexto: `${v.repMin}-${v.repMax} repeticiones, lejos del fallo`,
+          notas: 'Sube lo más rápido que puedas y baja controlando. Para la serie si pierdes velocidad.',
+          ficha: 'dominadas-explosivas',
+        },
+        {
+          nombre: 'Dominadas excéntricas',
+          series: v.excentricasSeries,
+          descansoSeriesS: v.excentricasDescansoMin * 60,
+          cargaTexto: `${v.repMin}-${v.repMax} bajadas de ${v.bajadaSMin}-${v.bajadaSMax} s`,
+          notas: 'Sube con un salto o con ayuda y baja despacio.',
+          ficha: 'dominadas-excentricas',
+        },
+      ],
+      explicacion,
+    },
+    {
+      nombre: 'Vuelta a la calma',
+      minutos: VUELTA_CALMA_DOMINADAS_MIN,
+      ejercicios: [{ nombre: 'Movilidad suave de hombro, espalda y muñecas', cargaTexto: 'Sin esfuerzo', ficha: 'movilidad' }],
+      explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar (decisión de diseño).'),
+    },
+  ])
+}
+
+function construirDominadasLastradas(p: Peticion): SesionPlan | null {
   const { minutos, series, repeticiones, repeticionesEnReserva, descansoMin } = VALORES['P-39']
   const total = CALENTAMIENTO_MIN + minutos + VUELTA_CALMA_DOMINADAS_MIN
   if (total > p.contexto.minutosDisponibles) return null

@@ -121,6 +121,12 @@ describe('VALORES del diagnóstico', () => {
     expect(columnas('P-11')[2]).toMatch(/como mucho \+1,25 kg por semana/)
     expect(VALORES['P-11']).toEqual({ sesionesValidasParaSubir: 2, kgMaxSemana: 1.25 })
   })
+  it('P-54 y P-73 coinciden con el documento', () => {
+    expect(columnas('P-54')[2]).toMatch(/^En cada sesión técnica, una vía de práctica repetida hasta que fluya/)
+    expect(columnas('P-73')[2]).toMatch(/^Alternando con las lastradas de P-39: dominadas explosivas 4 × 3-5/)
+    expect(columnas('P-73')[2]).toMatch(/excéntricas 3 × 3-5 bajadas de 3-5 s con 2 min; 20 min/)
+    expect(VALORES['P-73']).toMatchObject({ minutos: 20, explosivasSeries: 4, explosivasDescansoMin: 3, excentricasSeries: 3, excentricasDescansoMin: 2 })
+  })
   it('P-72 coincide con el documento', () => {
     expect(columnas('P-72')[2]).toMatch(/^Sesión suave de core y movilidad de 20-30 min/)
     expect(VALORES['P-72']).toEqual({ minutosMin: 20, minutosMax: 30 })
