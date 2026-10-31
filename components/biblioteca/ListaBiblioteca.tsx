@@ -23,7 +23,7 @@ const ICONO_GRUPO: Record<Grupo['id'], ReactNode> = {
 // Miniatura de cada ficha: su dibujo solo si ninguna otra ficha del grupo lo comparte (cinco suspensiones con el mismo
 // dibujo no se distinguirían). Si no, la pauta del título («7:3», «10 s») y, si no tiene, el icono del grupo.
 type Miniatura = { tipo: 'dibujo' } | { tipo: 'pauta'; texto: string } | { tipo: 'icono' }
-const PAUTA = /\d+:\d+|\d+ s/
+const PAUTA = /\d+:\d+|\d+ s\b/
 const MINIATURA: Record<string, Miniatura> = Object.fromEntries(
   GRUPOS.flatMap((g) => g.fichas.map((id): [FichaId, Miniatura] => {
     const f = FICHAS[id]
