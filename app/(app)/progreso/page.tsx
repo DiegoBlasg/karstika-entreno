@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { fuerzaRelativa } from '@/motor'
 import { FondoTopo } from '@/components/FondoTopo'
 import { Constancia } from '@/components/progreso/Constancia'
@@ -113,17 +112,25 @@ export default async function PaginaProgreso() {
 
       <Logros lista={logros(datos, hoy)} />
 
-      <section id="apuntar-test" className="scroll-mt-4 space-y-3">
-        <h2 className={TITULO_SECCION}>Apuntar un resultado de test</h2>
-        <p className="text-sm text-texto-2">
-          Aquí se apunta el resultado del test de dedos <strong>después</strong> de hacerlo. ¿Aún no lo has hecho? No pasa
-          nada: el entrenador te lo propondrá cuando toque. <Link href="/entrenar" className="text-progreso underline">Ir a Entrenar</Link>
-        </p>
-        <Tarjeta aria-label="Nuevo resultado">
-          <Etiqueta as="h3">Nuevo resultado</Etiqueta>
-          <FormularioEvaluacion hoy={hoy} fechaInicial={fechaInicial} peso={datos.perfil.peso_kg} />
-        </Tarjeta>
-      </section>
+      {sinResultado.length > 0 ? (
+        <section id="apuntar-test" className="scroll-mt-4 space-y-3">
+          <h2 className={TITULO_SECCION}>Apuntar un resultado de test</h2>
+          <Tarjeta aria-label="Nuevo resultado">
+            <Etiqueta as="h3">Nuevo resultado</Etiqueta>
+            <FormularioEvaluacion hoy={hoy} fechaInicial={fechaInicial} peso={datos.perfil.peso_kg} />
+          </Tarjeta>
+        </section>
+      ) : (
+        <details id="apuntar-test" className="scroll-mt-4 rounded-2xl border border-borde bg-superficie">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center px-4 text-texto-2 [&::-webkit-details-marker]:hidden">
+            ¿Hiciste un test por tu cuenta?
+          </summary>
+          <div className="space-y-3 p-4 pt-1">
+            <p className="text-sm text-texto-2">El entrenador te propone el test cuando toca. Si lo hiciste por tu cuenta, apunta aquí el resultado.</p>
+            <FormularioEvaluacion hoy={hoy} fechaInicial={fechaInicial} peso={datos.perfil.peso_kg} />
+          </div>
+        </details>
+      )}
 
       <section className="space-y-2">
         <h2 className={TITULO_SECCION}>Historial</h2>

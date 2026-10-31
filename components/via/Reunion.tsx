@@ -1,6 +1,4 @@
-import Link from 'next/link'
 import { Check, ChevronRight } from 'lucide-react'
-import { ENLACE } from '@/components/estilos'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Hoja } from '@/components/ui/Hoja'
 import { textoLastre } from '@/lib/cronometro/test'
@@ -83,7 +81,6 @@ function DetalleReunion({ reunion, tests }: { reunion: ReunionVia; tests: Result
           </ol>
         )}
       </div>
-      <Link href="/progreso" className={`${ENLACE} inline-flex min-h-11 items-center`}>Apuntar un resultado</Link>
     </div>
   )
 }

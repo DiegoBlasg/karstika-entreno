@@ -67,8 +67,8 @@ function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
         </select>
       </label>
       <div className="flex gap-3">
-        <label className="block flex-1">Hora de inicio<input type="time" name="hora" defaultValue={hhmm(sesion.horaInicio)} required className={CAMPO} /></label>
-        <label className="block flex-1">Minutos<input type="number" name="minutos" min={1} max={1440} defaultValue={sesion.duracionMin} required className={CAMPO} /></label>
+        <label className="block min-w-0 flex-1">Hora de inicio<input type="time" name="hora" defaultValue={hhmm(sesion.horaInicio)} required className={CAMPO} /></label>
+        <label className="block min-w-0 flex-1">Minutos<input type="number" name="minutos" min={1} max={1440} defaultValue={sesion.duracionMin} required className={CAMPO} /></label>
       </div>
       {TIPOS_CON_REGLETA.includes(tipo) && (
         <div className="flex gap-3">

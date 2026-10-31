@@ -50,3 +50,26 @@ describe('contraste', () => {
     expect(contraste(c('fondo'), c(t))).toBeGreaterThanOrEqual(4.5)
   })
 })
+
+describe('colores de fase', () => {
+  it('tienen el valor del spec', () => {
+    expect(tokens).toMatchObject({
+      'fase-base': '#8FB3A6', 'fase-fuerza': '#C6F24E', 'fase-resistencia': '#4FD1C5',
+      'fase-rendimiento': '#FF7A45', 'fase-transicion': '#6E7F78',
+    })
+  })
+
+  it.each(['base', 'fuerza', 'resistencia', 'rendimiento'])('el texto oscuro (fondo) se lee sobre fase-%s (AA)', (f) => {
+    expect(contraste(c('fondo'), c(`fase-${f}`))).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it.each(['base', 'fuerza', 'resistencia', 'rendimiento', 'transicion'])('fase-%s se distingue sobre fondo (no texto, ≥ 3:1)', (f) => {
+    expect(contraste(c(`fase-${f}`), c('fondo'))).toBeGreaterThanOrEqual(3)
+  })
+
+  // Transición (gris #6E7F78) no llega a 4,5:1 con texto oscuro: lleva el texto claro (`texto`) encima.
+  it('transición lleva texto claro encima', () => {
+    expect(contraste(c('fondo'), c('fase-transicion'))).toBeLessThan(4.5)
+    expect(contraste(c('texto'), c('fase-transicion'))).toBeGreaterThanOrEqual(3)
+  })
+})
