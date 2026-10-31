@@ -73,7 +73,7 @@ function Cambios({ c }: { c: CambiosResultados }) {
                 <dd className="space-y-1">
                   <p>
                     {c.ciclo2.tipo === 'pendiente'
-                      ? `se decide el ${numerica(c.ciclo2.fecha)} con tus tests y caídas: hoy apuntaría a ${NOMBRE_LIMITANTE[c.ciclo2.limitante]}.`
+                      ? `se decide el ${numerica(c.ciclo2.fecha)} con tus tests y lo que respondes al terminar: hoy apuntaría a ${NOMBRE_LIMITANTE[c.ciclo2.limitante]}.`
                       : `${c.ciclo2.fuerza} semanas de fuerza y ${c.ciclo2.resistencia} de resistencia${c.ciclo2.refuerzoTecnica ? ', con un cupo más de técnica por semana' : ''}.`}
                   </p>
                   <PorQue explicaciones={[c.ciclo2.explicacion]} />

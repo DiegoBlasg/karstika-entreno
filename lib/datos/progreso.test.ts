@@ -43,9 +43,27 @@ describe('constancia', () => {
 })
 
 describe('resumenEscalada', () => {
+  it('encadenes suma intentos antiguos y registros marcados; el último freno sale de la respuesta más reciente distinta de «nada»', () => {
+    const d = datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03'), sesionFila(uuid(2), '2026-11-05'), sesionFila(uuid(3), '2026-11-06'), sesionFila(uuid(4), '2026-11-20')],
+      intentos: [intento(1, '2026-11-03', true)],
+      registros: [
+        registro(uuid(1)),
+        { ...registro(uuid(2)), freno: 'cabeza', encadene: true },
+        { ...registro(uuid(3)), freno: 'nada' },
+        { ...registro(uuid(4)), freno: 'bombeo', encadene: true },
+      ],
+    })
+    // La sesión del 20 es posterior a hoy: no cuenta.
+    expect(resumenEscalada(d, '2026-11-06')).toMatchObject({ encadenes: 2, ultimoFreno: 'cabeza' })
+  })
+  it('el logro «Primer encadene» también sale de un registro marcado', () => {
+    const d = datosVacios({ sesiones: [sesionFila(uuid(2), '2026-11-05')], registros: [{ ...registro(uuid(2)), encadene: true }] })
+    expect(logros(d, '2026-11-06').find((l) => l.id === 'primer-encadene')).toMatchObject({ conseguido: true, fecha: '2026-11-05' })
+  })
   it('grado del perfil, encadenes y última caída hasta hoy', () => {
     const intentos = [intento(1, '2026-11-10', false, 'bombeo'), intento(2, '2026-11-12', true), intento(3, '2026-11-14', false, 'cabeza'), intento(4, '2026-11-20', true)]
-    expect(resumenEscalada(datosVacios({ intentos }), '2026-11-15')).toEqual({ gradoActual: '6b', gradoObjetivo: '7a', encadenes: 1, ultimaCaida: 'cabeza' })
+    expect(resumenEscalada(datosVacios({ intentos }), '2026-11-15')).toEqual({ gradoActual: '6b', gradoObjetivo: '7a', encadenes: 1, ultimoFreno: 'cabeza' })
   })
 })
 
