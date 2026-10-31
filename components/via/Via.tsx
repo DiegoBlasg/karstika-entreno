@@ -1,127 +1,76 @@
 import { PieDeVia } from '@/components/PieDeVia'
-import { Etiqueta } from '@/components/ui/Etiqueta'
-import { IconoCima } from '@/components/iconos/Escalada'
 import type { PasosArranque } from '@/lib/datos/arranque'
-import type { VistaVia } from '@/lib/datos/via'
+import type { EstadoTramo, VistaVia } from '@/lib/datos/via'
 import { fechaLarga } from '@/lib/fecha'
-import { Largo } from './Largo'
-import { FilaVia, LINEA } from './Rail'
-import { Reunion } from './Reunion'
+import { CarruselLargos } from './CarruselLargos'
+import type { PasoVia } from './PasosVia'
+import { ProximaReunion } from './Reunion'
+import { TarjetaCima, TarjetaLargo } from './TarjetaLargo'
 
-function Cima({ cima, llegada }: { cima: VistaVia['cima']; llegada: boolean }) {
-  const contenido = (
-    <>
-      <Etiqueta as="p" className="text-cima">Cima · semana objetivo{cima.actual ? ' · esta semana' : ''}</Etiqueta>
-      <p className="font-titular text-2xl font-extrabold uppercase leading-tight">{fechaLarga(cima.lunes)}</p>
-      <p className="tabular-nums">Grado objetivo: <span className="font-semibold text-cima">{cima.grado}</span></p>
-      <p className="text-sm text-texto-2">{cima.objetivo}</p>
-    </>
-  )
-  return (
-    <FilaVia
-      rail={
-        <>
-          <div className={`${LINEA} bottom-0 top-1/2 ${llegada ? 'bg-progreso' : 'bg-pista'}`} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="flex size-10 items-center justify-center rounded-full border-2 border-cima bg-fondo text-cima">
-              <IconoCima size={22} />
-            </span>
-          </div>
-        </>
-      }
-    >
-      {cima.actual ? (
-        <div className="my-1.5 space-y-1 rounded-2xl border border-cima bg-superficie p-4">{contenido}</div>
-      ) : (
-        <div className="space-y-1 py-2">{contenido}</div>
-      )}
-    </FilaVia>
-  )
+const ESTADO = { hecho: 'hecho', actual: 'ahora', futuro: 'por hacer' } as const
+const DIA = 86_400_000
+const semanasEntre = (desde: string, hasta: string): number => Math.round((Date.parse(hasta) - Date.parse(desde)) / (7 * DIA))
+
+const lunesActualDe = (vista: VistaVia): string | null => vista.largos.flatMap((l) => l.chapas).find((c) => c.estado === 'actual')?.lunes ?? null
+
+function estadoCima(vista: VistaVia): EstadoTramo {
+  if (vista.cima.actual) return 'actual'
+  return vista.largos.length > 0 && vista.largos.every((l) => l.estado === 'hecho') ? 'hecho' : 'futuro'
 }
 
-function Pie({ inicio, salida, arranque }: { inicio: string; salida: boolean; arranque: PasosArranque }) {
-  if (!arranque.completo) {
-    // Primer uso: en el pie de la vía, la tarjeta con los tres pasos; el rail baja desde arriba hasta su chapa.
-    return (
-      <FilaVia
-        rail={
-          <>
-            <div className={`${LINEA} top-0 h-5 ${salida ? 'bg-progreso' : 'bg-pista'}`} />
-            <span className="absolute left-1/2 top-5 size-3.5 -translate-x-1/2 rounded-full bg-progreso" />
-          </>
-        }
-      >
-        <PieDeVia pasos={arranque} />
-      </FilaVia>
-    )
-  }
-  return (
-    <FilaVia
-      rail={
-        <>
-          <div className={`${LINEA} top-0 bottom-1/2 ${salida ? 'bg-progreso' : 'bg-pista'}`} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="size-3.5 rounded-full bg-progreso" />
-          </div>
-        </>
-      }
-    >
-      <p className="py-2">
-        <Etiqueta>Pie de vía</Etiqueta> <span className="text-texto-2">· {fechaLarga(inicio)}</span>
-      </p>
-    </FilaVia>
-  )
+// Cuánto falta para la cima desde la semana en curso: «en 21 semanas», «la semana que viene» (null fuera de la temporada).
+function faltaCima(vista: VistaVia): string | null {
+  if (vista.cima.actual) return 'esta semana'
+  const lunes = lunesActualDe(vista)
+  if (!lunes) return null
+  const n = semanasEntre(lunes, vista.cima.lunes)
+  return n === 1 ? 'la semana que viene' : `en ${n} semanas`
 }
 
-// La temporada como una vía de varios largos, de la cima (arriba) al pie (abajo): se lee de abajo arriba, como se escala.
-export function Via({ vista, inicio, arranque }: { vista: VistaVia; inicio: string; arranque: PasosArranque }) {
+// Dónde estás, en una línea, bajo el título: «Largo 3 de 8 · la cima en 21 semanas».
+export function resumenVia(vista: VistaVia): string | null {
+  const { largos, cima } = vista
+  if (largos.length === 0) return null
+  if (cima.actual) return `Semana objetivo: a por el ${cima.grado}`
+  const actual = largos.find((l) => l.estado === 'actual')
+  const falta = faltaCima(vista)
+  if (actual && falta) return `Largo ${actual.numero} de ${largos.length} · la cima ${falta}`
+  if (estadoCima(vista) === 'hecho') return 'Temporada terminada'
+  return `${largos.length} largos · empieza el ${fechaLarga(largos[0]!.chapas[0]!.lunes)}`
+}
+
+// La temporada: fila de pasos (un largo por paso y la cima), carrusel de largos centrado en el actual y, debajo, la
+// próxima reunión. En el primer uso, el pie de vía con sus tres pasos.
+export function Via({ vista, arranque }: { vista: VistaVia; arranque: PasosArranque }) {
   const { largos, cima, tests } = vista
-  const lunesActual = largos.flatMap((l) => l.chapas).find((c) => c.estado === 'actual')?.lunes ?? null
+  const reuniones = largos.flatMap((l) => l.reuniones)
   // R1, R2…: posición de cada reunión entre todas las de la temporada (un largo puede tener una a mitad).
-  const numeros = new Map<string, number>()
-  for (const r of largos.flatMap((l) => l.reuniones)) numeros.set(r.lunes, numeros.size + 1)
-  const ultimo = largos.at(-1)
+  const numeros: Record<string, number> = Object.fromEntries(reuniones.map((r, i) => [r.lunes, i + 1]))
+  const pie = !arranque.completo && <PieDeVia pasos={arranque} />
+  if (largos.length === 0) return pie || null
+
+  const pasos: PasoVia[] = [
+    ...largos.map((l) => ({
+      id: `largo-${l.numero}`,
+      numero: l.numero,
+      faseId: l.faseId,
+      estado: l.estado,
+      nombre: `Largo ${l.numero} · ${l.fase} · ${ESTADO[l.estado]}`,
+    })),
+    { id: 'largo-cima', numero: null, faseId: null, estado: estadoCima(vista), nombre: `Cima · ${fechaLarga(cima.lunes)}` },
+  ]
+  const actual = pasos.findIndex((p) => p.estado === 'actual')
+  const futuro = pasos.findIndex((p) => p.estado === 'futuro')
+  const inicial = actual >= 0 ? actual : futuro >= 0 ? futuro : pasos.length - 1
+  const tarjetas = [
+    ...largos.map((l) => <TarjetaLargo key={l.numero} largo={l} numeros={numeros} />),
+    <TarjetaCima key="cima" cima={cima} falta={faltaCima(vista)} />,
+  ]
   return (
-    <ol aria-label="Tu vía, de la cima al pie">
-      <li>
-        <Cima cima={cima} llegada={cima.actual || ultimo?.estado === 'hecho'} />
-      </li>
-      {[...largos].reverse().flatMap((l) => {
-        const filas = []
-        // La reunión de la última semana del largo va encima, en su propia fila del raíl; las de mitad, dentro del largo
-        // (de la más alta a la más baja, como se lee la vía).
-        const ultima = l.chapas.at(-1)?.lunes
-        const final = l.reuniones.find((r) => r.lunes === ultima)
-        const intermedias = l.reuniones.filter((r) => r !== final).reverse()
-        if (final) {
-          filas.push(
-            <li key={`r${final.lunes}`}>
-              <Reunion reunion={final} numero={numeros.get(final.lunes)!} tests={tests} lunesActual={lunesActual} hecho={l.estado === 'hecho'} />
-            </li>,
-          )
-        }
-        const actual = l.estado === 'actual'
-        filas.push(
-          <li key={`l${l.numero}`} id={actual ? 'largo-actual' : undefined} aria-current={actual ? 'step' : undefined} className="scroll-mt-24">
-            <Largo
-              largo={l}
-              intermedias={
-                intermedias.length > 0 ? (
-                  <div className="mt-1 space-y-1">
-                    {intermedias.map((r) => (
-                      <Reunion key={r.lunes} reunion={r} numero={numeros.get(r.lunes)!} tests={tests} lunesActual={lunesActual} hecho={l.estado === 'hecho'} dentro />
-                    ))}
-                  </div>
-                ) : undefined
-              }
-            />
-          </li>,
-        )
-        return filas
-      })}
-      <li>
-        <Pie inicio={inicio} salida={largos.length > 0 && largos[0]!.estado !== 'futuro'} arranque={arranque} />
-      </li>
-    </ol>
+    <>
+      <CarruselLargos pasos={pasos} tarjetas={tarjetas} inicial={inicial} />
+      {pie}
+      <ProximaReunion reuniones={reuniones} tests={tests} lunesActual={lunesActualDe(vista)} />
+    </>
   )
 }

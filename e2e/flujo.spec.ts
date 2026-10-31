@@ -239,7 +239,7 @@ test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) =>
   await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
 })
 
-test('Vía: la vía con el largo actual, una reunión y una fuente desde «¿Por qué?»', async ({ page }) => {
+test('Vía: pasos con el largo actual, su tarjeta del carrusel y una fuente desde «¿Por qué?»', async ({ page }) => {
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
@@ -247,10 +247,18 @@ test('Vía: la vía con el largo actual, una reunión y una fuente desde «¿Por
   await page.getByRole('link', { name: 'Vía', exact: true }).click()
   await expect(page).toHaveURL(/\/via$/)
   await expect(page.getByRole('heading', { name: 'Tu vía' })).toBeVisible()
-  await expect(page.locator('[aria-current="step"]')).toHaveCount(1)
-  // El largo actual abre su hoja con el objetivo de la fase. aria-current va en el <li>; el disparador es su botón.
-  await page.locator('[aria-current="step"] button').first().click()
+  // En la fila de pasos, el largo actual (aria-current) enlaza con su tarjeta del carrusel; tocarlo la centra.
+  const pasoActual = page.locator('[aria-current="step"]')
+  await expect(pasoActual).toHaveCount(1)
+  const ancla = await pasoActual.getAttribute('href')
+  expect(ancla).toMatch(/^#largo-\d+$/)
+  await pasoActual.click()
+  // Toda la tarjeta del largo actual abre su hoja con las semanas.
+  const tarjeta = page.locator(`${ancla} button`).first()
+  await expect(tarjeta).toBeInViewport()
+  await tarjeta.click()
   await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByRole('dialog').getByText(/^Semanas · ciclo \d$/)).toBeVisible()
   await page.getByRole('button', { name: 'Cerrar' }).click()
   await expect(page.getByRole('dialog')).toBeHidden()
   await expect(page.getByRole('heading', { name: 'Qué ha cambiado por tus resultados' })).toBeVisible()
