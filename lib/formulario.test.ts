@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  chequeoDelDia, contexto, detalleRegleta, entero, ErrorFormulario, fecha, hora, inicialEntrenar, intentos, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
+  chequeoDelDia, contexto, detalleRegleta, encadene, entero, ErrorFormulario, fecha, freno, hora, inicialEntrenar, leerEntradaPeticion, molestias, numero, numeroOpcional, opcionOpcional,
 } from './formulario'
 
 const fd = (campos: Record<string, string>): FormData => {
@@ -38,12 +38,15 @@ describe('formulario', () => {
     ])
     expect(() => molestias(fd({ ...sinMolestias, dolor_hombro: '11' }))).toThrow('Dolor en Hombro: debe ser un número entre 0 y 10.')
   })
-  it('intentos al límite', () => {
-    expect(intentos(fd({ intento_0: 'encadenado', intento_1: '', intento_2: 'bombeo' }))).toEqual([
-      { encadenado: true },
-      { encadenado: false, motivoCaida: 'bombeo' },
-    ])
-    expect(() => intentos(fd({ intento_0: 'lluvia' }))).toThrow('Intento 1: opción no válida.')
+  it('qué te frenó: vacío → null; un valor válido; uno inválido lanza', () => {
+    expect(freno(fd({}))).toBeNull()
+    expect(freno(fd({ freno: 'bombeo' }))).toBe('bombeo')
+    expect(freno(fd({ freno: 'nada' }))).toBe('nada')
+    expect(() => freno(fd({ freno: 'lluvia' }))).toThrow('Qué te frenó: opción no válida.')
+  })
+  it('encadené: solo con la casilla marcada', () => {
+    expect(encadene(fd({}))).toBe(false)
+    expect(encadene(fd({ encadene: 'on' }))).toBe(true)
   })
   it('opción opcional', () => {
     expect(opcionOpcional(fd({ a: '' }), 'a', 'El agarre', ['abierto'])).toBeNull()

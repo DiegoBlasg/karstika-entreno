@@ -15,7 +15,7 @@ import { constancia, logros, resumenEscalada, UMBRAL_IGUAL } from '@/lib/datos/p
 import type { ResultadoTest } from '@/lib/datos/via'
 import { vistaVia } from '@/lib/datos/via'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
-import { NOMBRE_MOTIVO } from '@/lib/nombres'
+import { NOMBRE_FRENO } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonBorrarEvaluacion } from './BotonBorrarEvaluacion'
 import { FormularioEvaluacion } from './FormularioEvaluacion'
@@ -104,7 +104,7 @@ export default async function PaginaProgreso() {
         </p>
         <p className="text-sm text-texto-2">
           <span className="font-medium text-texto">{plural(escalada.encadenes, 'encadene', 'encadenes')}</span> al límite
-          {escalada.ultimaCaida && <><br />Última caída: {NOMBRE_MOTIVO[escalada.ultimaCaida]}</>}
+          {escalada.ultimaCaida && <><br />Última caída: {NOMBRE_FRENO[escalada.ultimaCaida]}</>}
         </p>
       </Tarjeta>
 
