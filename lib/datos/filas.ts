@@ -21,6 +21,7 @@ export interface FilaEvaluacion {
   lastre_kg: number
   resistencia_s: number | null
   tecnica: number | null
+  creada_en?: string   // cuándo se apuntó (la base siempre lo devuelve)
 }
 
 export interface FilaSesion {

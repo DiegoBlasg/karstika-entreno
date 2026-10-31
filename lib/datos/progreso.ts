@@ -18,7 +18,7 @@ export interface Constancia {
 export interface ResumenEscalada {
   gradoActual: string
   gradoObjetivo: string
-  encadenes: number                  // intentos encadenados antiguos + registros con «encadené», hasta hoy
+  encadenes: number                  // sesiones con encadene (intentos antiguos o «encadené»; una sesión cuenta como mucho por sus intentos o por la casilla), hasta hoy
   ultimoFreno: MotivoCaida | null    // la respuesta más reciente distinta de «nada»; si no hay, el último motivo de un intento antiguo
 }
 
@@ -69,9 +69,15 @@ export function resumenEscalada(d: DatosAtleta, hoy: string): ResumenEscalada {
   return {
     gradoActual: d.perfil.grado_actual,
     gradoObjetivo: d.perfil.grado_objetivo,
-    encadenes: hasta.filter((i) => i.encadenado).length + registros.filter((r) => r.encadene).length,
+    encadenes: hasta.filter((i) => i.encadenado).length + encadenesNuevos(d, registros).length,
     ultimoFreno: freno && freno !== 'nada' ? freno : (caida?.motivo_caida ?? null),
   }
+}
+
+// Registros marcados con «encadené» de sesiones sin intentos antiguos encadenados (si no, se contarían dos veces).
+function encadenesNuevos<T extends FilaRegistro>(d: DatosAtleta, registros: readonly T[]): T[] {
+  const conIntento = new Set(d.intentos.filter((i) => i.encadenado).map((i) => i.sesion_id))
+  return registros.filter((r) => r.encadene && !conIntento.has(r.sesion_id))
 }
 
 // Registros de sesiones hasta hoy con la fecha de su sesión, en orden (mismo día: por cuándo se apuntaron).
@@ -99,7 +105,7 @@ export function logros(d: DatosAtleta, hoy: string): Logro[] {
   }
   const fechasEncadene = [
     ...d.intentos.filter((i) => i.encadenado && i.fecha <= hoy).map((i) => i.fecha),
-    ...registrosConFecha(d, hoy).filter((r) => r.encadene).map((r) => r.fecha),
+    ...encadenesNuevos(d, registrosConFecha(d, hoy)).map((r) => r.fecha),
   ].sort()
   let record: string | null = null
   let mejor = -Infinity

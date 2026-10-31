@@ -10,7 +10,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
             objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
-      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica from evaluaciones order by fecha`,
+      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, creada_en::text as creada_en from evaluaciones order by fecha`,
       sql`select id::text as id, fecha::text as fecha, sesion, propuesta, origen from sesiones order by fecha, creada_en`,
       sql`select sesion_id::text as sesion_id, rpe, duracion_min, molestias, registrado_en::text as registrado_en, freno, encadene from registros`,
       sql`select fecha::text as fecha, sueno, fatiga, ganas, molestias from chequeos order by fecha`,

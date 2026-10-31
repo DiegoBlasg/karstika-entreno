@@ -57,6 +57,14 @@ describe('resumenEscalada', () => {
     // La sesión del 20 es posterior a hoy: no cuenta.
     expect(resumenEscalada(d, '2026-11-06')).toMatchObject({ encadenes: 2, ultimoFreno: 'cabeza' })
   })
+  it('una sesión con un intento antiguo encadenado y la casilla marcada al corregir cuenta una vez', () => {
+    const d = datosVacios({
+      sesiones: [sesionFila(uuid(1), '2026-11-03')],
+      intentos: [intento(1, '2026-11-03', true)],
+      registros: [{ ...registro(uuid(1)), encadene: true }],
+    })
+    expect(resumenEscalada(d, '2026-11-06').encadenes).toBe(1)
+  })
   it('el logro «Primer encadene» también sale de un registro marcado', () => {
     const d = datosVacios({ sesiones: [sesionFila(uuid(2), '2026-11-05')], registros: [{ ...registro(uuid(2)), encadene: true }] })
     expect(logros(d, '2026-11-06').find((l) => l.id === 'primer-encadene')).toMatchObject({ conseguido: true, fecha: '2026-11-05' })

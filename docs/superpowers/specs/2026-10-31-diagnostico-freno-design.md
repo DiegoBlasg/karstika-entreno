@@ -142,6 +142,22 @@ Tarjeta Grado: «Última caída: X» → «Último freno: X».
 - `probar-bd`: check de `freno`, default de `encadene`.
 - e2e: registrar una sesión al límite marcando freno + encadene, ver «Último freno» y la tarjeta «Tu perfil».
 
+## Cambios tras la revisión (Diego, 2026-10-31)
+
+- **El board también pregunta** «¿Qué te frenó hoy?» (`TIPOS_AL_LIMITE` = vía al límite, bloque al límite, pegues al proyecto y board).
+- **El ciclo 2 no cambia hacia atrás.** Migración `005_evaluaciones_creada_en.sql` (`evaluaciones.creada_en`). El reparto
+  se fija con `diagnosticoCiclo2(d, lunes)` (`lib/datos/peticion.ts`), que solo usa los tests y registros guardados antes
+  de las 0:00 UTC del lunes del ciclo 2. Queda una arista aceptada: corregir después del lunes un registro de los 7 días
+  anteriores conserva su `registrado_en` y sí cuenta.
+- **Textos honestos.** Sin datos propios, «Lo que suele limitar más» en neutro y «Si no cambia…»; con pocas respuestas,
+  «llevas N de 6»; dentro del ciclo 2, «se fijó el … apuntando a …». Explicaciones que distinguen «N de 6» y «sin
+  mayoría». «¿Por qué?» en la tarjeta, con una explicación de la fortaleza que cita P-71.
+- **Fortaleza:** si lo que más mejora es el limitante principal, se toma la siguiente que mejora.
+- **Pregunta en el móvil:** «Quitar respuesta», ✓ solo al marcar «Hoy encadené algo al límite» (en lima), botones de
+  igual altura y la última opción a lo ancho. «Último freno» pasa a «Lo último que te frenó».
+- **Encadenes:** una sesión con intentos antiguos encadenados y la casilla marcada cuenta una vez.
+- La rama `escaladas` renumerará su migración a **006**.
+
 ## Fuera de alcance (cola, en este orden)
 
 Batería de tests nueva → biblioteca ampliada → Escaladas con señales automáticas (brecha a vista-encadene, primero vs

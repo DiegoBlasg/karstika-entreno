@@ -8,7 +8,7 @@ import { lunesDe, sumarDias } from '../fecha'
 import { mensajeDe } from '../formulario'
 import type { DatosAtleta, FilaHueco, FilaSesion } from './filas'
 import { evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, seguimientoMotor } from './mapeo'
-import { temporadaDe } from './peticion'
+import { diagnosticoCiclo2, temporadaDe } from './peticion'
 import { huecoPasado, vistaSemana } from './semana'
 
 // La semana habitual de Diego, para orientar las semanas sin huecos declarados (dia: 0 = lunes).
@@ -158,7 +158,7 @@ export function cambiosPorResultados(d: DatosAtleta, hoy: string): CambiosResult
       const diagnostico = diagnosticar(evaluaciones, respuestas, hoy)
       ciclo2 = { tipo: 'pendiente', fecha: lunesCiclo2, limitante: diagnostico.limitantes[0]!, explicacion: ajusteCiclo2(diagnostico).explicacion }
     } else if (lunesCiclo2) {
-      const a = ajusteCiclo2(diagnosticar(evaluaciones, respuestas, lunesCiclo2))
+      const a = ajusteCiclo2(diagnosticoCiclo2(d, lunesCiclo2))
       ciclo2 = { tipo: 'fijado', fuerza: a.fuerza, resistencia: a.resistencia, refuerzoTecnica: a.refuerzoTecnica, explicacion: a.explicacion }
     }
     return {

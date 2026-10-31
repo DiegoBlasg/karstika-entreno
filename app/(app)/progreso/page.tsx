@@ -109,7 +109,7 @@ export default async function PaginaProgreso() {
         </p>
         <p className="text-sm text-texto-2">
           <span className="font-medium text-texto">{plural(escalada.encadenes, 'encadene', 'encadenes')}</span> al límite
-          {escalada.ultimoFreno && <><br />Último freno: {NOMBRE_FRENO[escalada.ultimoFreno]}</>}
+          {escalada.ultimoFreno && <><br />Lo último que te frenó: {NOMBRE_FRENO[escalada.ultimoFreno]}</>}
         </p>
       </Tarjeta>
 

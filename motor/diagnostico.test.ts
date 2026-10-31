@@ -84,10 +84,13 @@ describe('diagnosticar: limitante principal (P-69, P-70, P-23)', () => {
     expect(d.fuente).toBe('evidencia')
     expect(d.nada).toBe(4)
   })
-  it('sin mayoría del 40 % no hay candidato por respuestas', () => {
+  it('sin mayoría del 40 % no hay candidato por respuestas, y la explicación lo dice así', () => {
     // 7 respuestas: 2 + 2 + 2 + 1 → el máximo es 28,6 %.
     const r = [...frenos('bombeo', 2), ...frenos('paso-fuerza', 2, 5), ...frenos('tecnica-lectura', 2, 10), ...frenos('cabeza', 1, 15)]
-    expect(diagnosticar([], r, HOY).fuente).toBe('evidencia')
+    const d = diagnosticar([], r, HOY)
+    expect(d.fuente).toBe('evidencia')
+    expect(d.explicaciones[1]!.motivo).toMatch(/7 respuestas, sin ningún motivo que llegue al 40 %/)
+    expect(diagnosticar([], frenos('cabeza', 4), HOY).explicaciones[1]!.motivo).toMatch(/4 de 6 respuestas/)
   })
   it('los empates de mayoría siguen P-23', () => {
     const d = diagnosticar([], [...frenos('cabeza', 3), ...frenos('tecnica-lectura', 3, 10)], HOY)
@@ -175,6 +178,21 @@ describe('diagnosticar: fortaleza (P-71)', () => {
   it('con varios motivos a cero no se sabe', () => {
     expect(diagnosticar([], frenos('bombeo', 6), HOY).fortaleza).toBeNull()
   })
+  it('si lo que más mejora es el limitante principal, la fortaleza es la siguiente que mejora', () => {
+    // Técnica (por respuestas) es el limitante; técnica y fuerza mejoran, la resistencia no → fuerza.
+    const evs = [
+      ev('2026-12-01', 20, { resistenciaS: 80, tecnica: 3 }), ev('2027-01-19', 30, { resistenciaS: 81, tecnica: 4 }),
+      ev('2027-03-02', 34, { resistenciaS: 80, tecnica: 5 }),
+    ]
+    const d = diagnosticar(evs, frenos('tecnica-lectura', 6), HOY)
+    expect(d.limitantes[0]).toBe('tecnica')
+    expect(d.fortaleza).toEqual({ cualidad: 'fuerza-dedos', fuente: 'tests' })
+  })
+  it('la explicación de la fortaleza cita P-71', () => {
+    const d = diagnosticar(resistenciaSubeFuerzaNo, [], HOY)
+    expect(d.explicaciones[2]!.parametros).toEqual(['P-71'])
+    expect(d.explicaciones[2]!.motivo).toMatch(/^Lo que mejor llevas es la resistencia/)
+  })
 })
 
 describe('ajusteCiclo2', () => {
@@ -191,7 +209,6 @@ describe('ajusteCiclo2', () => {
   it('las explicaciones citan P-31 y P-23, la de cabeza también P-62, y el refuerzo de técnica no promete de más', () => {
     expect(con('bombeo').explicacion.parametros).toEqual(['P-23', 'P-31'])
     expect(con('bombeo').explicacion.motivo).toMatch(/decisión de diseño/)
-    expect(con('bombeo').explicacion.motivo).toMatch(/te frena el bombeo/)
     expect(con('cabeza').explicacion.parametros).toEqual(['P-23', 'P-31', 'P-62'])
     expect(con('tecnica-lectura').explicacion.motivo).toMatch(/cuando hay hueco/)
   })

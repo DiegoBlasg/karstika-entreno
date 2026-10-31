@@ -37,7 +37,7 @@ export const ETIQUETA_RPE: readonly string[] = [
 ]
 
 // Sesiones al límite: al terminarlas se pregunta «¿Qué te frenó hoy?» (alimenta el diagnóstico, P-69).
-export const TIPOS_AL_LIMITE: readonly TipoSesion[] = ['via-cuerda-limite', 'pegues-proyecto', 'bloque-limite']
+export const TIPOS_AL_LIMITE: readonly TipoSesion[] = ['via-cuerda-limite', 'pegues-proyecto', 'bloque-limite', 'board']
 
 // Sesiones colgado de la regleta: en «Hice otra cosa» se pregunta el canto y el agarre (el motor exige el canto a
 // los noveles, P-12).

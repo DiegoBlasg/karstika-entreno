@@ -109,10 +109,12 @@ function fortalezaDe(
 ): Fortaleza | null {
   const conDatos = progresos.filter(([, p]) => p.tendencia !== 'sin-datos')
   const mejoran = conDatos.filter(([, p]) => p.tendencia === 'mejora')
-  if (mejoran.length > 0 && mejoran.length < conDatos.length) {
+  // Sin el limitante principal: si es lo que más mejora, la fortaleza es la siguiente que mejora.
+  const candidatas = mejoran.filter(([l]) => l !== principal)
+  if (candidatas.length > 0 && mejoran.length < conDatos.length) {
     const relativo = (p: Progreso): number => (p.unidad === '%' ? p.cambio! : (p.cambio! / p.inicial!) * 100)
-    const [mejor] = mejoran.reduce((a, b) => (relativo(b[1]) > relativo(a[1]) ? b : a))
-    return mejor === principal ? null : { cualidad: mejor, fuente: 'tests' }
+    const [mejor] = candidatas.reduce((a, b) => (relativo(b[1]) > relativo(a[1]) ? b : a))
+    return { cualidad: mejor, fuente: 'tests' }
   }
   if (n >= MIN_RESPUESTAS) {
     const ceros = (Object.keys(frenos) as Limitante[]).filter((l) => frenos[l] === 0)
@@ -177,6 +179,9 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
   }
   const estado = (p: Progreso) => (p.tendencia === 'sin-datos' ? 'sin datos suficientes' : p.tendencia)
   const pct = (l: Limitante) => Math.round((frenos[l] / n) * 100)
+  const respuestasNoDeciden = n < MIN_RESPUESTAS
+    ? `${n} de ${MIN_RESPUESTAS} respuestas`
+    : `${n} respuestas, sin ningún motivo que llegue al ${MAYORIA_PCT} %`
   const lecturaTests = veredicto === 'resistencia'
     ? 'tu fuerza de dedos mejora y tu resistencia no'
     : 'tu resistencia mejora y tu fuerza de dedos no'
@@ -186,9 +191,9 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
     'respuestas-y-tests': () =>
       `Tus respuestas apuntaban a ${NOMBRE[candidato!]} (${pct(candidato!)} %), pero en tus tests ${lecturaTests}: manda el test y el limitante principal es ${NOMBRE[principal!]} (P-70).`,
     tests: () =>
-      `Aún no hay respuestas suficientes (${n} de ${MIN_RESPUESTAS} con una mayoría del ${MAYORIA_PCT} %), pero en tus tests ${lecturaTests}: el limitante principal es ${NOMBRE[principal!]} (P-70).`,
+      `Tus respuestas aún no deciden (${respuestasNoDeciden}), pero en tus tests ${lecturaTests}: el limitante principal es ${NOMBRE[principal!]} (P-70).`,
     evidencia: () =>
-      `Sin datos tuyos suficientes (${n} respuestas de ${MIN_RESPUESTAS} y sin un veredicto claro de los tests), el orden es el de la evidencia: fuerza de dedos y resistencia intermitente (P-23); después técnica y cabeza (la táctica de P-23), cuyo orden entre sí es decisión de diseño.`,
+      `Tus datos aún no deciden (${respuestasNoDeciden} y sin un veredicto claro de los tests), así que el orden es el general de la evidencia: fuerza de dedos y resistencia intermitente (P-23); después técnica y cabeza (la táctica de P-23), cuyo orden entre sí es decisión de diseño.`,
   }[fuente]()
   const parametrosLimitante: Record<FuenteDiagnostico, ParametroId[]> = {
     respuestas: ['P-23', 'P-69'],
@@ -207,6 +212,15 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
   const fortaleza = fortalezaDe(
     [['fuerza-dedos', fuerza], ['resistencia', resistencia], ['tecnica', tecnica]], frenos, n, limitantes[0]!,
   )
+  explicaciones.push(explicar(
+    'diagnostico.fortaleza',
+    ['P-71'],
+    fortaleza === null
+      ? 'Lo que mejor llevas solo sale con datos tuyos: una cualidad que mejora en tus tests cuando otra no, o el único motivo que nunca marcas con al menos 6 respuestas (P-71). Todavía no hay una diferencia clara.'
+      : fortaleza.fuente === 'tests'
+        ? `Lo que mejor llevas es ${NOMBRE[fortaleza.cualidad]}: mejora en tus tests mientras otra cualidad no (P-71).`
+        : `Lo que mejor llevas es ${NOMBRE[fortaleza.cualidad]}: en ${n} respuestas nunca la has marcado como lo que te frenó (P-71).`,
+  ))
   return { progreso: { fuerza, resistencia, tecnica }, limitantes, fuente, frenos, nada, fortaleza, explicaciones }
 }
 
@@ -224,7 +238,7 @@ export function ajusteCiclo2(d: Diagnostico): AjusteCiclo2 {
   const refuerzoTecnica = principal === 'tecnica'
   const motivo = {
     'fuerza-dedos': 'Tu limitante principal es la fuerza de dedos: el ciclo 2 alarga la fuerza a 10 semanas y acorta la resistencia a 4.',
-    resistencia: 'Tu limitante principal es la resistencia (te frena el bombeo): el ciclo 2 alarga la resistencia a 8 semanas y acorta la fuerza a 6.',
+    resistencia: 'Tu limitante principal es la resistencia: el ciclo 2 alarga la resistencia a 8 semanas y acorta la fuerza a 6.',
     tecnica: 'Tu limitante principal es la técnica o la lectura: el ciclo 2 mantiene 8 + 6 semanas y añade un cupo de técnica por semana, que se usa cuando hay hueco (días suaves, descargas y rendimiento); no desplaza a las sesiones de fuerza.',
     cabeza: 'Tu limitante principal es la cabeza: el ciclo 2 mantiene 8 + 6 semanas; el trabajo mental va en los consejos (no hay protocolo con evidencia, P-62).',
   }[principal]
