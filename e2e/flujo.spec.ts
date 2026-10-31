@@ -322,7 +322,7 @@ test('al límite: «¿Qué te frenó hoy?», encadené, último freno y «Tu per
   const sql = await sqlPruebas()
   const hoy = ahoraMadrid(new Date()).fecha
   const id = '00000000-0000-4000-8000-00000000f001'
-  const sesion = { id, tipo: 'bloque-limite', intensidad: 'alta', fecha: hoy, horaInicio: 23, duracionMin: 30 }
+  const sesion = { id, tipo: 'bloque-limite', intensidad: 'alta', fecha: hoy, horaInicio: 4, duracionMin: 30 }
   const explicacion = { regla: 'e2e.freno', parametros: [], evidencias: [], nivelMinimo: 'sinEvidencia', origen: 'diseno', motivo: 'e2e' }
   const propuesta = {
     sesion,
