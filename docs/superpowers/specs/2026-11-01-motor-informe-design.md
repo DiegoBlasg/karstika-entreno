@@ -24,11 +24,10 @@ base (3) se descartan: **la base sigue sin multipresa**.
   **6 min** entre series. Descarga: 1 serie.
 - Carga: **60 % del test vigente** (`lastreRepeaters(e, 0.6)`). Sin test vigente: texto «la carga con la que completas
   casi toda la primera serie» (como hoy sin test).
-- Progresión (diseño): si en la sesión anterior de este tipo se completaron las 24 en las dos series… la app no lo sabe
-  (no se registran repeticiones). Se aplica la misma regla de subida que al resto de multipresa (§3), con la carga base
-  al 60 % en lugar del 70/80 %.
-- Cronómetro: cada serie es un paso «fallo» de 10:6 hasta 24 repeticiones o «No puedo más» (el tipo de paso ya existe
-  para el 7:3 del test).
+- Progresión: la carga es **fija al 60 % del test vigente**, como en el ensayo (Devise fijó la intensidad); sube cuando
+  sube el test. La app no registra repeticiones, así que no hay rampa propia.
+- Cronómetro: cada serie es un paso «fallo» de 10:6 con **máximo de 24 repeticiones**: avanza solo al llegar a 24 o con
+  «No puedo más». El paso `fallo` gana `maxRepeticiones` (el 7:3 del test sigue sin máximo).
 - Sigue siendo **intensa de dedos** (P-15) y su cupo de fase no cambia.
 - Ficha nueva `resistencia-10-6` (sustituye a `resistencia-fuerza-10-5` en la plantilla; la vieja se mantiene en la
   biblioteca solo si algo la usa, si no se borra).
