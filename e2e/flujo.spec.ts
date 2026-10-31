@@ -78,12 +78,12 @@ test('Semana: generar un entreno para el lunes que viene y cambiarlo por otra op
   await expect(hoja).toBeHidden()
   // Queda aceptada en su día, por la mañana y sin hora; no se puede empezar hasta ese día.
   const fila = dia.locator('details').first()
-  await expect(fila.locator('summary')).toContainText('Mañana')
-  const antes = (await fila.locator('summary').textContent()) ?? ''
-  await fila.locator('summary').click()
+  await expect(fila.locator(':scope > summary')).toContainText('Mañana')
+  const antes = (await fila.locator(':scope > summary').textContent()) ?? ''
+  await fila.locator(':scope > summary').click()
   await expect(fila.getByRole('link', { name: 'Empezar sesión' })).toHaveCount(0)
   await fila.getByRole('button', { name: 'Otra opción' }).click()
-  await expect(dia.locator('details').first().locator('summary')).not.toHaveText(antes)
+  await expect(dia.locator('details').first().locator(':scope > summary')).not.toHaveText(antes)
 })
 
 test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
