@@ -7,6 +7,7 @@ import { Tarjeta } from '@/components/ui/Tarjeta'
 import { IrAlActual } from '@/components/via/IrAlActual'
 import { Via } from '@/components/via/Via'
 import { textoLastre } from '@/lib/cronometro/test'
+import { pasosArranque } from '@/lib/datos/arranque'
 import { cambiosPorResultados, type CambiosResultados } from '@/lib/datos/plan'
 import { vistaVia } from '@/lib/datos/via'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
@@ -104,7 +105,7 @@ export default async function PaginaVia() {
         </div>
       </header>
       {vista.aviso && <Aviso tono="ambar">{vista.aviso}</Aviso>}
-      <Via vista={vista} inicio={datos.perfil.inicio_temporada} />
+      <Via vista={vista} inicio={datos.perfil.inicio_temporada} arranque={pasosArranque(datos)} />
       <IrAlActual />
       <Cambios c={cambios} />
     </div>
