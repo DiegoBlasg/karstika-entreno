@@ -317,3 +317,40 @@ test('Biblioteca: desde una sesión, abrir «Cómo se hace» y ver los pasos', a
   await page.getByRole('link', { name: /Rotación externa con banda/ }).click()
   await expect(page.getByRole('img', { name: /codo pegado al costado/ })).toBeVisible()
 })
+
+test('al límite: «¿Qué te frenó hoy?», encadené, último freno y «Tu perfil»', async ({ page }) => {
+  const sql = await sqlPruebas()
+  const hoy = ahoraMadrid(new Date()).fecha
+  const id = '00000000-0000-4000-8000-00000000f001'
+  const sesion = { id, tipo: 'bloque-limite', intensidad: 'alta', fecha: hoy, horaInicio: 23, duracionMin: 30 }
+  const explicacion = { regla: 'e2e.freno', parametros: [], evidencias: [], nivelMinimo: 'sinEvidencia', origen: 'diseno', motivo: 'e2e' }
+  const propuesta = {
+    sesion,
+    bloques: [{ nombre: 'Bloque al límite', minutos: 30, ejercicios: [{ nombre: 'Pegues', cargaTexto: 'Al límite' }], explicacion }],
+    explicaciones: [explicacion],
+  }
+  await sql`insert into sesiones (id, fecha, sesion, propuesta, origen)
+            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(propuesta)}::jsonb, 'propuesta')`
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.goto(`/sesion/${id}`)
+  await page.getByRole('button', { name: 'Empezar', exact: true }).click()
+  page.once('dialog', (d) => void d.accept())
+  await page.getByRole('button', { name: 'Terminar', exact: true }).click()
+  await expect(page.getByText('¿Qué te frenó hoy?')).toBeVisible()
+  await expect(page.getByText('Intentos al límite')).toHaveCount(0)
+  await page.getByLabel('Miedo, no me atreví').check()
+  await page.getByLabel('✓ Hoy encadené algo al límite').check()
+  await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('8')
+  await page.getByRole('button', { name: 'Registrar' }).click()
+  await expect(page).toHaveURL(/\/chapa\//)
+  const [fila] = await sql`select freno, encadene from registros where sesion_id = ${id}`
+  expect(fila).toEqual({ freno: 'cabeza', encadene: true })
+  await page.goto('/progreso')
+  await expect(page.getByText('Último freno: Miedo, no me atreví')).toBeVisible()
+  const perfil = page.getByRole('region', { name: 'Tu perfil' })
+  await expect(perfil.getByText('Lo que más te limita')).toBeVisible()
+  await expect(perfil.getByText('Lo que mejor llevas')).toBeVisible()
+})
