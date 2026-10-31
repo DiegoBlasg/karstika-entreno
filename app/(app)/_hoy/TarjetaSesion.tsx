@@ -17,7 +17,7 @@ import {
   AGARRES, NOMBRE_AGARRE, NOMBRE_TIPO, NOMBRE_ZONA, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
 import { FormularioRegistro } from './FormularioRegistro'
-import { noLaHice, otraCosa } from './acciones'
+import { borrarRegistrada, noLaHice, otraCosa } from './acciones'
 
 // Hora decimal a HH:MM con dos dígitos (redondeando a minutos enteros, para que 9,9999 no dé «09:60»).
 const hhmm = (h: number): string => hhmmDeMinutos(Math.round(h * 60))
@@ -29,7 +29,7 @@ const enlaceCambiar = (f: FilaSesion): string =>
 const TOQUE = 'inline-flex min-h-11 items-center'
 
 // Borra la sesión: «No la hice» (hoy y pasadas) o «Quitar» / «Quitarla» (futuras y las que ya no encajan).
-function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-rojo' }: {
+export function BotonNoLaHice({ id, etiqueta = 'No la hice', confirmacion = '¿Borrar esta sesión?', clase = 'text-rojo' }: {
   id: string
   etiqueta?: string
   confirmacion?: string
@@ -100,7 +100,19 @@ function FormularioOtraCosa({ sesion }: { sesion: Sesion }) {
   )
 }
 
-function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string }) {
+// Borra una sesión registrada de los últimos 7 días con todo lo apuntado.
+function BotonBorrar({ id }: { id: string }) {
+  const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(borrarRegistrada, null)
+  return (
+    <form action={accion} onSubmit={(e) => { if (!confirm('¿Borrar esta sesión? Se borra con lo que apuntaste.')) e.preventDefault() }}>
+      <input type="hidden" name="sesion_id" value={id} />
+      <button className={`${TOQUE} text-sm text-rojo underline`} disabled={pendiente}>Borrar</button>
+      {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
+    </form>
+  )
+}
+
+export function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string }) {
   const { fila, registro } = tarjeta
   const [corrigiendo, setCorrigiendo] = useState(false)
   const cerrar = (): void => setCorrigiendo(false)
@@ -112,9 +124,12 @@ function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegis
           {registro.molestias.length > 0 ? ` · molestias: ${registro.molestias.map((m) => `${NOMBRE_ZONA[m.zona]} ${m.dolor}`).join(', ')}` : ''}
         </p>
         {corregible(fila.fecha, hoy) && (
-          <button type="button" onClick={() => setCorrigiendo(!corrigiendo)} className={`${TOQUE} text-sm underline`}>
-            {corrigiendo ? 'Cancelar' : 'Corregir'}
-          </button>
+          <div className="flex gap-4">
+            <button type="button" onClick={() => setCorrigiendo(!corrigiendo)} className={`${TOQUE} text-sm underline`}>
+              {corrigiendo ? 'Cancelar' : 'Corregir'}
+            </button>
+            {!corrigiendo && <BotonBorrar id={fila.id} />}
+          </div>
         )}
       </div>
       {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} />}

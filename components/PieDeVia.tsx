@@ -17,9 +17,9 @@ interface Paso {
 export function PieDeVia({ pasos, principal = true }: { pasos: PasosArranque; principal?: boolean }) {
   const lista: Paso[] = [
     {
-      hecho: pasos.huecos,
-      titulo: 'Di cuándo puedes entrenar esta semana',
-      accion: (p) => <Link href="/semana" className={p ? BOTON : BOTON_SECUNDARIO}>Añadir ratos para entrenar</Link>,
+      hecho: pasos.generado,
+      titulo: 'Genera tu primer entreno',
+      accion: (p) => <Link href="/semana" className={p ? BOTON : BOTON_SECUNDARIO}>Generar un entreno</Link>,
     },
     {
       hecho: pasos.sesion,
