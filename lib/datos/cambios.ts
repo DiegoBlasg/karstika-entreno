@@ -1,12 +1,17 @@
 // Cómo quedan los datos tras cada acción, antes de escribirla: se validan con validarDatos y solo entonces se
 // guardan. Puro.
-import type { Agarre, Intensidad, Sesion, SesionPlan, TipoSesion } from '../../motor'
+import type { Agarre, Contexto, Intensidad, Sesion, SesionPlan, TipoSesion } from '../../motor'
 import type { DatosAtleta, FilaAlta, FilaChequeo, FilaEvaluacion, FilaRegistro, FilaSesion } from './filas'
 
-// El motor devuelve ids reservados («propuesta-…»); al aceptar, la sesión recibe su id propio.
-export function filaSesionAceptada(plan: SesionPlan, id: string): FilaSesion {
+// El motor devuelve ids reservados («propuesta-…»); al aceptar, la sesión recibe su id propio. Con `contexto`, se guarda
+// con qué se generó.
+export function filaSesionAceptada(plan: SesionPlan, id: string, contexto?: Contexto): FilaSesion {
   const sesion: Sesion = { ...plan.sesion, id }
-  return { id, fecha: sesion.fecha, sesion, propuesta: { ...plan, sesion }, origen: 'propuesta' }
+  // Solo lo que elige el usuario: el material de casa sale siempre del perfil.
+  const guardado = contexto
+    ? { contexto: { compania: contexto.compania, lugar: contexto.lugar, minutosDisponibles: contexto.minutosDisponibles } }
+    : {}
+  return { id, fecha: sesion.fecha, sesion, propuesta: { ...plan, sesion, ...guardado }, origen: 'propuesta' }
 }
 
 export interface DatosLibre {

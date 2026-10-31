@@ -1,99 +1,13 @@
-// Lo que muestra la pantalla «Plan»: los próximos días (esta semana y la siguiente), el año por semanas y lo que ha
-// cambiado por tus resultados. Puro: no guarda nada y las sesiones planeadas solo viven en memoria.
+// Lo que muestra la pantalla «Plan»: el año por semanas y lo que ha cambiado por tus resultados. Puro: no guarda nada.
 import {
   ajusteCiclo2, diagnosticar, estadoAtleta, evaluacionVigente, FASE_OBJETIVO, FASES, FRACCION_INICIAL_REPEATERS, fuerzaRelativa, lastreRepeaters, ZONAS,
-  type Compania, type Explicacion, type FaseId, type Limitante, type Lugar, type Semaforo, type Sesion, type Zona,
+  type Explicacion, type FaseId, type Limitante, type Semaforo, type Zona,
 } from '../../motor'
-import { lunesDe, sumarDias } from '../fecha'
+import { lunesDe } from '../fecha'
 import { mensajeDe } from '../formulario'
-import type { DatosAtleta, FilaHueco, FilaSesion } from './filas'
+import type { DatosAtleta } from './filas'
 import { evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, seguimientoMotor } from './mapeo'
 import { diagnosticoCiclo2, temporadaDe } from './peticion'
-import { huecoPasado, vistaSemana } from './semana'
-
-// La semana habitual de Diego, para orientar las semanas sin huecos declarados (dia: 0 = lunes).
-export const PATRON_HABITUAL: readonly { dia: number; inicioMin: number; lugar: Lugar; compania: Compania; minutos: number }[] = [
-  { dia: 0, inicioMin: 9 * 60, lugar: 'casa', compania: 'solo', minutos: 60 },
-  { dia: 0, inicioMin: 19 * 60, lugar: 'rocodromo', compania: 'solo', minutos: 90 },
-  { dia: 1, inicioMin: 9 * 60, lugar: 'casa', compania: 'solo', minutos: 60 },
-  { dia: 1, inicioMin: 19 * 60, lugar: 'rocodromo', compania: 'con-gente', minutos: 120 },
-  { dia: 2, inicioMin: 9 * 60, lugar: 'casa', compania: 'solo', minutos: 60 },
-  { dia: 3, inicioMin: 9 * 60, lugar: 'casa', compania: 'solo', minutos: 60 },
-  { dia: 3, inicioMin: 19 * 60, lugar: 'rocodromo', compania: 'solo', minutos: 90 },
-]
-
-// Los huecos del patrón en una semana. Ids propios que no chocan con los uuid de la base ni con los reservados del motor.
-export function huecosDelPatron(lunes: string): FilaHueco[] {
-  return PATRON_HABITUAL.map((p) => {
-    const fecha = sumarDias(lunes, p.dia)
-    return { id: `patron-${fecha}-${p.inicioMin}`, fecha, inicio_min: p.inicioMin, compania: p.compania, lugar: p.lugar, minutos: p.minutos }
-  })
-}
-
-export type EstadoPlan = 'aceptada' | 'planeada' | 'libre' | 'sin-plan' | 'pasado'
-
-export interface HuecoPlan {
-  hueco: FilaHueco
-  estado: EstadoPlan
-  sesion?: Sesion
-  cargaAlta?: boolean
-  registrada?: boolean      // solo en las aceptadas
-  descansoActivo?: boolean  // solo en las libres: el plan deja libre un hueco en casa
-}
-
-export interface SemanaPlanVista {
-  lunes: string
-  orientativo: boolean      // huecos del patrón habitual, no declarados
-  huecos: HuecoPlan[]
-  aviso?: string
-}
-
-const delaSemana = (d: DatosAtleta, lunes: string): FilaHueco[] => {
-  const domingo = sumarDias(lunes, 6)
-  return d.huecos.filter((h) => h.fecha >= lunes && h.fecha <= domingo)
-}
-
-// Una semana con la misma lógica que «Mi semana» (vistaSemana); sin huecos declarados, con los del patrón.
-function semanaPlan(d: DatosAtleta, lunes: string, ahora: { fecha: string; minutos: number }): SemanaPlanVista {
-  const orientativo = delaSemana(d, lunes).length === 0
-  const datos = orientativo ? { ...d, huecos: [...d.huecos, ...huecosDelPatron(lunes)] } : d
-  let v: ReturnType<typeof vistaSemana>
-  try {
-    v = vistaSemana(datos, lunes, ahora)
-  } catch (e) {
-    const huecos = delaSemana(datos, lunes)
-      .sort((a, b) => a.fecha.localeCompare(b.fecha) || a.inicio_min - b.inicio_min)
-      .map((hueco): HuecoPlan => ({ hueco, estado: huecoPasado(hueco, ahora) ? 'pasado' : 'sin-plan' }))
-    return { lunes, orientativo, huecos, aviso: `No se ha podido calcular el plan de la semana: ${mensajeDe(e)}` }
-  }
-  const huecos = v.huecos.map(({ fila: hueco, estado: e }): HuecoPlan => {
-    switch (e.tipo) {
-      case 'pasado': return { hueco, estado: 'pasado', ...(e.sesion ? { sesion: e.sesion.sesion } : {}) }
-      case 'ocupado': return { hueco, estado: 'aceptada', sesion: e.sesion.sesion, registrada: e.registrada }
-      case 'planeado': return { hueco, estado: 'planeada', sesion: e.sesion, cargaAlta: e.cargaAlta }
-      case 'libre': return { hueco, estado: 'libre', descansoActivo: e.descansoActivo }
-      case 'sin-plan': return { hueco, estado: 'sin-plan' }
-    }
-  })
-  return { lunes, orientativo, huecos, ...(v.aviso ? { aviso: v.aviso } : {}) }
-}
-
-// Las sesiones planeadas de una semana como si ya estuvieran hechas (sin registro), para planear la siguiente.
-// Ids «plan-…»: no son uuid de la base ni los reservados del motor («propuesta-», «semana-»).
-function planeadasComoHechas(s: SemanaPlanVista): FilaSesion[] {
-  return s.huecos.flatMap(({ hueco, estado, sesion }) => {
-    if (estado !== 'planeada' || !sesion) return []
-    const id = `plan-${hueco.fecha}-${hueco.inicio_min}`
-    return [{ id, fecha: hueco.fecha, sesion: { ...sesion, id, fecha: hueco.fecha, horaInicio: hueco.inicio_min / 60 }, propuesta: null, origen: 'propuesta' }]
-  })
-}
-
-export function proximosDias(d: DatosAtleta, ahora: { fecha: string; minutos: number }): { semanas: SemanaPlanVista[] } {
-  const lunes = lunesDe(ahora.fecha)
-  const esta = semanaPlan(d, lunes, ahora)
-  const siguiente = semanaPlan({ ...d, sesiones: [...d.sesiones, ...planeadasComoHechas(esta)] }, sumarDias(lunes, 7), ahora)
-  return { semanas: [esta, siguiente] }
-}
 
 export interface SemanaAno {
   lunes: string

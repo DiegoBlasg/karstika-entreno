@@ -92,6 +92,12 @@ export async function borrarSesionBd(sql: Sql, id: string): Promise<boolean> {
   return filas.length > 0
 }
 
+// Borra una sesión registrada: su registro e intentos caen en cascada. La ventana de 7 días se comprueba en la acción.
+export async function borrarSesionRegistradaBd(sql: Sql, id: string): Promise<boolean> {
+  const filas = await sql`delete from sesiones where id = ${id} and exists (select 1 from registros where sesion_id = ${id}) returning id`
+  return filas.length > 0
+}
+
 // Una sola sentencia: la nueva solo se inserta si la vieja se ha borrado (y solo se borra si no está registrada).
 export async function sustituirSesion(sql: Sql, idViejo: string, nueva: FilaSesion): Promise<boolean> {
   const filas = await sql`with borrada as (

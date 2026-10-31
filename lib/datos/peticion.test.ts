@@ -63,22 +63,16 @@ describe('temporadaDe', () => {
   })
 })
 
-describe('prepararPropuesta con huecos', () => {
-  it('sin huecos declarados en la semana no hay plan semanal', () => {
-    const p = propuestaDe(prepararPropuesta(datosVacios(), MARTES))
-    expect(p.propuesta.semana).toBeUndefined()
-  })
-  it('con huecos declarados devuelve el plan del resto de la semana', () => {
+describe('prepararPropuesta sin ratos', () => {
+  it('los ratos guardados ya no cuentan: no hay plan semanal', () => {
     const d = datosVacios({
       huecos: [
         huecoFila(uuid(101), '2026-11-03', '19:00', { compania: 'con-gente', lugar: 'rocodromo', minutos: 120 }),
         huecoFila(uuid(102), '2026-11-04', '09:00'),
-        huecoFila(uuid(103), '2026-11-05', '19:00', { lugar: 'rocodromo', minutos: 90 }),
       ],
     })
-    const p = propuestaDe(prepararPropuesta(d, MARTES))
-    expect(p.propuesta.semana?.map((x) => x.hueco.fecha)).toEqual(['2026-11-04', '2026-11-05'])
-    expect(prepararPropuesta(d, MARTES)).toEqual(p) // determinista: aceptar ve lo mismo
+    expect(propuestaDe(prepararPropuesta(d, MARTES)).propuesta.semana).toBeUndefined()
+    expect(prepararPropuesta(d, MARTES)).toEqual(prepararPropuesta(datosVacios(), MARTES))
   })
 })
 

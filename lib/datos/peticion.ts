@@ -5,7 +5,6 @@ import {
 } from '../../motor'
 import { fechaLarga } from '../fecha'
 import type { DatosAtleta } from './filas'
-import { huecosPosteriores } from './huecos'
 import {
   consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor,
 } from './mapeo'
@@ -70,7 +69,6 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
   const evaluaciones = evaluacionesMotor(d.evaluaciones)
   const diagnostico = diagnosticar(evaluaciones, frenosMotor(d), e.fecha)
   const evaluacion = evaluacionParaFecha(evaluaciones, e.fecha)
-  const huecos = huecosPosteriores(d, e)
   const peticion: Peticion = {
     fecha: e.fecha,
     horaInicio: e.horaInicio,
@@ -80,7 +78,6 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     fase,
     seguimiento,
     consejosMostrados: consejosMostradosMotor(d.consejos),
-    ...(huecos ? { huecos: huecos.map((h) => ({ ...h, contexto: { ...h.contexto, multipresaEnCasa: d.perfil.multipresa_en_casa } })) } : {}),
     ...(diagnostico.limitantes[0] ? { limitantePrincipal: diagnostico.limitantes[0] } : {}),
     ...(evaluacion ? { evaluacion } : {}),
   }

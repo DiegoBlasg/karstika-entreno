@@ -1,5 +1,5 @@
 // Filas tal como las devuelven las consultas de lib/servidor/consultas.ts (fechas como 'AAAA-MM-DD').
-import type { Compania, Freno, Lugar, MotivoCaida, Molestia, Sesion, SesionPlan, Zona } from '../../motor'
+import type { Compania, Contexto, Freno, Lugar, MotivoCaida, Molestia, Sesion, SesionPlan, Zona } from '../../motor'
 
 export interface FilaPerfil {
   peso_kg: number
@@ -28,7 +28,8 @@ export interface FilaSesion {
   id: string
   fecha: string
   sesion: Sesion
-  propuesta: SesionPlan | null
+  // `contexto`: con quién, dónde y minutos con que se generó (para «Otra opción» y los valores de la hoja).
+  propuesta: (SesionPlan & { contexto?: Contexto }) | null
   origen: 'propuesta' | 'libre'
 }
 
