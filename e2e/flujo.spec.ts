@@ -352,6 +352,8 @@ test('al límite: «¿Qué te frenó hoy?», encadené, último freno y «Tu per
   await page.goto('/progreso')
   await expect(page.getByText('Lo último que te frenó: Miedo, no me atreví')).toBeVisible()
   const perfil = page.getByRole('region', { name: 'Tu perfil' })
-  await expect(perfil.getByText('Lo que más te limita')).toBeVisible()
-  await expect(perfil.getByText('Lo que mejor llevas')).toBeVisible()
+  // Con una sola respuesta aún no decide: se muestra el orden general y cuánto falta.
+  await expect(perfil.getByText('Lo que suele limitar más')).toBeVisible()
+  await expect(perfil.getByText('Tus respuestas aún no deciden: llevas 1 de 6 en las últimas 8 semanas.')).toBeVisible()
+  await expect(perfil.getByText('Lo que mejor llevas', { exact: true })).toBeVisible()
 })
