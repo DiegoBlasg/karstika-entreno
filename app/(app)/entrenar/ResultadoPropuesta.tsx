@@ -4,7 +4,8 @@ import { useActionState } from 'react'
 import { esCargaAlta, ZONAS, type SesionPlan } from '@/motor'
 import { AvisoMedico } from '@/components/AvisoMedico'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
-import { BOTON, TARJETA } from '@/components/estilos'
+import { BOTON, TARJETA, TARJETA_DESTACADA } from '@/components/estilos'
+import { Etiqueta } from '@/components/ui/Etiqueta'
 import { PlanSesion } from '@/components/PlanSesion'
 import { PorQue } from '@/components/PorQue'
 import type { EntradaPeticion, Preparacion } from '@/lib/datos/peticion'
@@ -17,15 +18,15 @@ import { aceptar } from './acciones'
 function Opcion({ plan, indice, titulo, entrada, reemplaza }: { plan: SesionPlan; indice: number; titulo: string; entrada: EntradaPeticion; reemplaza?: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(aceptar, null)
   return (
-    <section className={TARJETA}>
-      <p className="text-xs uppercase tracking-wide text-texto-2">{titulo}</p>
+    <section className={indice === 0 ? TARJETA_DESTACADA : TARJETA}>
+      <Etiqueta as="p">{titulo}</Etiqueta>
       <PlanSesion plan={plan} />
       <form action={accion}>
         <input type="hidden" name="entrada" value={JSON.stringify(entrada)} />
         <input type="hidden" name="indice" value={indice} />
         <input type="hidden" name="tipo" value={plan.sesion.tipo} />
         {reemplaza && <input type="hidden" name="reemplaza" value={reemplaza} />}
-        <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Aceptar esta sesión'}</button>
+        <button className={`${BOTON} w-full`} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Aceptar esta sesión'}</button>
       </form>
       {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
     </section>
@@ -60,7 +61,7 @@ export function ResultadoPropuesta({ entrada, prep, posicion, reemplaza }: {
       {estado && <PorQue titulo="Cómo te ve el entrenador hoy" explicaciones={estado.explicaciones} />}
       {propuesta.descanso && (
         <section className={TARJETA}>
-          <h2 className="font-semibold">Toca descansar</h2>
+          <h2 className="font-titular text-2xl font-bold uppercase">Toca descansar</h2>
           <p className="text-sm">{propuesta.descanso.motivo}</p>
           {!propuesta.principal && propuesta.descanso.regla === 'plan.semana-libre' && entrada.contexto.lugar === 'casa' && (
             <p className="text-sm">{DESCANSO_ACTIVO}</p>

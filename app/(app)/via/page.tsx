@@ -1,9 +1,9 @@
 import { FRACCION_INICIAL_REPEATERS, VALORES } from '@/motor'
 import { FondoTopo } from '@/components/FondoTopo'
-import { TARJETA } from '@/components/estilos'
 import { PorQue } from '@/components/PorQue'
 import { Aviso } from '@/components/ui/Aviso'
 import { Etiqueta } from '@/components/ui/Etiqueta'
+import { Tarjeta } from '@/components/ui/Tarjeta'
 import { IrAlActual } from '@/components/via/IrAlActual'
 import { Via } from '@/components/via/Via'
 import { textoLastre } from '@/lib/cronometro/test'
@@ -22,54 +22,66 @@ const MOTIVO_DESCARGA = { rpe: 'sesiones más duras de lo previsto', bienestar: 
 function Cambios({ c }: { c: CambiosResultados }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Qué ha cambiado por tus resultados</h2>
+      <h2 className="font-titular text-2xl font-bold uppercase">Qué ha cambiado por tus resultados</h2>
       {c.aviso ? (
-        <p className="rounded bg-ambar/10 p-3 text-sm">{c.aviso}</p>
+        <Aviso tono="ambar">{c.aviso}</Aviso>
       ) : (
-        <ul className={`${TARJETA} text-sm`}>
-          <li>
-            <span className="font-medium">Último test: </span>
-            {c.ultimoTest
-              ? `${fechaLarga(c.ultimoTest.fecha)} · ${textoLastre(c.ultimoTest.lastreKg)} · ${Math.round(c.ultimoTest.fuerzaRelativa)} % de tu peso${
-                  c.ultimoTest.vigente ? '' : '. Tiene más de 10 semanas: toca repetirlo antes de volver a la multipresa.'
-                }`
-              : 'sin test todavía.'}
-          </li>
-          {c.repeaters && (
-            <li>
-              <span className="font-medium">Carga de los repeaters: </span>
-              al empezar, el {Math.round(FRACCION_INICIAL_REPEATERS * 100)} % del test ({textoLastre(c.repeaters.lastreInicial)}); con sesiones válidas sube como mucho al {Math.round(VALORES['P-06'].fraccionMaximaRepeaters * 100)} %
-              ({textoLastre(c.repeaters.lastreMaximo)}). La carga exacta sale en cada sesión de multipresa.
-            </li>
-          )}
-          <li>
-            <span className="font-medium">Freno por esfuerzo: </span>
-            {c.sinSubida
-              ? 'activo. Tu última sesión fue más dura de lo previsto o tienes una zona en ámbar: la carga no sube por ahora.'
-              : 'no. La carga puede subir cuando toque.'}
-          </li>
-          <li>
-            <span className="font-medium">Zonas: </span>
-            {c.zonas.length > 0 ? c.zonas.map((z) => `${NOMBRE_ZONA[z.zona]} en ${SEMAFORO[z.semaforo]}`).join(', ') + '.' : 'todas en verde.'}
-          </li>
-          <li>
-            <span className="font-medium">Descargas adelantadas: </span>
-            {c.descargasAdelantadas.length > 0
-              ? c.descargasAdelantadas.map((x) => `del ${corta(x.desde)} al ${corta(x.hasta)} por ${MOTIVO_DESCARGA[x.motivo]}`).join('; ') + '.'
-              : 'ninguna.'}
-          </li>
-          {c.ciclo2 && (
-            <li className="space-y-1">
-              <p>
-                <span className="font-medium">Ciclo 2: </span>
-                {c.ciclo2.tipo === 'pendiente'
-                  ? `se decide el ${numerica(c.ciclo2.fecha)} con tus tests y caídas: hoy apuntaría a ${NOMBRE_LIMITANTE[c.ciclo2.limitante]}.`
-                  : `${c.ciclo2.fuerza} semanas de fuerza y ${c.ciclo2.resistencia} de resistencia${c.ciclo2.refuerzoTecnica ? ', con un cupo más de técnica por semana' : ''}.`}
-              </p>
-              <PorQue explicaciones={[c.ciclo2.explicacion]} />
-            </li>
-          )}
-        </ul>
+        <Tarjeta>
+          <dl className="space-y-3 text-sm">
+            <div>
+              <dt><Etiqueta>Último test</Etiqueta></dt>
+              <dd>
+                {c.ultimoTest
+                  ? `${fechaLarga(c.ultimoTest.fecha)} · ${textoLastre(c.ultimoTest.lastreKg)} · ${Math.round(c.ultimoTest.fuerzaRelativa)} % de tu peso${
+                      c.ultimoTest.vigente ? '' : '. Tiene más de 10 semanas: toca repetirlo antes de volver a la multipresa.'
+                    }`
+                  : 'sin test todavía.'}
+              </dd>
+            </div>
+            {c.repeaters && (
+              <div>
+                <dt><Etiqueta>Carga de los repeaters</Etiqueta></dt>
+                <dd>
+                  al empezar, el {Math.round(FRACCION_INICIAL_REPEATERS * 100)} % del test ({textoLastre(c.repeaters.lastreInicial)}); con sesiones válidas sube como mucho al {Math.round(VALORES['P-06'].fraccionMaximaRepeaters * 100)} %
+                  ({textoLastre(c.repeaters.lastreMaximo)}). La carga exacta sale en cada sesión de multipresa.
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt><Etiqueta>Freno por esfuerzo</Etiqueta></dt>
+              <dd>
+                {c.sinSubida
+                  ? 'activo. Tu última sesión fue más dura de lo previsto o tienes una zona en ámbar: la carga no sube por ahora.'
+                  : 'no. La carga puede subir cuando toque.'}
+              </dd>
+            </div>
+            <div>
+              <dt><Etiqueta>Zonas</Etiqueta></dt>
+              <dd>{c.zonas.length > 0 ? c.zonas.map((z) => `${NOMBRE_ZONA[z.zona]} en ${SEMAFORO[z.semaforo]}`).join(', ') + '.' : 'todas en verde.'}</dd>
+            </div>
+            <div>
+              <dt><Etiqueta>Descargas adelantadas</Etiqueta></dt>
+              <dd>
+                {c.descargasAdelantadas.length > 0
+                  ? c.descargasAdelantadas.map((x) => `del ${corta(x.desde)} al ${corta(x.hasta)} por ${MOTIVO_DESCARGA[x.motivo]}`).join('; ') + '.'
+                  : 'ninguna.'}
+              </dd>
+            </div>
+            {c.ciclo2 && (
+              <div>
+                <dt><Etiqueta>Ciclo 2</Etiqueta></dt>
+                <dd className="space-y-1">
+                  <p>
+                    {c.ciclo2.tipo === 'pendiente'
+                      ? `se decide el ${numerica(c.ciclo2.fecha)} con tus tests y caídas: hoy apuntaría a ${NOMBRE_LIMITANTE[c.ciclo2.limitante]}.`
+                      : `${c.ciclo2.fuerza} semanas de fuerza y ${c.ciclo2.resistencia} de resistencia${c.ciclo2.refuerzoTecnica ? ', con un cupo más de técnica por semana' : ''}.`}
+                  </p>
+                  <PorQue explicaciones={[c.ciclo2.explicacion]} />
+                </dd>
+              </div>
+            )}
+          </dl>
+        </Tarjeta>
       )}
     </section>
   )
