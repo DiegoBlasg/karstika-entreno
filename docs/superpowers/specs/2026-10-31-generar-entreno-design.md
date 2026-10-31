@@ -41,6 +41,8 @@ Fecha: 2026-10-31 · Rama: `generar-entreno` (sale de `diagnostico-freno`, que e
   **¿Cuándo?** (Mañana / Tarde), todos con `Opciones`.
 - Valores iniciales: el contexto de la última sesión generada ese mismo día de la semana (`propuesta.contexto`, §5);
   si no hay, Solo · Rocódromo · 90 · Tarde.
+- Si el día es hoy y aún no hay chequeo de hoy, la hoja añade «¿Cómo llegas hoy?» (sueño, fatiga, ganas y molestias,
+  P-65) y se guarda con la sesión.
 - Botón «Generar». Mientras genera: «Generando…».
 
 ### Qué pasa al generar
@@ -89,8 +91,8 @@ los días en orden. Los ratos guardados dejan de usarse (no se borran).
 - **Cuándo se ofrece**: el motor, cuando la propuesta es descanso (`descanso` presente y sin principal), añade
   `core-movilidad` como **alternativa** siempre que **ninguna zona esté en rojo**. En «Hice otra cosa» y «Apuntar
   entrenamiento» aparece como un tipo más.
-- Validación de seguridad: con una zona en rojo, `validarSesion` rechaza `core-movilidad` (P-45/P-64 ya prohíben
-  cargar la zona; aquí se rechaza entera por sencillez).
+- Con una zona en rojo el motor no la ofrece. Apuntarla a mano («Hice otra cosa») sigue siendo posible: lo hecho, hecho
+  está.
 - Biblioteca: fichas de texto para plancha, hollow, elevaciones colgado, plancha lateral, rana, 90/90 y dislocaciones,
   con el formato de las fichas actuales (sin SVG si no hay figura; se reutiliza la de dominadas para el colgado).
 
