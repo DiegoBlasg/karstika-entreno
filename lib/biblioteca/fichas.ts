@@ -5,7 +5,7 @@ import { FRACCION_INICIAL_REPEATERS, VALORES, type ParametroId } from '../../mot
 import type { DibujoId } from './dibujos'
 
 export const FICHA_IDS = [
-  'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-fuerza-10-5', 'suspension-maxima-10s', 'test-7-3-fallo',
+  'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo',
   'calentamiento-progresivo', 'calentamiento-barra',
   'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'practica-tecnica', 'video-autoevaluacion',
   'dominadas-lastradas', 'colgarse-barra',
@@ -103,27 +103,27 @@ export const FICHAS: Record<FichaId, Ficha> = {
     parametros: ['P-01', 'P-02', 'P-03', 'P-05', 'P-06', 'P-09', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
-  'resistencia-fuerza-10-5': {
-    id: 'resistencia-fuerza-10-5',
-    titulo: `Resistencia de fuerza ${RF.trabajoS}:${RF.descansoS}`,
-    paraQue: 'Suspensiones más largas, con menos descanso, para la resistencia de fuerza de dedos.',
+  'resistencia-10-6': {
+    id: 'resistencia-10-6',
+    titulo: `Resistencia ${RF.trabajoS}:${RF.descansoS} al ${pct(RF.fraccion)}`,
+    paraQue: 'Suspensiones intermitentes submáximas para la resistencia de dedos: el protocolo con ensayo (Devise 2022) que mejoró la resistencia sin necesidad de ir al máximo.',
     material: `Multipresa, regleta de ${REGLETA}`,
     pasos: [
       ...PASOS_COLGARSE,
-      `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso; ${RF.repeticiones} repeticiones por serie.`,
+      `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso, hasta ${RF.repeticiones} repeticiones o hasta que no puedas sostener los ${RF.trabajoS} s con buena forma.`,
       `Haz ${RF.series} series con ${fmt(RF.descansoSeriesS / 60)} min entre series.`,
-      `Carga: la misma regla que los repeaters (el ${pct(FRACCION_INICIAL_REPEATERS)} del test y después hasta el ${pct(VALORES['P-06'].fraccionMaximaRepeaters)}).`,
+      `Carga: el ${pct(RF.fraccion)} de tu fuerza máxima del último test, fija. Sin test: la carga con la que completas casi toda la primera serie (decisión de diseño).`,
       NOVEL,
     ],
     errores: [
-      'Llegar al fallo en las primeras series.',
+      'Subir la carga para llegar antes al fallo: el estímulo está en acumular repeticiones a carga moderada.',
       'Cerrar el agarre hacia el arqueado al final de cada suspensión.',
     ],
     paraSi: [
-      'No sostienes los 10 s con buena forma: termina la serie.',
+      'No sostienes los 10 s con buena forma: la serie ha terminado.',
       ...PARA_SI,
     ],
-    parametros: ['P-36', 'P-06', 'P-09', 'P-10', 'P-12', ...SEGURIDAD],
+    parametros: ['P-36', 'P-09', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
   'suspension-maxima-10s': {
@@ -663,7 +663,7 @@ export interface Grupo {
 }
 
 export const GRUPOS: Grupo[] = [
-  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-fuerza-10-5', 'suspension-maxima-10s', 'test-7-3-fallo'] },
+  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo'] },
   {
     id: 'escalada',
     titulo: 'Escalada',

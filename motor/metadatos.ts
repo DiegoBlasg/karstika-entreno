@@ -40,7 +40,7 @@ export const METADATOS: Record<ParametroId, MetadatoParametro<ParametroId>> = {
   "P-33": {"id":"P-33","titulo":"Combinar fuerza y resistencia (interferencia)","origen":"evidencia","evidencia":["EV-FUERZA-008","EV-FUERZA-012","EV-RESIST-004"],"nivelMinimo":"C"},
   "P-34": {"id":"P-34","titulo":"Carga de sesión","origen":"evidencia","evidencia":["EV-PERIOD-005","EV-PERIOD-006"],"nivelMinimo":"B"},
   "P-35": {"id":"P-35","titulo":"ARC o capacidad (escalada continua suave)","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
-  "P-36": {"id":"P-36","titulo":"Resistencia de fuerza en multipresa","origen":"evidencia","evidencia":["EV-DEDOS-005","EV-DEDOS-006","EV-RESIST-003"],"nivelMinimo":"A"},
+  "P-36": {"id":"P-36","titulo":"Resistencia en multipresa","origen":"evidencia","evidencia":["EV-DEDOS-005","EV-DEDOS-006","EV-RESIST-003"],"nivelMinimo":"A"},
   "P-37": {"id":"P-37","titulo":"4x4, bloques enlazados e intervalos en vía","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
   "P-38": {"id":"P-38","titulo":"Fuerza máxima en board","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
   "P-39": {"id":"P-39","titulo":"Dominadas lastradas","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},

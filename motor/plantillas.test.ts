@@ -438,13 +438,15 @@ describe('plantillas del tramo 2c', () => {
   const casa = { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } as const
   const roca = { compania: 'con-gente', lugar: 'roca', minutosDisponibles: 180 } as const
 
-  it('multipresa de resistencia de fuerza: P-36 (10 s : 5 s, 5 repeticiones, 4 series, 60 s), 10 + 10 = 20 min, a 20 mm', () => {
+  it('multipresa de resistencia: P-36 (10 s : 6 s hasta 24, 2 series, 6 min, 60 % fijo), 10 + 20 = 30 min, a 20 mm', () => {
     const plan = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, evaluacion }))!
-    expect(plan.sesion).toMatchObject({ tipo: 'multipresa-resistencia-fuerza', intensidad: 'alta', duracionMin: 20 })
+    expect(plan.sesion).toMatchObject({ tipo: 'multipresa-resistencia-fuerza', intensidad: 'alta', duracionMin: 30 })
     expect(plan.sesion.detalle).toMatchObject({ regletaMm: 20, agarre: 'semiarqueado' })
-    expect(plan.bloques[1]!.ejercicios[0]).toMatchObject({ trabajoS: 10, descansoS: 5, repeticiones: 5, series: 4, descansoSeriesS: 60 })
-    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(0) // 70 % de 70 + 30 kg
+    expect(plan.bloques[1]!.ejercicios[0]).toMatchObject({ trabajoS: 10, descansoS: 6, repeticiones: 24, series: 2, descansoSeriesS: 360, hastaFallo: true })
+    // 60 % de (70 + 30) − 70 = −10 kg: descarga de 10 kg.
+    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(-10)
     expect(plan.bloques[1]!.explicacion.parametros).toContain('P-36')
+    expect(plan.bloques[1]!.explicacion.motivo).toMatch(/Devise 2022/)
   })
   it('4x4: P-37 (4 bloques, 4 vueltas, 4 min), 10 + 10 + 30 = 50 min, carga alta', () => {
     const plan = construirSesion('resistencia-4x4', peticion())!
@@ -479,9 +481,9 @@ describe('plantillas en semana de descarga (P-48)', () => {
     expect(repeaters[0]!.explicacion.parametros).toContain('P-48')
     expect(repeaters[0]!.ejercicios[0]!.cargaKg).toBe(10) // la carga se mantiene; baja el volumen
   })
-  it('resistencia de fuerza: la mitad de series; 4x4: la mitad de vueltas', () => {
+  it('resistencia: una sola serie; 4x4: la mitad de vueltas', () => {
     const rf = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, fase: descarga }))!
-    expect(rf.bloques[1]!.ejercicios[0]!.series).toBe(2)
+    expect(rf.bloques[1]!.ejercicios[0]!.series).toBe(1)
     const cuatro = construirSesion('resistencia-4x4', peticion({ fase: descarga }))!
     expect(cuatro.bloques[2]!.ejercicios[0]!.series).toBe(2)
     expect(cuatro.sesion.duracionMin).toBe(35)

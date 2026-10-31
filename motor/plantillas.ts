@@ -210,20 +210,21 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
 
 // Resistencia de fuerza en multipresa (P-36, A): 10 s : 5 s, 5 repeticiones, 4 series, 60 s entre series. En
 // descarga, la mitad de series. Misma progresión de carga que los repeaters.
+// Resistencia en multipresa (P-36, Devise 2022): 10:6 hasta 24 repeticiones por serie, al 60 % fijo del test vigente.
+// El ensayo no reajustó la intensidad: la carga sube cuando sube el test, no por sesiones.
 function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
-  // Protocolo nuevo, progresión propia (P-11): vuelve a empezar al 70 % aunque haya repeaters previos.
-  const progresion = progresionMultipresa(p, ['multipresa-resistencia-fuerza'])
-  const { kg, porcentaje, retornoP46 } = progresion
-  const { trabajoS, descansoS, repeticiones, descansoSeriesS } = VALORES['P-36']
-  const series = p.fase.descarga ? VALORES['P-36'].series / 2 : VALORES['P-36'].series
-  const segundos = series * repeticiones * (trabajoS + descansoS) + (series - 1) * descansoSeriesS
+  const { trabajoS, descansoS, repeticiones, descansoSeriesS, fraccion } = VALORES['P-36']
+  const kg = evaluacionVigente(p.evaluacion, p.fecha) ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
+  const porcentaje = Math.round(fraccion * 100)
+  const series = p.fase.descarga ? 1 : VALORES['P-36'].series
+  const segundos = series * (repeticiones * (trabajoS + descansoS) - descansoS) + (series - 1) * descansoSeriesS
   const bloqueMin = Math.max(5, Math.ceil(segundos / 60 / 5) * 5)
   const total = CALENTAMIENTO_MIN + bloqueMin
   if (total > p.contexto.minutosDisponibles) return null
   const bloques: Bloque[] = [
     bloqueCalentamiento(),
     {
-      nombre: 'Resistencia de fuerza en multipresa',
+      nombre: 'Resistencia en multipresa',
       minutos: bloqueMin,
       ejercicios: [
         {
@@ -233,16 +234,19 @@ function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
           trabajoS,
           descansoS,
           descansoSeriesS,
+          hastaFallo: true,
           ...(kg !== undefined ? { cargaKg: kg } : {}),
           cargaTexto: cargaMultipresa(kg),
-          notas: notasCarga(kg, porcentaje),
-          ficha: 'resistencia-fuerza-10-5',
+          notas: kg !== undefined
+            ? `El ${porcentaje} % de tu último test. Cada serie, hasta ${repeticiones} repeticiones o hasta que no sostengas los ${trabajoS} s.`
+            : `Sin test vigente: la carga con la que completas casi toda la primera serie (decisión de diseño). Cada serie, hasta ${repeticiones} repeticiones.`,
+          ficha: 'resistencia-10-6',
         },
       ],
       explicacion: explicar(
         'plantilla.multipresa-resistencia-fuerza',
-        [...(p.fase.descarga ? (['P-36', 'P-06', 'P-09', 'P-10', 'P-48'] as const) : (['P-36', 'P-06', 'P-09', 'P-10', 'P-11'] as const)), ...(retornoP46 ? (['P-46'] as const) : [])],
-        `${p.fase.descarga ? 'Semana de descarga: la mitad de series. ' : ''}Resistencia de fuerza: ${trabajoS} s colgado : ${descansoS} s de descanso, ${repeticiones} repeticiones, ${series} series y 1 min entre series, en regleta de 20 mm semiarqueado. La carga (70 % y después 80 % del test) es la de los repeaters (P-06): P-36 no fija intensidad para este perfil.${extrasProgresion(progresion)}`,
+        p.fase.descarga ? ['P-36', 'P-09', 'P-10', 'P-48'] : ['P-36', 'P-09', 'P-10'],
+        `${p.fase.descarga ? 'Semana de descarga: una sola serie. ' : ''}Resistencia: ${trabajoS} s colgado : ${descansoS} s de descanso, hasta ${repeticiones} repeticiones por serie, ${series === 1 ? '1 serie' : `${series} series con ${descansoSeriesS / 60} min entre series`}, en regleta de 20 mm semiarqueado, al ${porcentaje} % fijo de tu fuerza máxima. Es el protocolo con ensayo que mejoró la resistencia (Devise 2022, en avanzados); las suspensiones al máximo no la mejoraron.`,
       ),
     },
   ]
