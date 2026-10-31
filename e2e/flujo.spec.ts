@@ -75,8 +75,8 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
   await expect(page).toHaveURL(/\/$/)
   await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
-  // Sale en la lista de la semana y otra vez en «Próximos días».
-  await expect(page.getByText(/Aceptada/).first()).toBeVisible()
+  // Sale en la lista de la semana (ya no se repite en «Próximos días»).
+  await expect(page.getByText(/Aceptada/)).toBeVisible()
 })
 
 test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
