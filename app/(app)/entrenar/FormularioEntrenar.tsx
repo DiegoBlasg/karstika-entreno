@@ -36,8 +36,8 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
       <form onSubmit={enviarSinVaciar(accion)} className="space-y-4">
         {inicial.reemplaza && <input type="hidden" name="reemplaza" value={inicial.reemplaza} />}
         <div className="flex gap-3">
-          <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} max={inicial.reemplaza ? hoy : undefined} value={dia} onChange={(e) => setDia(e.target.value)} readOnly={Boolean(inicial.reemplaza)} required className={CAMPO} /></label>
-          <label className="block w-32">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
+          <label className="block min-w-0 flex-1">Día<input type="date" name="fecha" min={primerDia} max={inicial.reemplaza ? hoy : undefined} value={dia} onChange={(e) => setDia(e.target.value)} readOnly={Boolean(inicial.reemplaza)} required className={CAMPO} /></label>
+          <label className="block w-32 min-w-0">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
         </div>
         <Opciones nombre="compania" leyenda="¿Con quién?" requerido valor={inicial.compania ?? 'con-gente'} columnas={2}
           opciones={[{ valor: 'con-gente', texto: 'Con gente' }, { valor: 'solo', texto: 'Solo' }]} />

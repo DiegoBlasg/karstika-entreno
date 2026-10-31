@@ -1,34 +1,31 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
 import { Opciones } from '@/components/ui/Opciones'
 import type { EstadoAccion } from '@/lib/estado'
-import { fechaLarga } from '@/lib/fecha'
 import { MINUTOS_DISPONIBLES } from '@/lib/formulario'
 import { anadirHueco } from './acciones'
 
-// Se envía sin vaciar: añadir varios huecos seguidos solo cambia el día o la hora.
-export function FormularioHueco({ dias, abierto }: { dias: string[]; abierto: boolean }) {
+// Un rato para entrenar en un día ya elegido (el «+» de ese día). Se envía sin vaciar: si el servidor lo rechaza
+// (se solapa, ya ha pasado…) los campos se quedan como estaban. Al guardarlo avisa con `alAnadir` (la hoja se cierra).
+export function FormularioHueco({ fecha, alAnadir }: { fecha: string; alAnadir: (mensaje: string) => void }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(anadirHueco, null)
   const [minutos, setMinutos] = useState(60)
   const [lugar, setLugar] = useState('casa')
-  // Solo decide si empieza abierto: añadir un hueco no lo cierra y deja ver «Hueco añadido.».
-  const [inicial] = useState(abierto)
+  // Cada respuesta de la acción es un objeto nuevo: se avisa una sola vez por respuesta, aunque se vuelva a pintar.
+  const avisado = useRef<EstadoAccion>(null)
+  useEffect(() => {
+    if (estado?.ok && avisado.current !== estado) {
+      avisado.current = estado
+      alAnadir(estado.ok)
+    }
+  }, [estado, alAnadir])
   return (
-    <details open={inicial} className="rounded-2xl border border-borde bg-superficie">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden px-4 font-titular text-lg font-bold uppercase tracking-wide text-progreso">+ Añadir un hueco</summary>
-    <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 p-4 pt-1">
-      <div className="flex gap-3">
-        <label className="block flex-1">
-          Día
-          <select name="fecha" className={CAMPO} defaultValue={dias[0]}>
-            {dias.map((d) => <option key={d} value={d}>{fechaLarga(d)}</option>)}
-          </select>
-        </label>
-        <label className="block w-32">Hora<input type="time" name="hora" defaultValue="09:00" required className={CAMPO} /></label>
-      </div>
+    <form onSubmit={enviarSinVaciar(accion)} className="space-y-4">
+      <input type="hidden" name="fecha" value={fecha} />
+      <label className="block">Hora<input type="time" name="hora" defaultValue="09:00" required className={CAMPO} /></label>
       <Opciones nombre="compania" leyenda="¿Con quién?" requerido valor="solo" columnas={2}
         opciones={[{ valor: 'solo', texto: 'Solo' }, { valor: 'con-gente', texto: 'Con gente' }]} />
       <Opciones nombre="lugar" leyenda="¿Dónde?" requerido valor={lugar} onCambio={(v) => { setLugar(v); setMinutos(v === 'casa' ? 60 : 90) }}
@@ -40,10 +37,8 @@ export function FormularioHueco({ dias, abierto }: { dias: string[]; abierto: bo
           value={minutos} onChange={(e) => setMinutos(Number(e.target.value))} required className={CAMPO}
         />
       </label>
-      <button className={BOTON} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Añadir hueco'}</button>
       {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}
-      {estado?.ok && <p className="text-sm text-progreso">{estado.ok}</p>}
+      <button className={`${BOTON} w-full`} disabled={pendiente}>{pendiente ? 'Guardando…' : 'Añadir rato'}</button>
     </form>
-    </details>
   )
 }

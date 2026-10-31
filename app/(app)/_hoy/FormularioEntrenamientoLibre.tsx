@@ -42,8 +42,8 @@ function Formulario({ hoy, hora, alTerminar }: { hoy: string; hora: string; alTe
         </select>
       </label>
       <div className="flex gap-3">
-        <label className="block flex-1">Hora de inicio<input type="time" name="hora" defaultValue={hora} required className={CAMPO} /></label>
-        <label className="block flex-1">Minutos<input type="number" name="minutos" min={1} max={1440} defaultValue={60} required className={CAMPO} /></label>
+        <label className="block min-w-0 flex-1">Hora de inicio<input type="time" name="hora" defaultValue={hora} required className={CAMPO} /></label>
+        <label className="block min-w-0 flex-1">Minutos<input type="number" name="minutos" min={1} max={1440} defaultValue={60} required className={CAMPO} /></label>
       </div>
       {TIPOS_CON_REGLETA.includes(tipo) && (
         <div className="flex gap-3">

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { BOTON, BOTON_SECUNDARIO, ENLACE, TARJETA } from '@/components/estilos'
+import { BOTON, BOTON_SECUNDARIO, TARJETA } from '@/components/estilos'
 import { IconoChapa } from '@/components/iconos/Escalada'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import type { PasosArranque } from '@/lib/datos/arranque'
@@ -18,8 +18,8 @@ export function PieDeVia({ pasos, principal = true }: { pasos: PasosArranque; pr
   const lista: Paso[] = [
     {
       hecho: pasos.huecos,
-      titulo: 'Declara tus huecos de la semana',
-      accion: (p) => <Link href="/semana" className={p ? BOTON : BOTON_SECUNDARIO}>Declarar huecos</Link>,
+      titulo: 'Di cuándo puedes entrenar esta semana',
+      accion: (p) => <Link href="/semana" className={p ? BOTON : BOTON_SECUNDARIO}>Añadir ratos para entrenar</Link>,
     },
     {
       hecho: pasos.sesion,
@@ -30,10 +30,7 @@ export function PieDeVia({ pasos, principal = true }: { pasos: PasosArranque; pr
       hecho: pasos.test,
       titulo: 'Tu primer test de dedos',
       accion: () => (
-        <>
-          <p className="text-sm text-texto-2">El entrenador te lo propondrá cuando toque, en la base.</p>
-          <Link href="/progreso" className={`${ENLACE} inline-flex min-h-11 items-center`}>Ya lo hice: apuntarlo</Link>
-        </>
+        <p className="text-sm text-texto-2">El entrenador te lo propondrá cuando toque, en la base.</p>
       ),
     },
   ]

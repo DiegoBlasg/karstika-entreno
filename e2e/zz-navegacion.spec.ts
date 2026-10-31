@@ -68,6 +68,9 @@ test('Progreso: fuerza, grado, semanas cumplidas y logros', async ({ page }) => 
 
 test('Progreso: apuntar un test lleva a la reunión', async ({ page }) => {
   await page.goto('/progreso')
+  // Sin tests pendientes de apuntar, el formulario va plegado: se abre antes.
+  const plegado = page.getByText('¿Hiciste un test por tu cuenta?')
+  if (await plegado.isVisible()) await plegado.click()
   // Hoy ya puede tener un test (el del cronómetro guiado de flujo.spec.ts): dos el mismo día no se admiten, así que se
   // apunta uno de hace tres días. flujo.spec.ts vacía la base de pruebas al empezar, y no queda nada entre ejecuciones.
   const hoy = ahoraMadrid(new Date()).fecha

@@ -3,17 +3,18 @@ import { X } from 'lucide-react'
 import { useId, useRef, type ReactNode } from 'react'
 
 // Hoja inferior: «¿Por qué?», fuentes y detalles. Cierra con Escape, con la X y al tocar fuera.
-export function Hoja({ disparador, titulo, children, claseDisparador = 'inline-flex min-h-11 items-center text-progreso underline underline-offset-2' }: {
+export function Hoja({ disparador, titulo, children, claseDisparador = 'inline-flex min-h-11 items-center text-progreso underline underline-offset-2', etiquetaDisparador }: {
   disparador: ReactNode
   titulo: string
   children: ReactNode
   claseDisparador?: string
+  etiquetaDisparador?: string // nombre accesible del botón cuando el disparador es solo un icono
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const idTitulo = useId()
   return (
     <>
-      <button type="button" className={claseDisparador} onClick={() => ref.current?.showModal()}>
+      <button type="button" aria-label={etiquetaDisparador} className={claseDisparador} onClick={() => ref.current?.showModal()}>
         {disparador}
       </button>
       <dialog

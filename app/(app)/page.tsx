@@ -78,7 +78,7 @@ export default async function PaginaHoy() {
 
       {proximo && (
         <p className="text-sm text-texto-2">
-          Próximo hueco: {fechaLarga(proximo.fila.fecha)} {hhmmDeMinutos(proximo.fila.inicio_min)} ·{' '}
+          Próximo rato: {fechaLarga(proximo.fila.fecha)} {hhmmDeMinutos(proximo.fila.inicio_min)} ·{' '}
           {proximo.estado.tipo === 'planeado'
             ? `${nombreSesion(proximo.estado.sesion)}${proximo.estado.cargaAlta ? ' ★' : ''}`
             : proximo.estado.tipo === 'libre' ? 'libre' : 'sin plan'}

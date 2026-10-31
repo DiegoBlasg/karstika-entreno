@@ -1,23 +1,13 @@
-import Link from 'next/link'
-import { FICHAS, GRUPOS } from '@/lib/biblioteca/fichas'
+import { ListaBiblioteca } from '@/components/biblioteca/ListaBiblioteca'
 
 export default function PaginaBiblioteca() {
   return (
-    <div className="space-y-5 text-sm">
-      <h1 className="text-xl font-semibold">Biblioteca de ejercicios</h1>
-      <p className="text-texto-2">Cómo se hace cada ejercicio que te propone el entrenador.</p>
-      {GRUPOS.map((g) => (
-        <section key={g.id} className="space-y-2">
-          <h2 className="font-medium">{g.titulo}</h2>
-          <ul className="space-y-1">
-            {g.fichas.map((id) => (
-              <li key={id}>
-                <Link href={`/biblioteca/${id}`} className="inline-flex min-h-11 items-center text-progreso underline">{FICHAS[id].titulo}</Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="space-y-4 text-sm">
+      <div className="space-y-1">
+        <h1 className="font-titular text-4xl font-extrabold uppercase leading-none">Biblioteca</h1>
+        <p className="text-texto-2">Cómo se hace cada ejercicio que te propone el entrenador.</p>
+      </div>
+      <ListaBiblioteca />
     </div>
   )
 }

@@ -1,28 +1,13 @@
-import Link from 'next/link'
-import { Check, ChevronRight } from 'lucide-react'
-import { ENLACE } from '@/components/estilos'
+import { ChevronRight } from 'lucide-react'
+import { IconoReunion } from '@/components/iconos/Escalada'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Hoja } from '@/components/ui/Hoja'
 import { textoLastre } from '@/lib/cronometro/test'
 import type { ResultadoTest, ReunionVia } from '@/lib/datos/via'
 import { sumarDias } from '@/lib/fecha'
-import { DISPARADOR_ESTIRADO, FilaVia, LINEA, corta } from './Rail'
+import { corta } from './fechas'
 
 const pct = (r: ResultadoTest): number => Math.round(r.fuerzaRelativa)
-
-export const CIRCULO: Record<ReunionVia['estado'], string> = {
-  hecha: 'border-progreso bg-progreso text-fondo',
-  proxima: 'border-progreso bg-fondo',
-  futura: 'border-texto-3 bg-fondo',
-  'sin-hacer': 'border-ambar bg-fondo',
-}
-
-const ESTADO: Record<ReunionVia['estado'], string> = {
-  hecha: 'hecha',
-  proxima: 'próxima',
-  futura: 'por hacer',
-  'sin-hacer': 'sin hacer',
-}
 
 // Semanas que faltan desde la semana en curso hasta la del test.
 function cuando(lunes: string, lunesActual: string | null): string | null {
@@ -33,10 +18,12 @@ function cuando(lunes: string, lunesActual: string | null): string | null {
   return n === 1 ? 'la semana que viene' : `en ${n} semanas`
 }
 
-function textoFila(r: ReunionVia, numero: number): string {
+// Una reunión en una línea: «R2 · 114 % del peso», «Test · semana del 22 feb» o «Test sin hacer · semana del 22 feb».
+// `corto`, para las tarjetas del carrusel: «R2 · 114 %», «Test sin hacer · 22 feb».
+export function textoReunionVia(r: ReunionVia, numero: number, corto = false): string {
   const semana = `semana del ${corta(r.lunes)}`
-  if (r.estado === 'hecha' && r.resultado) return `R${numero} · ${pct(r.resultado)} % del peso`
-  if (r.estado === 'sin-hacer') return `Test sin hacer · ${semana}`
+  if (r.estado === 'hecha' && r.resultado) return `R${numero} · ${pct(r.resultado)} %${corto ? '' : ' del peso'}`
+  if (r.estado === 'sin-hacer') return `Test sin hacer · ${corto ? corta(r.lunes) : semana}`
   return `Test · ${semana}`
 }
 
@@ -83,61 +70,44 @@ function DetalleReunion({ reunion, tests }: { reunion: ReunionVia; tests: Result
           </ol>
         )}
       </div>
-      <Link href="/progreso" className={`${ENLACE} inline-flex min-h-11 items-center`}>Apuntar un resultado</Link>
     </div>
   )
 }
 
-// Reunión (semana de test). Por defecto, en el raíl entre dos largos (la del final de un largo); `dentro`: un test a
-// mitad de un largo, que se pinta dentro de la fila del largo (su círculo lo dibuja el raíl del largo, en su semana).
-// `hecho`: el tramo que la cruza ya está escalado.
-export function Reunion({ reunion, numero, tests, lunesActual, hecho, dentro = false }: {
-  reunion: ReunionVia
-  numero: number
+// Debajo del carrusel: la próxima reunión (o, si ya no quedan, la última) y, al tocarla, su hoja con la evolución.
+export function ProximaReunion({ reuniones, tests, lunesActual }: {
+  reuniones: ReunionVia[] // todas las de la temporada, en orden
   tests: ResultadoTest[]
   lunesActual: string | null
-  hecho: boolean
-  dentro?: boolean
 }) {
-  const { estado } = reunion
-  const extra = estado === 'proxima' ? cuando(reunion.lunes, lunesActual) : estado === 'hecha' ? `semana del ${corta(reunion.lunes)}` : null
-  const hoja = (
+  if (reuniones.length === 0) return null
+  const i = reuniones.findIndex((r) => r.estado === 'proxima' || r.estado === 'futura')
+  const pendiente = i >= 0
+  const indice = pendiente ? i : reuniones.length - 1
+  const reunion = reuniones[indice]!
+  const numero = indice + 1
+  const todasHechas = reuniones.every((r) => r.estado === 'hecha')
+  const etiqueta = pendiente ? `Próxima reunión · R${numero}` : todasHechas ? 'Todas las reuniones hechas' : 'No quedan reuniones por hacer'
+  const extra = pendiente ? cuando(reunion.lunes, lunesActual) : null
+  return (
     <Hoja
       titulo={`Reunión R${numero}`}
-      claseDisparador={DISPARADOR_ESTIRADO}
+      claseDisparador="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-borde bg-superficie p-4 text-left active:bg-superficie-2"
       disparador={
-        <span className="flex items-center justify-between gap-2">
-          <span className="block">
-            <span className={`block font-titular text-xs font-medium uppercase tracking-[0.08em] ${estado === 'sin-hacer' ? 'text-ambar' : estado === 'proxima' || estado === 'hecha' ? 'text-progreso' : 'text-texto-2'}`}>
-              Reunión R{numero}{dentro ? ' · a mitad del largo' : ''} · {ESTADO[estado]}
-            </span>
-            <span className={`block tabular-nums ${estado === 'futura' ? 'text-texto-2' : ''}`}>
-              {textoFila(reunion, numero)}
-              {extra && <span className="text-texto-2"> · {extra}</span>}
-            </span>
+        <>
+          <span className={`flex size-11 shrink-0 items-center justify-center rounded-full ${pendiente ? 'bg-progreso/15 text-progreso' : 'bg-superficie-2 text-texto-2'}`}>
+            <IconoReunion size={22} />
           </span>
-          <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-texto-3" />
-        </span>
+          <span className="block min-w-0 flex-1">
+            <span className={`block font-titular text-xs font-medium uppercase tracking-[0.08em] ${pendiente ? 'text-progreso' : 'text-texto-2'}`}>{etiqueta}</span>
+            <span className="block font-titular text-lg font-bold uppercase leading-tight tabular-nums">{textoReunionVia(reunion, numero)}</span>
+            {extra && <span className="block text-sm text-texto-2">{extra}</span>}
+          </span>
+          <ChevronRight aria-hidden="true" size={20} className="shrink-0 text-texto-3" />
+        </>
       }
     >
       <DetalleReunion reunion={reunion} tests={tests} />
     </Hoja>
-  )
-  if (dentro) return <div className="relative">{hoja}</div>
-  return (
-    <FilaVia
-      rail={
-        <>
-          <div className={`${LINEA} inset-y-0 ${hecho ? 'bg-progreso' : 'bg-pista'}`} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`flex size-5 items-center justify-center rounded-full border-2 ${CIRCULO[estado]}`}>
-              {estado === 'hecha' && <Check size={12} strokeWidth={3.5} />}
-            </span>
-          </div>
-        </>
-      }
-    >
-      {hoja}
-    </FilaVia>
   )
 }

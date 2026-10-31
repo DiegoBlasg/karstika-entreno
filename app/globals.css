@@ -15,6 +15,11 @@
   --color-cima: #FF7A45;
   --color-ambar: #F5B83D;
   --color-rojo: #FF5A5A;
+  --color-fase-base: #8FB3A6;
+  --color-fase-fuerza: #C6F24E;
+  --color-fase-resistencia: #4FD1C5;
+  --color-fase-rendimiento: #FF7A45;
+  --color-fase-transicion: #6E7F78;
 }
 
 /* Entrada de la chapa nueva (≤ 400 ms); se apaga con motion-reduce:animate-none. */
@@ -38,6 +43,22 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Safari de iOS pinta los campos de fecha y hora con un ancho propio y los monta unos sobre otros: que no desborden su columna. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  min-width: 0;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
 }
 
 body {

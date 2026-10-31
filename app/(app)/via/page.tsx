@@ -4,8 +4,7 @@ import { PorQue } from '@/components/PorQue'
 import { Aviso } from '@/components/ui/Aviso'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Tarjeta } from '@/components/ui/Tarjeta'
-import { IrAlActual } from '@/components/via/IrAlActual'
-import { Via } from '@/components/via/Via'
+import { Via, resumenVia } from '@/components/via/Via'
 import { textoLastre } from '@/lib/cronometro/test'
 import { pasosArranque } from '@/lib/datos/arranque'
 import { cambiosPorResultados, type CambiosResultados } from '@/lib/datos/plan'
@@ -93,6 +92,7 @@ export default async function PaginaVia() {
   const hoy = ahoraMadrid(new Date()).fecha
   const vista = vistaVia(datos, hoy)
   const cambios = cambiosPorResultados(datos, hoy)
+  const resumen = resumenVia(vista)
   return (
     <div className="space-y-6">
       <header className="relative -mx-4 overflow-hidden px-4 pb-1 pt-2">
@@ -102,11 +102,11 @@ export default async function PaginaVia() {
           <h1 className="font-titular text-4xl font-extrabold uppercase leading-none">
             Tu <span className="text-progreso">vía</span>
           </h1>
+          {resumen && <p className="mt-1.5 text-texto-2">{resumen}</p>}
         </div>
       </header>
       {vista.aviso && <Aviso tono="ambar">{vista.aviso}</Aviso>}
-      <Via vista={vista} inicio={datos.perfil.inicio_temporada} arranque={pasosArranque(datos)} />
-      <IrAlActual />
+      <Via vista={vista} arranque={pasosArranque(datos)} />
       <Cambios c={cambios} />
     </div>
   )
