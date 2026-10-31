@@ -87,6 +87,9 @@ const TIPOS_MULTIPRESA_PROGRESION: readonly TipoSesion[] = ['multipresa-resisten
 // Escalones: 0 = 1 bloque al 70 %, 1 = 2 bloques al 70 %, 2 = 80 %. Cada episodio de molestia en dedos o muñeca
 // baja un escalón desde donde estabas en ese momento (P-46), y desde ahí se progresa de nuevo. Con el freno de P-11
 // (`sinSubida`), hoy no se pasa del escalón de la última multipresa.
+// El lunes (día numérico) de la semana natural de `dia` (el día 0 cayó en jueves).
+const lunesDeDia = (dia: number): number => dia - ((((dia - 4) % 7) + 7) % 7)
+
 function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_MULTIPRESA_PROGRESION) {
   const hoy = diaNumero(p.fecha)
   const noValidas = new Set(p.estado?.sesionesNoValidas ?? [])
@@ -106,13 +109,24 @@ function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_
   ]
     .filter((e) => e.dia < hoy)
     .sort((x, y) => x.dia - y.dia || x.orden - y.orden || Number(y.molestia) - Number(x.molestia))
+  // P-11 (Mundry 2021): ya en la fracción máxima, la carga sube como mucho 1,25 kg por semana natural, y solo en las
+  // semanas con una sesión válida precedida de otra válida. Una molestia reinicia la rampa.
+  const { kgMaxSemana, sesionesValidasParaSubir } = VALORES['P-11']
   let previas = 0
   let antesDeLaUltima = 0
+  let racha = 0
+  const semanasConSubida = new Set<number>()
   for (const e of eventos) {
-    if (e.molestia) previas = Math.min(previas, Math.max(0, escalon(previas) - 1) * S)
-    else {
+    if (e.molestia) {
+      previas = Math.min(previas, Math.max(0, escalon(previas) - 1) * S)
+      racha = 0
+      semanasConSubida.clear()
+    } else {
       antesDeLaUltima = previas
+      const enMaxima = previas >= 2 * S
+      racha = e.valida ? racha + 1 : 0
       if (e.valida) previas++
+      if (enMaxima && racha >= sesionesValidasParaSubir) semanasConSubida.add(lunesDeDia(e.dia))
     }
   }
   const retornoP46 = escalon(previas) < escalon(lista.length)
@@ -124,16 +138,30 @@ function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_
   const sesionesConUnBloque = S
   const inicial = previas < 2 * sesionesConUnBloque
   const fraccion = inicial ? FRACCION_INICIAL_REPEATERS : VALORES['P-06'].fraccionMaximaRepeaters
-  const kg = evaluacionVigente(p.evaluacion, p.fecha) ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
-  return { previas, sesionesConUnBloque, inicial, kg, porcentaje: Math.round(fraccion * 100), retornoP46, frenado, sinApuntar }
+  const vigente = evaluacionVigente(p.evaluacion, p.fecha)
+  let kg = vigente ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
+  let porcentaje = Math.round(fraccion * 100)
+  let enRampa = false
+  if (vigente && kg !== undefined && !inicial) {
+    // El salto de la fracción inicial a la máxima no es de golpe: desde la carga inicial, +1,25 kg por semana con subida.
+    const conRampa = lastreRepeaters(p.evaluacion!, FRACCION_INICIAL_REPEATERS) + kgMaxSemana * semanasConSubida.size
+    if (conRampa < kg) {
+      kg = conRampa
+      enRampa = true
+      const e = p.evaluacion!
+      porcentaje = Math.round(((e.pesoCorporalKg + kg) / (e.pesoCorporalKg + e.lastreKg)) * 100)
+    }
+  }
+  return { previas, sesionesConUnBloque, inicial, kg, porcentaje, retornoP46, frenado, sinApuntar, enRampa }
 }
 
 const TEXTO_P46 = ' Tras tu última molestia en dedos o muñeca, la progresión vuelve un escalón atrás y sube de nuevo con sesiones sin dolor (P-46).'
 const TEXTO_FRENO = ' Hoy no sube: tu última sesión quedó por encima del esfuerzo previsto o tienes una zona en ámbar (P-11).'
 const textoSinApuntar = (n: number): string =>
   n === 0 ? '' : ` ${n === 1 ? '1 sesión de multipresa sin registro no cuenta' : `${n} sesiones de multipresa sin registro no cuentan`} para subir: apunta el RPE y los minutos al terminar.`
-const extrasProgresion = (r: { retornoP46: boolean; frenado: boolean; sinApuntar: number }): string =>
-  `${r.retornoP46 ? TEXTO_P46 : ''}${r.frenado ? TEXTO_FRENO : ''}${textoSinApuntar(r.sinApuntar)}`
+const TEXTO_RAMPA = ' La carga sube como mucho 1,25 kg por semana y solo tras 2 sesiones válidas seguidas, hasta llegar al máximo (P-11, Mundry 2021).'
+const extrasProgresion = (r: { retornoP46: boolean; frenado: boolean; sinApuntar: number; enRampa?: boolean }): string =>
+  `${r.enRampa ? TEXTO_RAMPA : ''}${r.retornoP46 ? TEXTO_P46 : ''}${r.frenado ? TEXTO_FRENO : ''}${textoSinApuntar(r.sinApuntar)}`
 
 function notasCarga(kg: number | undefined, porcentaje: number): string {
   return kg === undefined

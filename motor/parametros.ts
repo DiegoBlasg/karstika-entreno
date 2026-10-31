@@ -31,6 +31,7 @@ export const VALORES = {
   'P-07': { sesionesPorSemana: 2 },
   'P-08': { semanasMaximasSinReevaluar: 10 },
   'P-18': { duracionS: 10, intentos: 3, descansoS: 180 },
+  'P-11': { sesionesValidasParaSubir: 2, kgMaxSemana: 1.25 },
   'P-35': { series: 2, seriesMax: 3, minutosSerie: 15, minutosSerieCorta: 10, descansoMin: 10, onOffs: 10, onOffsDescarga: 5 },
   'P-41': { minutos: 15 },
   'P-49': { minutos: 10 },

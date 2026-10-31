@@ -116,10 +116,10 @@ describe('chequeo y descarga adelantada (P-50, P-65)', () => {
 
 describe('progresión de la multipresa con seguimiento (P-11, P-46)', () => {
   const dentro = ocho.map((s) => reg(s, 7))
-  it('8 sesiones válidas: 2 bloques al 80 %', () => {
+  it('8 sesiones válidas: 2 bloques y la carga empieza la rampa desde el 70 % (P-11)', () => {
     const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento: seg({ registros: dentro }) }))
     expect(repeaters(r)).toMatchObject({ bloques: 2 })
-    expect(repeaters(r).notas).toMatch(/80 %/)
+    expect(repeaters(r).notas).toMatch(/70 %/)
   })
   it('sin registros, las sesiones no cuentan para subir: 1 bloque al 70 %', () => {
     const r = proponerSesion(pet('2026-12-10', CASA, { historial: ocho, seguimiento: seg() }))
