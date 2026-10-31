@@ -56,35 +56,34 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await expect(page.getByText(/Hecha · RPE 7/)).toBeVisible()
 })
 
-test('Mi semana: añadir un rato para entrenar, prepararlo y aceptarlo', async ({ page }) => {
+test('Semana: generar un entreno para el lunes que viene y cambiarlo por otra opción', async ({ page }) => {
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await page.getByRole('link', { name: 'Semana', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Tu semana' })).toBeVisible()
   await page.getByRole('link', { name: 'Siguiente ›' }).click()
-  // Esperar a que cargue la semana siguiente: si no, el rato se añadiría a la semana actual.
   await expect(page.getByRole('link', { name: '‹ Anterior' })).toBeVisible()
-  // Vacía: el aviso único y el plan orientativo, sin botones de «Preparar».
-  await expect(page.getByText(/Añade cuándo puedes entrenar esta semana/)).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Preparar' })).toHaveCount(0)
-  // El «+» del lunes abre la hoja con ese día ya elegido.
-  await page.getByRole('button', { name: /^Añadir un rato para entrenar el lunes/ }).click()
+  const lunes = sumarDias(lunesDeEstaSemana(), 7)
+  const dia = page.locator(`li[data-fecha="${lunes}"]`)
+  // El primer día libre lleva el botón principal; la hoja pregunta con quién, dónde, cuándo y cuántos minutos.
+  await dia.getByRole('button', { name: 'Generar entreno' }).click()
   const hoja = page.getByRole('dialog')
-  await expect(hoja.getByRole('heading', { name: /^Rato para entrenar · lunes/ })).toBeVisible()
-  await hoja.getByLabel('Hora').fill('19:00')
+  await expect(hoja.getByRole('heading', { name: /^Generar entreno · lunes/ })).toBeVisible()
+  await hoja.getByLabel('Con gente').check()
   await hoja.getByLabel('Rocódromo').check()
-  await hoja.getByRole('button', { name: 'Añadir rato' }).click()
-  await expect(page.getByText(/^Rato añadido el lunes \d+\.$/)).toBeVisible()
+  await hoja.getByLabel('Mañana').check()
+  await hoja.getByLabel('Minutos disponibles').fill('90')
+  await hoja.getByRole('button', { name: 'Generar', exact: true }).click()
   await expect(hoja).toBeHidden()
-  await page.getByRole('link', { name: 'Preparar' }).first().click()
-  await expect(page).toHaveURL(/\/entrenar\?/)
-  await page.getByRole('button', { name: 'Preparar sesión' }).click()
-  await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
-  await expect(page).toHaveURL(/\/$/)
-  await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
-  // Sale en la fila de su día.
-  await expect(page.getByText(/Aceptada/)).toBeVisible()
+  // Queda aceptada en su día, por la mañana y sin hora; no se puede empezar hasta ese día.
+  const fila = dia.locator('details').first()
+  await expect(fila.locator('summary')).toContainText('Mañana')
+  const antes = (await fila.locator('summary').textContent()) ?? ''
+  await fila.locator('summary').click()
+  await expect(fila.getByRole('link', { name: 'Empezar sesión' })).toHaveCount(0)
+  await fila.getByRole('button', { name: 'Otra opción' }).click()
+  await expect(dia.locator('details').first().locator('summary')).not.toHaveText(antes)
 })
 
 test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
@@ -245,6 +244,12 @@ test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) =>
     await guardar.click()
   }
   await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
+  // Apuntado sin querer: se puede borrar con todo lo apuntado.
+  const tarjeta = page.locator('article').filter({ hasText: 'Técnica · 30 min (lo que hiciste)' })
+  await expect(tarjeta).toHaveCount(1)
+  page.once('dialog', (d) => void d.accept())
+  await tarjeta.getByRole('button', { name: 'Borrar' }).click()
+  await expect(tarjeta).toHaveCount(0)
 })
 
 test('Vía: pasos con el largo actual, su tarjeta del carrusel y una fuente desde «¿Por qué?»', async ({ page }) => {
