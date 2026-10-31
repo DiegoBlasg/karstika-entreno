@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { BOTON, TARJETA } from '@/components/estilos'
+import { Aviso } from '@/components/ui/Aviso'
 import type { DatosAtleta } from '@/lib/datos/filas'
 import { enlacePreparar } from '@/lib/datos/huecos'
 import { proximosDias, type HuecoPlan, type SemanaPlanVista } from '@/lib/datos/plan'
@@ -43,25 +44,59 @@ function Semana({ s, titulo }: { s: SemanaPlanVista; titulo: string }) {
     <section className="space-y-3">
       <h3 className="font-medium">{titulo} · {corta(s.lunes)} – {corta(sumarDias(s.lunes, 6))}</h3>
       {s.orientativo && (
-        <p className="rounded bg-superficie-2 p-3 text-sm">
-          Orientativo, con tu semana habitual: declara tus huecos en <Link href="/semana" className="underline">Semana</Link>.
-        </p>
+        <Aviso tono="info">Orientativo, con tu semana habitual: declara tus huecos más abajo.</Aviso>
       )}
-      {s.aviso && <p className="rounded bg-ambar/10 p-3 text-sm">{s.aviso}</p>}
+      {s.aviso && <Aviso tono="ambar">{s.aviso}</Aviso>}
       {pendientes.length > 0 && <ul className="space-y-3">{pendientes.map((h) => <FilaHueco key={h.hueco.id} h={h} />)}</ul>}
     </section>
   )
 }
 
-// Lo que el plan propone para esta semana y la siguiente (antes en Vía).
-export function ProximosDias({ datos, ahora }: { datos: DatosAtleta; ahora: { fecha: string; minutos: number } }) {
-  const { semanas } = proximosDias(datos, ahora)
+const DIA_CORTO = new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', timeZone: 'UTC' })
+const diaCorto = (fecha: string): string => DIA_CORTO.format(new Date(`${fecha}T12:00:00Z`)).replace(/\./g, '')
+
+function textoCompacto(h: HuecoPlan): string {
+  if (h.sesion) return `${nombreSesion(h.sesion)}${h.cargaAlta ? ' ★' : ''}`
+  if (h.estado === 'libre') return h.descansoActivo ? DESCANSO_ACTIVO : 'Libre'
+  return 'Sin plan todavía'
+}
+
+// Adelanto de la semana siguiente: una línea por hueco, sin botones.
+function Adelanto({ s }: { s: SemanaPlanVista }) {
   return (
-    <section className="space-y-4 pt-4">
+    <section className="space-y-3">
+      <h3 className="font-medium">Semana siguiente · {corta(s.lunes)} – {corta(sumarDias(s.lunes, 6))}</h3>
+      {s.orientativo && <Aviso tono="info">Orientativo, con tu semana habitual: declara tus huecos para afinarlo.</Aviso>}
+      {s.aviso && <Aviso tono="ambar">{s.aviso}</Aviso>}
+      {s.huecos.length > 0 && (
+        <ul className="divide-y divide-borde rounded-2xl border border-borde bg-superficie px-4">
+          {s.huecos.map((h) => (
+            <li key={h.hueco.id} className="py-2 text-sm">
+              <span className="text-texto-2">{diaCorto(h.hueco.fecha)} · {hhmmDeMinutos(h.hueco.inicio_min)} · {NOMBRE_LUGAR[h.hueco.lugar]}</span>
+              <br />
+              {textoCompacto(h)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+// Lo que el plan propone y no sale ya en la lista de la semana que se está viendo (antes en Vía):
+// el plan orientativo si esa semana no tiene huecos declarados y, viendo esta semana, un adelanto de la siguiente.
+export function ProximosDias({ datos, ahora, lunesVisto }: { datos: DatosAtleta; ahora: { fecha: string; minutos: number }; lunesVisto: string }) {
+  const { semanas } = proximosDias(datos, ahora)
+  const vista = semanas.find((s) => s.lunes === lunesVisto)
+  const orientativa = vista?.orientativo ? vista : undefined
+  const adelanto = lunesVisto === semanas[0]?.lunes ? semanas[1] : undefined
+  if (!orientativa && !adelanto) return null
+  return (
+    <section className="space-y-4 pt-2">
       <h2 className="text-lg font-semibold">Próximos días</h2>
-      {semanas[0] && <Semana s={semanas[0]} titulo="Esta semana" />}
-      {semanas[1] && <Semana s={semanas[1]} titulo="Semana siguiente" />}
-      {semanas.some((s) => s.huecos.some((h) => h.estado === 'planeada' && h.cargaAlta)) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
+      {orientativa && <Semana s={orientativa} titulo="Plan orientativo" />}
+      {adelanto && <Adelanto s={adelanto} />}
+      {orientativa?.huecos.some((h) => h.estado === 'planeada' && h.cargaAlta) && <p className="text-xs text-texto-2">★ = carga alta.</p>}
     </section>
   )
 }

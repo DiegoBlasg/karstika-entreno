@@ -1,5 +1,7 @@
+import { PieDeVia } from '@/components/PieDeVia'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import { IconoCima } from '@/components/iconos/Escalada'
+import type { PasosArranque } from '@/lib/datos/arranque'
 import type { VistaVia } from '@/lib/datos/via'
 import { fechaLarga } from '@/lib/fecha'
 import { Largo } from './Largo'
@@ -37,7 +39,22 @@ function Cima({ cima, llegada }: { cima: VistaVia['cima']; llegada: boolean }) {
   )
 }
 
-function Pie({ inicio, salida }: { inicio: string; salida: boolean }) {
+function Pie({ inicio, salida, arranque }: { inicio: string; salida: boolean; arranque: PasosArranque }) {
+  if (!arranque.completo) {
+    // Primer uso: en el pie de la vía, la tarjeta con los tres pasos; el rail baja desde arriba hasta su chapa.
+    return (
+      <FilaVia
+        rail={
+          <>
+            <div className={`${LINEA} top-0 h-5 ${salida ? 'bg-progreso' : 'bg-pista'}`} />
+            <span className="absolute left-1/2 top-5 size-3.5 -translate-x-1/2 rounded-full bg-progreso" />
+          </>
+        }
+      >
+        <PieDeVia pasos={arranque} />
+      </FilaVia>
+    )
+  }
   return (
     <FilaVia
       rail={
@@ -57,7 +74,7 @@ function Pie({ inicio, salida }: { inicio: string; salida: boolean }) {
 }
 
 // La temporada como una vía de varios largos, de la cima (arriba) al pie (abajo): se lee de abajo arriba, como se escala.
-export function Via({ vista, inicio }: { vista: VistaVia; inicio: string }) {
+export function Via({ vista, inicio, arranque }: { vista: VistaVia; inicio: string; arranque: PasosArranque }) {
   const { largos, cima, tests } = vista
   const lunesActual = largos.flatMap((l) => l.chapas).find((c) => c.estado === 'actual')?.lunes ?? null
   // R1, R2…: posición de cada reunión entre todas las de la temporada (un largo puede tener una a mitad).
@@ -103,7 +120,7 @@ export function Via({ vista, inicio }: { vista: VistaVia; inicio: string }) {
         return filas
       })}
       <li>
-        <Pie inicio={inicio} salida={largos.length > 0 && largos[0]!.estado !== 'futuro'} />
+        <Pie inicio={inicio} salida={largos.length > 0 && largos[0]!.estado !== 'futuro'} arranque={arranque} />
       </li>
     </ol>
   )

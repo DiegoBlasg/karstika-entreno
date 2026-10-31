@@ -50,6 +50,14 @@ test('Hoy: mini-vía con el largo actual que lleva a Vía', async ({ page }) => 
   await expect(page).toHaveURL(/\/via$/)
 })
 
+test('con huecos, sesión registrada y test no aparece el pie de vía del primer uso', async ({ page }) => {
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.getByText('Antes de empezar a escalar')).toHaveCount(0)
+  await page.goto('/via')
+  await expect(page.getByRole('heading', { name: 'Tu vía' })).toBeVisible()
+  await expect(page.getByText('Antes de empezar a escalar')).toHaveCount(0)
+})
+
 test('Progreso: fuerza, grado, semanas cumplidas y logros', async ({ page }) => {
   await page.goto('/progreso')
   await expect(page.getByRole('heading', { name: 'Tu progreso' })).toBeVisible()

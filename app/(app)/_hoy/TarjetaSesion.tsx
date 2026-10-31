@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Play } from 'lucide-react'
+import { ChevronDown, Play } from 'lucide-react'
 import { useActionState, useState } from 'react'
 import { MOTIVO_DESCANSO, TIPOS_SESION, type Sesion, type TipoSesion } from '@/motor'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
@@ -143,7 +143,12 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
             : <Link href={enlaceCambiar(fila)} className={`${TOQUE} underline`}>Cambiarla por otra</Link>}
         </div>
       )}
-      {fila.propuesta ? (
+      {fila.propuesta && registro ? (
+        // Ya registrada: de un vistazo el nombre, lo hecho y «Corregir»; el plan, plegado.
+        <h3 className="font-semibold">
+          {NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min{s.intensidad === 'alta' ? ' · intensa' : ''}
+        </h3>
+      ) : fila.propuesta ? (
         <>
           {posicion && <ContextoTemporada posicion={posicion} />}
           <PlanSesion plan={fila.propuesta} />
@@ -151,11 +156,28 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
       ) : (
         <h3 className="font-semibold">{NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min (lo que hiciste)</h3>
       )}
-      {s.tipo === 'evaluacion-dedos' && (
+      {s.tipo === 'evaluacion-dedos' && !(fila.propuesta && registro) && (
         <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/progreso" className="underline">Progreso</Link>.</p>
       )}
       {registro ? (
-        <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
+        <>
+          <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
+          {fila.propuesta && (
+            <details className="group border-t border-borde pt-1">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm text-texto-2 [&::-webkit-details-marker]:hidden">
+                <ChevronDown size={16} aria-hidden className="transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+                Ver el plan
+              </summary>
+              <div className="space-y-3 pt-2">
+                {posicion && <ContextoTemporada posicion={posicion} />}
+                <PlanSesion plan={fila.propuesta} />
+                {s.tipo === 'evaluacion-dedos' && (
+                  <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/progreso" className="underline">Progreso</Link>.</p>
+                )}
+              </div>
+            </details>
+          )}
+        </>
       ) : (
         <>
           {hayCronometro && (

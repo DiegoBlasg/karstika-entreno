@@ -75,8 +75,8 @@ test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) =>
   await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
   await expect(page).toHaveURL(/\/$/)
   await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
-  // Sale en la lista de la semana y otra vez en «Próximos días».
-  await expect(page.getByText(/Aceptada/).first()).toBeVisible()
+  // Sale en la lista de la semana (ya no se repite en «Próximos días»).
+  await expect(page.getByText(/Aceptada/)).toBeVisible()
 })
 
 test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
@@ -186,9 +186,9 @@ test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra',
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page.getByText('¿Cómo llegas hoy?')).toBeVisible()
-  await page.getByLabel('Sueño 1').check({ force: true })
-  await page.getByLabel('Fatiga 1').check({ force: true })
-  await page.getByLabel('Ganas 1').check({ force: true })
+  await page.getByLabel('Sueño 1').check()
+  await page.getByLabel('Fatiga 1').check()
+  await page.getByLabel('Ganas 1').check()
   await page.getByRole('button', { name: 'Guardar chequeo' }).click()
   await expect(page.getByText('Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:')).toBeVisible()
   await page.getByRole('link', { name: 'Cambiarla por otra' }).click()
