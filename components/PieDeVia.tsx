@@ -14,7 +14,7 @@ interface Paso {
 
 // Primer uso: tres chapas en vertical, de abajo arriba como la vía (lima = hecho, gris = por hacer). Solo el primer paso
 // pendiente lleva el botón principal.
-export function PieDeVia({ pasos }: { pasos: PasosArranque }) {
+export function PieDeVia({ pasos, principal = true }: { pasos: PasosArranque; principal?: boolean }) {
   const lista: Paso[] = [
     {
       hecho: pasos.huecos,
@@ -31,7 +31,7 @@ export function PieDeVia({ pasos }: { pasos: PasosArranque }) {
       titulo: 'Tu primer test de dedos',
       accion: () => (
         <>
-          <p className="text-sm text-texto-2">El entrenador te lo propondrá cuando toque (en la base, tras unas semanas).</p>
+          <p className="text-sm text-texto-2">El entrenador te lo propondrá cuando toque, en la base.</p>
           <Link href="/progreso" className={`${ENLACE} inline-flex min-h-11 items-center`}>Ya lo hice: apuntarlo</Link>
         </>
       ),
@@ -39,10 +39,10 @@ export function PieDeVia({ pasos }: { pasos: PasosArranque }) {
   ]
   const primera = lista.findIndex((p) => !p.hecho)
   return (
-    <section aria-labelledby="titulo-pie" className={TARJETA}>
+    <section aria-label="Pie de vía" className={TARJETA}>
       <div className="space-y-1">
         <Etiqueta as="p">Pie de vía</Etiqueta>
-        <h2 id="titulo-pie" className="font-titular text-2xl font-bold uppercase leading-tight">Antes de empezar a escalar</h2>
+        <h2 className="font-titular text-2xl font-bold uppercase leading-tight">Antes de empezar a escalar</h2>
       </div>
       <ol className="flex flex-col-reverse">
         {lista.map((p, i) => (
@@ -62,7 +62,7 @@ export function PieDeVia({ pasos }: { pasos: PasosArranque }) {
                 <span className="sr-only">{p.hecho ? 'Hecho: ' : 'Por hacer: '}</span>
                 {p.titulo}
               </p>
-              {!p.hecho && p.accion(i === primera)}
+              {!p.hecho && p.accion(principal && i === primera)}
             </div>
           </li>
         ))}

@@ -18,7 +18,7 @@ export function FormularioHueco({ dias, abierto }: { dias: string[]; abierto: bo
   const [inicial] = useState(abierto)
   return (
     <details open={inicial} className="rounded-2xl border border-borde bg-superficie">
-      <summary className="flex min-h-11 cursor-pointer items-center px-4 font-titular text-lg font-bold uppercase tracking-wide text-progreso">+ Añadir un hueco</summary>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden px-4 font-titular text-lg font-bold uppercase tracking-wide text-progreso">+ Añadir un hueco</summary>
     <form onSubmit={enviarSinVaciar(accion)} className="space-y-3 p-4 pt-1">
       <div className="flex gap-3">
         <label className="block flex-1">

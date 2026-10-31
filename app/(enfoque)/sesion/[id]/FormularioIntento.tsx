@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Opciones } from '@/components/ui/Opciones'
 import type { Intento } from '@/lib/cronometro/test'
 
 const fmt = (n: number): string => String(n).replace('.', ',')
@@ -27,14 +28,11 @@ export function FormularioIntento({ n, de, valor, alCambiar }: {
   return (
     <fieldset className="space-y-2 rounded border border-borde bg-superficie p-3">
       <legend className="font-medium">Intento {n} de {de}</legend>
-      <div className="flex gap-4 text-sm">
-        <label className="inline-flex items-center gap-1">
-          <input type="radio" name={`signo-${n}`} checked={!descarga} onChange={() => { setDescarga(false); poner({ descarga: false }) }} /> Lastre
-        </label>
-        <label className="inline-flex items-center gap-1">
-          <input type="radio" name={`signo-${n}`} checked={descarga} onChange={() => { setDescarga(true); poner({ descarga: true }) }} /> Descarga
-        </label>
-      </div>
+      <Opciones
+        nombre={`signo-${n}`} leyenda="Tipo de carga" columnas={2} valor={descarga ? 'descarga' : 'lastre'}
+        opciones={[{ valor: 'lastre', texto: 'Lastre' }, { valor: 'descarga', texto: 'Descarga' }]}
+        onCambio={(v) => { const d = v === 'descarga'; setDescarga(d); poner({ descarga: d }) }}
+      />
       <label className="block text-sm">
         Kilos
         <input

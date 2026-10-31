@@ -49,7 +49,7 @@ export default async function PaginaHoy() {
         </div>
       </header>
 
-      {!arranque.completo && <PieDeVia pasos={arranque} />}
+      {!arranque.completo && <PieDeVia pasos={arranque} principal={false} />}
       {largo && <MiniVia largo={largo} />}
 
       {v.zonasRojo.length > 0 && (

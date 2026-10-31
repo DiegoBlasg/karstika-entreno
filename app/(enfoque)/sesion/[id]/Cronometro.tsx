@@ -446,7 +446,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
       <section className={`flex flex-1 flex-col items-center justify-center gap-3 rounded-3xl border-2 px-4 py-6 text-center ${FONDO[fase]}`}>
         <h1 className="font-titular text-3xl font-extrabold uppercase leading-none tracking-[0.08em]">
           {NOMBRE_FASE[fase]}
-          {fallo && <span className="block pt-1 text-lg tracking-wide">hasta el fallo</span>}
+          {fallo?.fase === 'colgado' && <span className="block pt-1 text-lg tracking-wide">hasta el fallo</span>}
         </h1>
         {fallo ? (
           <>
