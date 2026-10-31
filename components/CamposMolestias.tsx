@@ -3,6 +3,7 @@
 import { useId, useState } from 'react'
 import { ZONAS, type Molestia } from '@/motor'
 import { NOMBRE_ZONA } from '@/lib/nombres'
+import { Opciones } from '@/components/ui/Opciones'
 
 // Campos dolor_<zona> y alarma_<zona> que lee molestias() de lib/formulario.ts. `iniciales` precarga lo ya apuntado.
 // Con `plegable`, primero «¿Alguna molestia?»: con «No» se envían todos los dolor_<zona> a 0 y ninguna alarma, que
@@ -33,15 +34,8 @@ export function CamposMolestias({ iniciales = [], plegable = false }: { iniciale
   if (!plegable) return campos
   return (
     <div className="space-y-2">
-      <fieldset>
-        <legend className="font-medium">¿Alguna molestia?</legend>
-        <label className="mr-4 inline-flex items-center gap-1">
-          <input type="radio" checked={!abierto} onChange={() => setAbierto(false)} /> No
-        </label>
-        <label className="mr-4 inline-flex items-center gap-1">
-          <input type="radio" checked={abierto} onChange={() => setAbierto(true)} /> Sí
-        </label>
-      </fieldset>
+      <Opciones nombre="hay_molestia" leyenda="¿Alguna molestia?" columnas={2} valor={abierto ? 'si' : 'no'} onCambio={(v) => setAbierto(v === 'si')}
+        opciones={[{ valor: 'no', texto: 'No' }, { valor: 'si', texto: 'Sí' }]} />
       {abierto ? campos : ZONAS.map((z) => <input key={z} type="hidden" name={`dolor_${z}`} value="0" />)}
     </div>
   )

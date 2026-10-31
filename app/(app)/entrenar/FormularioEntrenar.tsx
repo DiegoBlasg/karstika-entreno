@@ -4,18 +4,11 @@ import { useActionState, useEffect, useRef, useState } from 'react'
 import { CamposChequeo } from '@/components/CamposChequeo'
 import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { BOTON, CAMPO } from '@/components/estilos'
+import { Opciones } from '@/components/ui/Opciones'
 import { fechaLarga } from '@/lib/fecha'
 import { MINUTOS_DISPONIBLES, type ChequeoInicial, type InicialEntrenar } from '@/lib/formulario'
 import { proponer, type EstadoProponer } from './acciones'
 import { ResultadoPropuesta } from './ResultadoPropuesta'
-
-function Radio({ nombre, valor, texto, marcado = false }: { nombre: string; valor: string; texto: string; marcado?: boolean }) {
-  return (
-    <label className="mr-4 inline-flex items-center gap-1">
-      <input type="radio" name={nombre} value={valor} defaultChecked={marcado} required /> {texto}
-    </label>
-  )
-}
 
 // Se envía sin vaciar los campos (enviarSinVaciar): tras proponer, el formulario conserva lo rellenado. Y si ya hay
 // chequeo de hoy guardado (`chequeoHoy`), los campos arrancan con él, así que preparar no lo pisa con 3/3/3 y sin molestias.
@@ -46,17 +39,10 @@ export function FormularioEntrenar({ hoy, hora, inicioTemporada, inicial = {}, c
           <label className="block flex-1">Día<input type="date" name="fecha" min={primerDia} max={inicial.reemplaza ? hoy : undefined} value={dia} onChange={(e) => setDia(e.target.value)} readOnly={Boolean(inicial.reemplaza)} required className={CAMPO} /></label>
           <label className="block w-32">Hora<input type="time" name="hora" defaultValue={inicial.hora ?? hora} required className={CAMPO} /></label>
         </div>
-        <fieldset>
-          <legend className="font-medium">¿Con quién?</legend>
-          <Radio nombre="compania" valor="con-gente" texto="Con gente" marcado={(inicial.compania ?? 'con-gente') === 'con-gente'} />
-          <Radio nombre="compania" valor="solo" texto="Solo" marcado={inicial.compania === 'solo'} />
-        </fieldset>
-        <fieldset>
-          <legend className="font-medium">¿Dónde?</legend>
-          <Radio nombre="lugar" valor="rocodromo" texto="Rocódromo" marcado={(inicial.lugar ?? 'rocodromo') === 'rocodromo'} />
-          <Radio nombre="lugar" valor="roca" texto="Roca" marcado={inicial.lugar === 'roca'} />
-          <Radio nombre="lugar" valor="casa" texto="Casa" marcado={inicial.lugar === 'casa'} />
-        </fieldset>
+        <Opciones nombre="compania" leyenda="¿Con quién?" requerido valor={inicial.compania ?? 'con-gente'} columnas={2}
+          opciones={[{ valor: 'con-gente', texto: 'Con gente' }, { valor: 'solo', texto: 'Solo' }]} />
+        <Opciones nombre="lugar" leyenda="¿Dónde?" requerido valor={inicial.lugar ?? 'rocodromo'}
+          opciones={[{ valor: 'rocodromo', texto: 'Rocódromo' }, { valor: 'roca', texto: 'Roca' }, { valor: 'casa', texto: 'Casa' }]} />
         <label className="block">Minutos disponibles<input type="number" name="minutos" min={MINUTOS_DISPONIBLES.min} max={MINUTOS_DISPONIBLES.max} step={1} defaultValue={inicial.minutos ?? 90} required className={CAMPO} /></label>
         {dia === hoy && (
           <fieldset className="space-y-3">
