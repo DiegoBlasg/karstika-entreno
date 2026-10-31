@@ -190,8 +190,8 @@ describe('tecnica', () => {
 })
 
 describe('arc', () => {
-  it('con tiempo: 10 + 15 + 10 + 15 = 50 min', () => {
-    const plan = construirSesion('arc', peticion())!
+  it('con 50-74 min: 10 + 15 + 10 + 15 = 50 min', () => {
+    const plan = construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 } }))!
     expect(plan.sesion).toMatchObject({ tipo: 'arc', intensidad: 'suave', duracionMin: 50 })
     expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 10, 15])
   })
@@ -202,6 +202,19 @@ describe('arc', () => {
   })
   it('devuelve null si no caben 40 min', () => {
     expect(construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 39 } }))).toBeNull()
+  })
+  it('con 75 min o más: 3 series de 15', () => {
+    const plan = construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 90 } }))!
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 10, 15, 10, 15])
+  })
+  it('alterna: con un ARC antes, on-offs 10 × 1:1 (30 min); en descarga, 5', () => {
+    const previo = { id: 'a1', tipo: 'arc' as const, intensidad: 'suave' as const, fecha: '2026-11-02', horaInicio: 18, duracionMin: 50 }
+    const b = construirSesion('arc', peticion({ fecha: '2026-11-09', historial: [previo] }))!
+    expect(b.sesion.duracionMin).toBe(30)
+    expect(b.bloques[1]!.ejercicios[0]).toMatchObject({ nombre: '10 × (1 min escalando / 1 min de descanso)', ficha: 'on-offs' })
+    const d = construirSesion('arc', peticion({ fecha: '2026-11-09', historial: [previo], fase: { ...peticion().fase, descarga: true } }))!
+    expect(d.bloques[1]!.ejercicios[0]!.nombre).toMatch(/^5 × /)
+    expect(d.sesion.duracionMin).toBe(20)
   })
   it('cita P-35', () => {
     expect(construirSesion('arc', peticion())!.bloques[1]!.explicacion.parametros).toContain('P-35')

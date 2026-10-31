@@ -521,17 +521,56 @@ function construirTecnica(p: Peticion): SesionPlan | null {
   return base && plan(sesionDe('tecnica', p, base.total, 'suave'), base.bloques)
 }
 
+// ARC (P-35): se alterna A (continuo) y B (on-offs) según cuántas sesiones de ARC hay antes de hoy, como el hombro.
+export type RutinaArc = 'A' | 'B'
+
+export function rutinaArc(p: Peticion): RutinaArc {
+  const hoy = diaNumero(p.fecha)
+  return p.historial.filter((s) => s.tipo === 'arc' && diaNumero(s.fecha) < hoy).length % 2 === 0 ? 'A' : 'B'
+}
+
 function construirArc(p: Peticion): SesionPlan | null {
-  const { series, minutosSerie, minutosSerieCorta, descansoMin } = VALORES['P-35']
-  const total = (serieMin: number): number =>
-    CALENTAMIENTO_MIN + series * serieMin + (series - 1) * descansoMin
-  const serieMin = [minutosSerie, minutosSerieCorta].find((m) => total(m) <= p.contexto.minutosDisponibles)
-  if (serieMin === undefined) return null
+  const v = VALORES['P-35']
+  if (rutinaArc(p) === 'B') {
+    const vueltas = p.fase.descarga ? v.onOffsDescarga : v.onOffs
+    const bloqueMin = 2 * vueltas
+    if (CALENTAMIENTO_MIN + bloqueMin <= p.contexto.minutosDisponibles) {
+      return plan(sesionDe('arc', p, CALENTAMIENTO_MIN + bloqueMin, 'suave'), [
+        bloqueCalentamiento(),
+        {
+          nombre: 'On-offs',
+          minutos: bloqueMin,
+          ejercicios: [
+            {
+              // Sin series ni tiempos: el cronómetro lo guía como un bloque de minutos (no como intentos de colgarse).
+              nombre: `${vueltas} × (1 min escalando / 1 min de descanso)`,
+              cargaTexto: 'Unos 2 grados por debajo de tu nivel a vista',
+              notas: 'Bombeo alto solo en las últimas; si llega antes, baja la dificultad.',
+              ficha: 'on-offs',
+            },
+          ],
+          explicacion: explicar(
+            'plantilla.arc-on-offs',
+            ['P-35'],
+            `${p.fase.descarga ? 'Semana de descarga: la mitad de vueltas. ' : ''}Capacidad, alternando con el ARC continuo: on-offs de 1 min escalando y 1 min de descanso. Es un protocolo de entrenadores (Lattice), sin ensayo; la alternancia es decisión de diseño.`,
+          ),
+        },
+      ])
+    }
+  }
+  const { minutosSerie, minutosSerieCorta, descansoMin } = v
+  const total = (series: number, serieMin: number): number => CALENTAMIENTO_MIN + series * serieMin + (series - 1) * descansoMin
+  const opciones: [number, number][] = p.fase.descarga
+    ? [[v.series, minutosSerie], [v.series, minutosSerieCorta]]
+    : [[v.seriesMax, minutosSerie], [v.series, minutosSerie], [v.series, minutosSerieCorta]]
+  const elegida = opciones.find(([n, m]) => total(n, m) <= p.contexto.minutosDisponibles)
+  if (!elegida) return null
+  const [series, serieMin] = elegida
   const bloques: Bloque[] = [bloqueCalentamiento()]
   for (let i = 1; i <= series; i++) {
     if (i > 1) {
       bloques.push({
-        nombre: 'Descanso entre series',
+        nombre: `Descanso tras la serie ${i - 1}`,
         minutos: descansoMin,
         ejercicios: [{ nombre: 'Descanso suave, hidrátate', cargaTexto: 'Sin esfuerzo' }],
         explicacion: explicar('plantilla.arc-descanso', ['P-35'], 'Entre las series de ARC se descansa 10 minutos.'),
@@ -551,11 +590,11 @@ function construirArc(p: Peticion): SesionPlan | null {
       explicacion: explicar(
         'plantilla.arc',
         ['P-35'],
-        'Capacidad: 2 series de 10-15 minutos de escalada continua sin bombeo marcado, con 10 minutos de descanso.',
+        `Capacidad: ${series} series de ${serieMin} minutos de escalada continua sin bombeo marcado, con 10 minutos de descanso (se alterna con los on-offs). Los entrenadores proponen 20-45 min continuos; las series son decisión de diseño.`,
       ),
     })
   }
-  return plan(sesionDe('arc', p, total(serieMin), 'suave'), bloques)
+  return plan(sesionDe('arc', p, total(series, serieMin), 'suave'), bloques)
 }
 
 // Con 40 min o más se añaden antagonistas y movilidad (decisión del usuario: días en casa de la fase base).

@@ -7,7 +7,7 @@ import type { DibujoId } from './dibujos'
 export const FICHA_IDS = [
   'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo',
   'calentamiento-progresivo', 'calentamiento-barra',
-  'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'practica-tecnica', 'video-autoevaluacion',
+  'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'practica-tecnica', 'video-autoevaluacion',
   'dominadas-lastradas', 'colgarse-barra',
   'retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda', 'face-pull-banda', 'extensores-dedos-banda',
   'plancha-toques-hombro',
@@ -274,7 +274,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
     material: 'Rocódromo (travesía o vías fáciles)',
     pasos: [
       'Elige una travesía o vías muy por debajo de tu nivel.',
-      `Escala sin parar ${ARC.minutosSerie} min (o ${ARC.minutosSerieCorta} si va corta la sesión).`,
+      `Escala sin parar ${ARC.minutosSerie} min (o ${ARC.minutosSerieCorta} si va corta la sesión); ${ARC.series}-${ARC.seriesMax} series según el tiempo.`,
       'Esfuerzo 3-4 de 10: puedes hablar mientras escalas.',
       `Descansa ${ARC.descansoMin} min entre series.`,
     ],
@@ -286,6 +286,21 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Notas bombeo: baja la dificultad.',
       ...PARA_SI,
     ],
+    parametros: ['P-35', ...SEGURIDAD],
+  },
+  'on-offs': {
+    id: 'on-offs',
+    titulo: 'On-offs (1 min escalando / 1 min de descanso)',
+    paraQue: 'Capacidad del antebrazo con intervalos: se alterna con el ARC continuo. Protocolo de entrenadores (Lattice), sin ensayo.',
+    material: 'Rocódromo (bloques o vías fáciles, autoasegurador) o roca',
+    pasos: [
+      'Elige un recorrido unos 2 grados por debajo de tu nivel a vista.',
+      `Escala 1 min y descansa 1 min; repite ${ARC.onOffs} veces (${ARC.onOffsDescarga} en semana de descarga).`,
+      'El bombeo debe llegar solo en las últimas vueltas.',
+      'En el descanso, sacude los brazos colgando (P-52).',
+    ],
+    errores: ['Empezar demasiado duro y bombearse en la tercera vuelta.', 'Alargar los descansos.'],
+    paraSi: ['Te bombeas pronto: baja la dificultad.', ...PARA_SI],
     parametros: ['P-35', ...SEGURIDAD],
   },
   'practica-tecnica': {
@@ -667,7 +682,7 @@ export const GRUPOS: Grupo[] = [
   {
     id: 'escalada',
     titulo: 'Escalada',
-    fichas: ['calentamiento-progresivo', 'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'practica-tecnica', 'video-autoevaluacion'],
+    fichas: ['calentamiento-progresivo', 'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'practica-tecnica', 'video-autoevaluacion'],
   },
   { id: 'barra', titulo: 'Barra', fichas: ['calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas'] },
   {
