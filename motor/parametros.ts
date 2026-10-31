@@ -47,5 +47,7 @@ export const VALORES = {
   'P-68': { maxCargaAltaPorDia: 1 },
   // Diagnóstico por la respuesta de cierre (decisión de diseño, sinEvidencia).
   'P-69': { ventanaDias: 56, minRespuestas: 6, mayoriaPct: 40 },
+  // Core y movilidad cuando toca descansar (decisión de diseño, sinEvidencia).
+  'P-72': { minutosMin: 20, minutosMax: 30 },
   'P-57': { gramosPorKg: 1.6 },
 } as const satisfies Partial<Record<ParametroId, object>>

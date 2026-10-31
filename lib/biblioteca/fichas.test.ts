@@ -113,7 +113,7 @@ describe('fichas de hombro: lo que es diseño lo dice', () => {
 
 describe('GRUPOS', () => {
   it('son los cinco del índice, en orden', () => {
-    expect(GRUPOS.map((g) => g.titulo)).toEqual(['Suspensiones', 'Escalada', 'Barra', 'Hombro y antagonistas', 'Movilidad'])
+    expect(GRUPOS.map((g) => g.titulo)).toEqual(['Suspensiones', 'Escalada', 'Barra', 'Hombro y antagonistas', 'Movilidad y core'])
   })
   it('cada ficha está en un solo grupo', () => {
     const vistas = GRUPOS.flatMap((g) => g.fichas)

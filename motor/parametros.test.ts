@@ -117,6 +117,10 @@ describe('VALORES del diagnóstico', () => {
     expect(columnas('P-31')[2]).toMatch(/^Fuerza de dedos: 4-10 semanas\. Resistencia de fuerza: 4-8 semanas/)
     expect(VALORES['P-31']).toEqual({ fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 })
   })
+  it('P-72 coincide con el documento', () => {
+    expect(columnas('P-72')[2]).toMatch(/^Sesión suave de core y movilidad de 20-30 min/)
+    expect(VALORES['P-72']).toEqual({ minutosMin: 20, minutosMax: 30 })
+  })
   it('P-69 coincide con el documento; P-70 y P-71 existen', () => {
     expect(columnas('P-69')[2]).toMatch(/^Una pregunta al terminar cada sesión al límite/)
     expect(columnas('P-69')[2]).toMatch(/56 días/)
