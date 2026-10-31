@@ -42,7 +42,7 @@ describe('prepararPropuesta', () => {
     const fila = filaSesionAceptada(opcionElegida(martes.propuesta, 0)!, uuid(1))
     const d = conRegistro(conSesion(datosVacios(), fila), {
       sesion_id: uuid(1), rpe: 10, duracion_min: fila.sesion.duracionMin, molestias: [], registrado_en: 'x',
-    }, [])
+    })
     const jueves = propuestaDe(prepararPropuesta(d, { ...MARTES, fecha: '2026-11-05' }))
     expect(jueves.propuesta.estado?.sinSubida).toBe(true)
   })

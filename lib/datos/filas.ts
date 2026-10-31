@@ -1,5 +1,5 @@
 // Filas tal como las devuelven las consultas de lib/servidor/consultas.ts (fechas como 'AAAA-MM-DD').
-import type { Compania, Lugar, MotivoCaida, Molestia, Sesion, SesionPlan, Zona } from '../../motor'
+import type { Compania, Freno, Lugar, MotivoCaida, Molestia, Sesion, SesionPlan, Zona } from '../../motor'
 
 export interface FilaPerfil {
   peso_kg: number
@@ -37,6 +37,10 @@ export interface FilaRegistro {
   duracion_min: number
   molestias: Molestia[]
   registrado_en: string
+  // «¿Qué te frenó hoy?» (solo sesiones al límite) y si se encadenó algo. La base siempre los devuelve; opcionales
+  // para los registros construidos a mano.
+  freno?: Freno | null
+  encadene?: boolean
 }
 
 export interface FilaChequeo {

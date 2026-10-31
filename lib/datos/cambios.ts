@@ -1,7 +1,7 @@
 // Cómo quedan los datos tras cada acción, antes de escribirla: se validan con validarDatos y solo entonces se
 // guardan. Puro.
 import type { Agarre, Intensidad, Sesion, SesionPlan, TipoSesion } from '../../motor'
-import type { DatosAtleta, FilaAlta, FilaChequeo, FilaEvaluacion, FilaIntento, FilaRegistro, FilaSesion } from './filas'
+import type { DatosAtleta, FilaAlta, FilaChequeo, FilaEvaluacion, FilaRegistro, FilaSesion } from './filas'
 
 // El motor devuelve ids reservados («propuesta-…»); al aceptar, la sesión recibe su id propio.
 export function filaSesionAceptada(plan: SesionPlan, id: string): FilaSesion {
@@ -56,22 +56,19 @@ export function sinSesion(d: DatosAtleta, id: string): DatosAtleta {
   }
 }
 
-export function conRegistro(d: DatosAtleta, r: FilaRegistro, intentos: FilaIntento[]): DatosAtleta {
+export function conRegistro(d: DatosAtleta, r: FilaRegistro): DatosAtleta {
   if (!d.sesiones.some((s) => s.id === r.sesion_id)) throw new Error('Esa sesión ya no existe.')
   if (d.registros.some((x) => x.sesion_id === r.sesion_id)) throw new Error('Esa sesión ya está registrada.')
-  return { ...d, registros: [...d.registros, r], intentos: [...d.intentos, ...intentos] }
+  return { ...d, registros: [...d.registros, r] }
 }
 
-// Corrige un registro ya guardado: sustituye el registro (conservando cuándo se apuntó) y todos los intentos de esa
-// sesión.
-export function conRegistroCorregido(d: DatosAtleta, r: FilaRegistro, intentos: FilaIntento[]): DatosAtleta {
+// Corrige un registro ya guardado: sustituye el registro conservando cuándo se apuntó. Los intentos antiguos no se tocan.
+export function conRegistroCorregido(d: DatosAtleta, r: FilaRegistro): DatosAtleta {
   const previo = d.registros.find((x) => x.sesion_id === r.sesion_id)
   if (!previo) throw new Error('Esa sesión no está registrada.')
-  if (intentos.some((i) => i.sesion_id !== r.sesion_id)) throw new Error('Los intentos tienen que ser de la misma sesión.')
   return {
     ...d,
     registros: d.registros.map((x) => (x.sesion_id === r.sesion_id ? { ...r, registrado_en: previo.registrado_en } : x)),
-    intentos: [...d.intentos.filter((i) => i.sesion_id !== r.sesion_id), ...intentos],
   }
 }
 

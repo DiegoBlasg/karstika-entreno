@@ -7,7 +7,7 @@ import {
 import { lunesDe, sumarDias } from '../fecha'
 import { mensajeDe } from '../formulario'
 import type { DatosAtleta, FilaHueco, FilaSesion } from './filas'
-import { evaluacionesMotor, evaluacionParaFecha, historialMotor, intentosMotor, seguimientoMotor } from './mapeo'
+import { evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, seguimientoMotor } from './mapeo'
 import { temporadaDe } from './peticion'
 import { huecoPasado, vistaSemana } from './semana'
 
@@ -147,7 +147,7 @@ export interface CambiosResultados {
 export function cambiosPorResultados(d: DatosAtleta, hoy: string): CambiosResultados {
   try {
     const evaluaciones = evaluacionesMotor(d.evaluaciones)
-    const intentos = intentosMotor(d.intentos)
+    const respuestas = frenosMotor(d)
     const e = evaluacionParaFecha(evaluaciones, hoy)
     const vigente = evaluacionVigente(e, hoy)
     const estado = estadoAtleta(historialMotor(d.sesiones), seguimientoMotor(d), hoy)
@@ -155,10 +155,10 @@ export function cambiosPorResultados(d: DatosAtleta, hoy: string): CambiosResult
     const lunesCiclo2 = t.semanas.find((s) => s.ciclo === 2)?.lunes
     let ciclo2: Ciclo2Vista | null = null
     if (lunesCiclo2 && hoy < lunesCiclo2) {
-      const diagnostico = diagnosticar(evaluaciones, intentos, hoy)
+      const diagnostico = diagnosticar(evaluaciones, respuestas, hoy)
       ciclo2 = { tipo: 'pendiente', fecha: lunesCiclo2, limitante: diagnostico.limitantes[0]!, explicacion: ajusteCiclo2(diagnostico).explicacion }
     } else if (lunesCiclo2) {
-      const a = ajusteCiclo2(diagnosticar(evaluaciones, intentos, lunesCiclo2))
+      const a = ajusteCiclo2(diagnosticar(evaluaciones, respuestas, lunesCiclo2))
       ciclo2 = { tipo: 'fijado', fuerza: a.fuerza, resistencia: a.resistencia, refuerzoTecnica: a.refuerzoTecnica, explicacion: a.explicacion }
     }
     return {

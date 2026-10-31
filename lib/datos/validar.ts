@@ -1,7 +1,7 @@
 // Valida el conjunto de datos con los validadores del motor antes de escribir nada. Lanza con el mensaje del motor.
 import { diagnosticar, finHoras, inicioHoras, validarEntrada, validarSeguimiento } from '../../motor'
 import type { DatosAtleta } from './filas'
-import { evaluacionesMotor, historialMotor, intentosMotor, seguimientoMotor } from './mapeo'
+import { evaluacionesMotor, historialMotor, frenosMotor, seguimientoMotor } from './mapeo'
 
 // `guardando`: el id de la sesión que se está guardando; si solapa, el error habla de ella.
 export function validarDatos(d: DatosAtleta, guardando?: string): void {
@@ -29,11 +29,12 @@ export function validarDatos(d: DatosAtleta, guardando?: string): void {
     if (fecha === undefined) throw new Error(`El intento ${i.id} no tiene sesión`)
     if (fecha !== i.fecha) throw new Error(`El intento ${i.id} no tiene la fecha de su sesión`)
   }
-  // diagnosticar valida todas las evaluaciones y todos los intentos (fechas repetidas, rangos) antes de calcular;
+  // diagnosticar valida todas las evaluaciones y todas las respuestas (fechas repetidas, valores) antes de calcular;
   // la fecha solo decide qué cuenta en el cálculo, que aquí no se usa.
-  const fechas = [...d.evaluaciones.map((e) => e.fecha), ...d.intentos.map((i) => i.fecha)].sort()
+  const respuestas = frenosMotor(d)
+  const fechas = [...d.evaluaciones.map((e) => e.fecha), ...respuestas.map((r) => r.fecha)].sort()
   const ultima = fechas.at(-1)
-  if (ultima !== undefined) diagnosticar(evaluacionesMotor(d.evaluaciones), intentosMotor(d.intentos), ultima)
+  if (ultima !== undefined) diagnosticar(evaluacionesMotor(d.evaluaciones), respuestas, ultima)
 }
 
 function hhmm(minutosAbsolutos: number): string {

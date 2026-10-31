@@ -7,7 +7,7 @@ import { fechaLarga } from '../fecha'
 import type { DatosAtleta } from './filas'
 import { huecosPosteriores } from './huecos'
 import {
-  consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, intentosMotor, perfilMotor, seguimientoMotor,
+  consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor,
 } from './mapeo'
 import { validarDatos } from './validar'
 
@@ -28,7 +28,7 @@ export function temporadaDe(d: DatosAtleta): Temporada {
   const sinAjuste = planificarTemporada(inicio, objetivo)
   const ciclo2 = sinAjuste.semanas.find((s) => s.ciclo === 2)
   if (!ciclo2) return sinAjuste
-  const ajuste = ajusteCiclo2(diagnosticar(evaluacionesMotor(d.evaluaciones), intentosMotor(d.intentos), ciclo2.lunes))
+  const ajuste = ajusteCiclo2(diagnosticar(evaluacionesMotor(d.evaluaciones), frenosMotor(d), ciclo2.lunes))
   return planificarTemporada(inicio, objetivo, { ajuste })
 }
 
@@ -49,7 +49,7 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     throw err
   }
   const evaluaciones = evaluacionesMotor(d.evaluaciones)
-  const diagnostico = diagnosticar(evaluaciones, intentosMotor(d.intentos), e.fecha)
+  const diagnostico = diagnosticar(evaluaciones, frenosMotor(d), e.fecha)
   const evaluacion = evaluacionParaFecha(evaluaciones, e.fecha)
   const huecos = huecosPosteriores(d, e)
   const peticion: Peticion = {

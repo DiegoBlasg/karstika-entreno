@@ -49,12 +49,12 @@ export async function registrar(_previo: EstadoAccion, fd: FormData): Promise<Es
     if (!fila) return { error: 'Esa sesión ya no existe.' }
     if (fila.fecha > hoy) return { error: 'No puedes registrar una sesión de un día futuro.' }
     leido = leerRegistro(fd, fila)
-    validarDatos(conRegistro(datos, leido.registro, leido.filasIntentos))
+    validarDatos(conRegistro(datos, leido.registro))
   } catch (e) {
     return { error: mensajeDe(e) }
   }
   try {
-    await insertarRegistro(sql, leido.registro, leido.filasIntentos)
+    await insertarRegistro(sql, leido.registro)
   } catch (e) {
     return { error: `No se ha podido guardar el registro: ${mensajeDe(e)}` }
   }
@@ -74,12 +74,12 @@ export async function corregirRegistro(_previo: EstadoAccion, fd: FormData): Pro
     if (!datos.registros.some((r) => r.sesion_id === fila.id)) return { error: 'Esa sesión todavía no está registrada.' }
     if (!corregible(fila.fecha, hoy)) return { error: 'Solo puedes corregir registros de los últimos 7 días.' }
     leido = leerRegistro(fd, fila)
-    validarDatos(conRegistroCorregido(datos, leido.registro, leido.filasIntentos))
+    validarDatos(conRegistroCorregido(datos, leido.registro))
   } catch (e) {
     return { error: mensajeDe(e) }
   }
   try {
-    await corregirRegistroBd(sql, leido.registro, leido.filasIntentos)
+    await corregirRegistroBd(sql, leido.registro)
   } catch (e) {
     return { error: `No se ha podido corregir el registro: ${mensajeDe(e)}` }
   }
@@ -224,7 +224,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
       ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
     })
     leido = leerRegistro(fd, libre)
-    validarDatos(conRegistro(conSesion(datos, libre), leido.registro, leido.filasIntentos), libre.id)
+    validarDatos(conRegistro(conSesion(datos, libre), leido.registro), libre.id)
     const avisos = validarSesion(libre.sesion, historialMotor(datos.sesiones), perfilMotor(datos.perfil)).map((v) => v.mensaje)
     if (avisos.length > 0 && fd.get('confirmar') !== 'on') {
       return { error: 'El entrenador no habría propuesto esto. Revisa los avisos y confirma si lo hiciste así.', avisos }
@@ -233,7 +233,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
     return { error: mensajeDe(e) }
   }
   try {
-    await insertarSesionRegistrada(sql, libre, leido.registro, leido.filasIntentos)
+    await insertarSesionRegistrada(sql, libre, leido.registro)
   } catch (e) {
     return { error: `No se ha podido guardar el entrenamiento: ${mensajeDe(e)}` }
   }

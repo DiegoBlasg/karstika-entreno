@@ -1,6 +1,6 @@
 // Traducción de filas de la base de datos a los tipos del motor. Puro.
-import type { EvaluacionDedos, IntentoLimite, Perfil, Seguimiento, Sesion } from '../../motor'
-import type { DatosAtleta, FilaConsejo, FilaEvaluacion, FilaIntento, FilaPerfil, FilaSesion } from './filas'
+import type { EvaluacionDedos, Perfil, RespuestaFreno, Seguimiento, Sesion } from '../../motor'
+import type { DatosAtleta, FilaConsejo, FilaEvaluacion, FilaPerfil, FilaSesion } from './filas'
 
 export function perfilMotor(f: FilaPerfil): Perfil {
   return { pesoKg: f.peso_kg, anosEscalando: f.anos_escalando, lesiones: [...f.lesiones] }
@@ -47,8 +47,13 @@ export function seguimientoMotor(d: DatosAtleta): Seguimiento {
   }
 }
 
-export function intentosMotor(filas: readonly FilaIntento[]): IntentoLimite[] {
-  return filas.map((f) => ({ fecha: f.fecha, encadenado: f.encadenado, ...(f.motivo_caida ? { motivoCaida: f.motivo_caida } : {}) }))
+// Las respuestas a «¿Qué te frenó hoy?», con la fecha de la sesión de cada registro.
+export function frenosMotor(d: DatosAtleta): RespuestaFreno[] {
+  const fechaDe = new Map(d.sesiones.map((s) => [s.id, s.fecha]))
+  return d.registros.flatMap((r) => {
+    const fecha = fechaDe.get(r.sesion_id)
+    return r.freno && fecha !== undefined ? [{ fecha, freno: r.freno }] : []
+  })
 }
 
 export function consejosMostradosMotor(filas: readonly FilaConsejo[]): { id: string; fecha: string }[] {
