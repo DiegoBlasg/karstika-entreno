@@ -25,6 +25,7 @@ const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
   dominadas: CASA_O_ROCODROMO,
   hombro: CASA_O_ROCODROMO,
   campus: CASA_O_ROCODROMO,
+  'core-movilidad': ['rocodromo', 'roca', 'casa'],   // P-72: la alternativa suave del descanso, en cualquier sitio
   descanso: ['rocodromo', 'roca', 'casa'],
 }
 

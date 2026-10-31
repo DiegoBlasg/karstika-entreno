@@ -908,8 +908,43 @@ export const TIPOS_CON_PLANTILLA: readonly TipoSesion[] = [
   'multipresa-resistencia-fuerza', 'pegues-proyecto', 'resistencia-4x4', 'tecnica', 'via-cuerda-limite',
 ]
 
+// Core y movilidad (P-72): la alternativa suave cuando toca descansar. Dosis = decisión de diseño. Sin barra (roca) o
+// sin poder colgarse (P-64, P-65), las elevaciones van tumbado.
+const ejerciciosCore = (colgado: boolean): Ejercicio[] => [
+  { nombre: 'Plancha frontal', cargaTexto: '3 × 30-45 s · descanso 45-60 s', ficha: 'plancha-frontal' },
+  { nombre: 'Hollow', cargaTexto: '3 × 20-30 s · descanso 45-60 s', ficha: 'hollow' },
+  colgado
+    ? { nombre: 'Elevaciones de piernas colgado', cargaTexto: '3 × 6-10 · descanso 60 s', ficha: 'elevaciones-colgado' }
+    : { nombre: 'Elevaciones de piernas tumbado', cargaTexto: '3 × 10-12 · descanso 45 s', ficha: 'elevaciones-tumbado' },
+  { nombre: 'Plancha lateral', cargaTexto: '2 × 30 s por lado', ficha: 'plancha-lateral' },
+]
+const EJERCICIOS_MOVILIDAD: readonly Ejercicio[] = [
+  { nombre: 'Rana', cargaTexto: '2 × 45 s', ficha: 'rana' },
+  { nombre: '90/90 de cadera', cargaTexto: '2 × 5 por lado', ficha: 'cadera-90-90' },
+  { nombre: 'Dislocaciones de hombro con cinta o palo', cargaTexto: '2 × 10', ficha: 'dislocaciones-hombro' },
+]
+
+function construirCoreMovilidad(p: Peticion): SesionPlan | null {
+  const { minutosMin, minutosMax } = VALORES['P-72']
+  if (p.contexto.minutosDisponibles < minutosMin) return null
+  const total = p.contexto.minutosDisponibles >= minutosMax ? minutosMax : minutosMin
+  const core = total === minutosMax ? 18 : 12
+  const colgado = p.contexto.lugar !== 'roca' && !sinColgarse(p)
+  const explicacion = explicar(
+    'plantilla.core-movilidad',
+    ['P-72'],
+    'Hoy toca descansar de escalar: si quieres moverte, core y movilidad suaves no cargan los dedos. Los ejercicios y las dosis son decisión de diseño: no hay estudios de core en escaladores.',
+  )
+  return plan(sesionDe('core-movilidad', p, total, 'suave'), [
+    { nombre: 'Core', minutos: core, ejercicios: ejerciciosCore(colgado), explicacion },
+    { nombre: 'Movilidad', minutos: total - core, ejercicios: EJERCICIOS_MOVILIDAD.map((e) => ({ ...e })), explicacion },
+  ])
+}
+
 export function construirSesion(tipo: TipoSesion, p: Peticion): SesionPlan | null {
   switch (tipo) {
+    case 'core-movilidad':
+      return construirCoreMovilidad(p)
     case 'via-cuerda-limite':
       return construirViaLimite(p)
     case 'multipresa-resistencia-fuerza':

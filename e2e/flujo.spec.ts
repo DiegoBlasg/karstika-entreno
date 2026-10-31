@@ -34,17 +34,21 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await page.getByLabel('Fecha objetivo').fill(sumarDias(inicio, 48 * 7))
   await page.getByLabel('He leído el aviso y lo acepto').check()
   await page.getByRole('button', { name: 'Guardar perfil' }).click()
-  await expect(page).toHaveURL(/\/entrenar$/)
+  // La primera vez, a Semana a generar el primer entreno: hoy, por la mañana (pide también el chequeo de hoy).
+  await expect(page).toHaveURL(/\/semana$/)
+  const hoyFecha = ahoraMadrid(new Date()).fecha
+  await page.locator(`li[data-fecha="${hoyFecha}"]`).getByRole('button', { name: 'Generar entreno' }).click()
+  const hoja = page.getByRole('dialog')
+  await hoja.getByLabel('Con gente').check()
+  await hoja.getByLabel('Rocódromo').check()
+  await hoja.getByLabel('Mañana').check()
+  await hoja.getByLabel('Minutos disponibles').fill('120')
+  await expect(hoja.getByText('¿Cómo llegas hoy?')).toBeVisible()
+  await hoja.getByRole('button', { name: 'Generar', exact: true }).click()
+  await expect(hoja).toBeHidden()
+  await expect(page.getByText(/^Listo: /)).toBeVisible()
 
-  await page.getByLabel('Hora').fill('10:00')
-  await page.getByLabel('Con gente').check()
-  await page.getByLabel('Rocódromo').check()
-  await page.getByLabel('Minutos disponibles').fill('120')
-  await page.getByRole('button', { name: 'Preparar sesión' }).click()
-  const aceptar = page.getByRole('button', { name: 'Aceptar esta sesión' }).first()
-  await expect(aceptar).toBeVisible()
-  await aceptar.click()
-
+  await page.getByRole('link', { name: 'Hoy', exact: true }).click()
   await expect(page).toHaveURL(/\/$/)
   await page.getByRole('button', { name: 'Terminar', exact: true }).click()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('7')
@@ -56,35 +60,34 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await expect(page.getByText(/Hecha · RPE 7/)).toBeVisible()
 })
 
-test('Mi semana: añadir un rato para entrenar, prepararlo y aceptarlo', async ({ page }) => {
+test('Semana: generar un entreno para el lunes que viene y cambiarlo por otra opción', async ({ page }) => {
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await page.getByRole('link', { name: 'Semana', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Tu semana' })).toBeVisible()
   await page.getByRole('link', { name: 'Siguiente ›' }).click()
-  // Esperar a que cargue la semana siguiente: si no, el rato se añadiría a la semana actual.
   await expect(page.getByRole('link', { name: '‹ Anterior' })).toBeVisible()
-  // Vacía: el aviso único y el plan orientativo, sin botones de «Preparar».
-  await expect(page.getByText(/Añade cuándo puedes entrenar esta semana/)).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Preparar' })).toHaveCount(0)
-  // El «+» del lunes abre la hoja con ese día ya elegido.
-  await page.getByRole('button', { name: /^Añadir un rato para entrenar el lunes/ }).click()
+  const lunes = sumarDias(lunesDeEstaSemana(), 7)
+  const dia = page.locator(`li[data-fecha="${lunes}"]`)
+  // El primer día libre lleva el botón principal; la hoja pregunta con quién, dónde, cuándo y cuántos minutos.
+  await dia.getByRole('button', { name: 'Generar entreno' }).click()
   const hoja = page.getByRole('dialog')
-  await expect(hoja.getByRole('heading', { name: /^Rato para entrenar · lunes/ })).toBeVisible()
-  await hoja.getByLabel('Hora').fill('19:00')
+  await expect(hoja.getByRole('heading', { name: /^Generar entreno · lunes/ })).toBeVisible()
+  await hoja.getByLabel('Con gente').check()
   await hoja.getByLabel('Rocódromo').check()
-  await hoja.getByRole('button', { name: 'Añadir rato' }).click()
-  await expect(page.getByText(/^Rato añadido el lunes \d+\.$/)).toBeVisible()
+  await hoja.getByLabel('Mañana').check()
+  await hoja.getByLabel('Minutos disponibles').fill('90')
+  await hoja.getByRole('button', { name: 'Generar', exact: true }).click()
   await expect(hoja).toBeHidden()
-  await page.getByRole('link', { name: 'Preparar' }).first().click()
-  await expect(page).toHaveURL(/\/entrenar\?/)
-  await page.getByRole('button', { name: 'Preparar sesión' }).click()
-  await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
-  await expect(page).toHaveURL(/\/$/)
-  await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
-  // Sale en la fila de su día.
-  await expect(page.getByText(/Aceptada/)).toBeVisible()
+  // Queda aceptada en su día, por la mañana y sin hora; no se puede empezar hasta ese día.
+  const fila = dia.locator('details').first()
+  await expect(fila.locator(':scope > summary')).toContainText('Mañana')
+  const antes = (await fila.locator(':scope > summary').textContent()) ?? ''
+  await fila.locator(':scope > summary').click()
+  await expect(fila.getByRole('link', { name: 'Empezar sesión' })).toHaveCount(0)
+  await fila.getByRole('button', { name: 'Otra opción' }).click()
+  await expect(dia.locator('details').first().locator(':scope > summary')).not.toHaveText(antes)
 })
 
 test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla', async ({ page }) => {
@@ -186,9 +189,11 @@ test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra',
     bloques: [{ nombre: 'Bloque', minutos: 30, ejercicios: [{ nombre: 'Bloques al límite', cargaTexto: 'Máximo' }], explicacion }],
     explicaciones: [explicacion],
   }
+  // Con el contexto con que se generó: así se puede pedir «Otra opción».
+  const conContexto = { ...propuesta, contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 } }
   await sql`insert into sesiones (id, fecha, sesion, propuesta, origen)
-            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(propuesta)}::jsonb, 'propuesta')`
-  // Sin chequeo de hoy, Hoy lo pide (el primer test lo guardó desde Entrenar).
+            values (${id}, ${hoy}, ${JSON.stringify(sesion)}::jsonb, ${JSON.stringify(conContexto)}::jsonb, 'propuesta')`
+  // Sin chequeo de hoy, Hoy lo pide (el primer test lo guardó al generar).
   await sql`delete from chequeos where fecha = ${hoy}`
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
@@ -199,28 +204,11 @@ test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra',
   await page.getByLabel('Ganas 1').check()
   await page.getByRole('button', { name: 'Guardar chequeo' }).click()
   await expect(page.getByText('Con cómo llegas hoy, el entrenador ya no te propondría esta sesión:')).toBeVisible()
-  await page.getByRole('link', { name: 'Cambiarla por otra' }).click()
-  await expect(page).toHaveURL(new RegExp(`/entrenar\?.*reemplaza=${id}`))
-  await expect(page.getByText(/Vas a cambiar la sesión/)).toBeVisible()
-  // Entrenar arranca con el chequeo ya guardado en Hoy (1/1/1) y no se toca: preparar no debe pisarlo con 3/3/3.
-  await expect(page.getByText('Ya hiciste el chequeo de hoy: cámbialo solo si ha cambiado algo.')).toBeVisible()
-  await expect(page.getByLabel('Sueño 1')).toBeChecked()
-  await expect(page.getByLabel('Fatiga 1')).toBeChecked()
-  await expect(page.getByLabel('Ganas 1')).toBeChecked()
-  await page.getByLabel('Casa').check()
-  await page.getByRole('button', { name: 'Preparar sesión' }).click()
-  // Con un chequeo tan bajo el motor puede proponer solo descanso (sin «Aceptar»): entonces no hay nada que aceptar y la
-  // vieja sigue; se comprueba «Toca descansar» y se saltan las aserciones de la sustitución.
-  const aceptar = page.getByRole('button', { name: 'Aceptar esta sesión' }).first()
-  const descansar = page.getByRole('heading', { name: 'Toca descansar' })
-  await expect(aceptar.or(descansar).first()).toBeVisible()
-  if (await aceptar.isVisible()) {
-    await aceptar.click()
-    await expect(page).toHaveURL(/\/$/)
-    expect(await sql`select id from sesiones where id = ${id}`).toHaveLength(0)
-  } else {
-    await expect(descansar).toBeVisible()
-  }
+  // «Otra opción» la cambia por la siguiente del entrenador con su mismo contexto; con un chequeo tan bajo puede no haber
+  // ninguna: entonces lo dice y la vieja sigue.
+  await page.getByRole('button', { name: 'Otra opción' }).first().click()
+  const sinOtra = page.getByText('No hay otra opción para ese día.')
+  await expect.poll(async () => (await sinOtra.isVisible()) || (await sql`select id from sesiones where id = ${id}`).length === 0).toBe(true)
   // En cualquier caso, el chequeo de hoy sigue siendo el guardado en Hoy.
   expect(await sql`select sueno, fatiga, ganas from chequeos where fecha = ${hoy}`).toEqual([{ sueno: 1, fatiga: 1, ganas: 1 }])
 })
@@ -245,6 +233,12 @@ test('Hoy: apuntar un entrenamiento que no estaba planeado', async ({ page }) =>
     await guardar.click()
   }
   await expect(page.getByText('Entrenamiento apuntado.')).toBeVisible()
+  // Apuntado sin querer: se puede borrar con todo lo apuntado.
+  const tarjeta = page.locator('article').filter({ hasText: 'Técnica · 30 min (lo que hiciste)' })
+  await expect(tarjeta).toHaveCount(1)
+  page.once('dialog', (d) => void d.accept())
+  await tarjeta.getByRole('button', { name: 'Borrar' }).click()
+  await expect(tarjeta).toHaveCount(0)
 })
 
 test('Vía: pasos con el largo actual, su tarjeta del carrusel y una fuente desde «¿Por qué?»', async ({ page }) => {

@@ -61,10 +61,18 @@ export async function borrarEvaluacionBd(sql: Sql, id: string): Promise<void> {
   await sql`delete from evaluaciones where id = ${id}`
 }
 
-export async function guardarChequeo(sql: Sql, c: FilaChequeo): Promise<void> {
-  await sql`insert into chequeos (fecha, sueno, fatiga, ganas, molestias)
+const consultaChequeo = (sql: Sql, c: FilaChequeo) =>
+  sql`insert into chequeos (fecha, sueno, fatiga, ganas, molestias)
     values (${c.fecha}, ${c.sueno}, ${c.fatiga}, ${c.ganas}, ${JSON.stringify(c.molestias)}::jsonb)
     on conflict (fecha) do update set sueno = excluded.sueno, fatiga = excluded.fatiga, ganas = excluded.ganas, molestias = excluded.molestias`
+
+export async function guardarChequeo(sql: Sql, c: FilaChequeo): Promise<void> {
+  await consultaChequeo(sql, c)
+}
+
+// «Generar entreno» de hoy: el chequeo y la sesión, juntos o ninguno.
+export async function insertarSesionConChequeo(sql: Sql, f: FilaSesion, c: FilaChequeo | null): Promise<void> {
+  await sql.transaction([...(c ? [consultaChequeo(sql, c)] : []), consultaSesion(sql, f)])
 }
 
 const consultaSesion = (sql: Sql, f: FilaSesion) =>
@@ -89,6 +97,12 @@ export async function borrarSesionBd(sql: Sql, id: string): Promise<boolean> {
   const filas = await sql`delete from sesiones
     where id = ${id} and not exists (select 1 from registros where sesion_id = ${id})
     returning id`
+  return filas.length > 0
+}
+
+// Borra una sesión registrada: su registro e intentos caen en cascada. La ventana de 7 días se comprueba en la acción.
+export async function borrarSesionRegistradaBd(sql: Sql, id: string): Promise<boolean> {
+  const filas = await sql`delete from sesiones where id = ${id} and exists (select 1 from registros where sesion_id = ${id}) returning id`
   return filas.length > 0
 }
 

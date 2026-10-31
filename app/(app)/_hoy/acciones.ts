@@ -13,7 +13,7 @@ import { ahoraMadrid } from '@/lib/fecha'
 import { detalleRegleta, encadene, entero, fecha as leerFecha, freno, hora, mensajeDe, molestias, opcion, texto } from '@/lib/formulario'
 import { TIPOS_AL_LIMITE, TIPOS_CON_REGLETA } from '@/lib/nombres'
 import {
-  borrarSesionBd, corregirRegistroBd, guardarChequeo, insertarAlta, insertarRegistro, insertarSesionRegistrada, requerirDatos, sustituirSesion,
+  borrarSesionBd, borrarSesionRegistradaBd, corregirRegistroBd, guardarChequeo, insertarAlta, insertarRegistro, insertarSesionRegistrada, requerirDatos, sustituirSesion,
 } from '@/lib/servidor/consultas'
 
 const TIPOS_LIBRES = TIPOS_SESION.filter((t): t is Exclude<TipoSesion, 'descanso'> => t !== 'descanso')
@@ -86,6 +86,29 @@ export async function corregirRegistro(_previo: EstadoAccion, fd: FormData): Pro
 }
 
 const YA_REGISTRADA = 'Esa sesión ya está registrada: no se puede cambiar ni borrar.'
+
+// Borra una sesión registrada de los últimos 7 días con todo lo apuntado (p. ej. un entrenamiento apuntado sin querer).
+export async function borrarRegistrada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const hoy = ahoraMadrid(new Date()).fecha
+  const { sql, datos } = await requerirDatos()
+  let id: string
+  try {
+    id = texto(fd, 'sesion_id', 'La sesión')
+  } catch (e) {
+    return { error: mensajeDe(e) }
+  }
+  const s = datos.sesiones.find((x) => x.id === id)
+  if (!s || !datos.registros.some((r) => r.sesion_id === id)) return { error: 'Esa sesión no está registrada.' }
+  if (!corregible(s.fecha, hoy)) return { error: 'Solo puedes borrar lo registrado en los últimos 7 días.' }
+  try {
+    if (!(await borrarSesionRegistradaBd(sql, id))) return { error: 'Esa sesión ya no existe.' }
+  } catch (e) {
+    return { error: `No se ha podido borrar: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/')
+  revalidatePath('/semana')
+  return { ok: 'Sesión borrada.' }
+}
 
 export async function noLaHice(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const { sql, datos } = await requerirDatos()

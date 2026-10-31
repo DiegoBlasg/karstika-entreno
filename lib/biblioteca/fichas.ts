@@ -12,6 +12,8 @@ export const FICHA_IDS = [
   'retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda', 'face-pull-banda', 'extensores-dedos-banda',
   'plancha-toques-hombro',
   'movilidad',
+  'plancha-frontal', 'hollow', 'elevaciones-colgado', 'elevaciones-tumbado', 'plancha-lateral', 'rana', 'cadera-90-90',
+  'dislocaciones-hombro',
 ] as const
 export type FichaId = (typeof FICHA_IDS)[number]
 
@@ -529,6 +531,129 @@ export const FICHAS: Record<FichaId, Ficha> = {
     paraSi: PARA_SI,
     parametros: ['P-41', 'P-64', ...SEGURIDAD],
   },
+  // Core y movilidad (P-72): ejercicios y dosis = decisión de diseño; no hay estudios de core en escaladores.
+  'plancha-frontal': {
+    id: 'plancha-frontal',
+    titulo: 'Plancha frontal',
+    paraQue: 'Tensión del tronco: mantener el cuerpo recto como en un desplome con los pies apoyados. La dosis es decisión de diseño.',
+    material: 'Ninguno (una esterilla si la hay)',
+    pasos: [
+      'Antebrazos en el suelo, codos bajo los hombros.',
+      'Cuerpo recto de la cabeza a los talones: aprieta glúteos y abdomen.',
+      'Respira sin soltar la tensión; la mirada al suelo.',
+      'Para la serie cuando la cadera empiece a caer.',
+    ],
+    errores: ['Hundir la zona lumbar.', 'Subir la cadera para descansar.', 'Aguantar la respiración.'],
+    paraSi: ['Molestia lumbar: acorta el tiempo o apoya las rodillas.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+    dibujo: 'plancha',
+  },
+  hollow: {
+    id: 'hollow',
+    titulo: 'Hollow',
+    paraQue: 'Tensión de la parte delantera del tronco, la que se pierde cuando los pies se despegan en un desplome. La dosis es decisión de diseño.',
+    material: 'Ninguno (una esterilla si la hay)',
+    pasos: [
+      'Tumbado boca arriba, pega la zona lumbar al suelo.',
+      'Despega hombros y piernas del suelo, brazos estirados hacia atrás.',
+      'Mantén la lumbar pegada todo el tiempo.',
+      'Más fácil: rodillas dobladas o brazos junto al cuerpo.',
+    ],
+    errores: ['Que la lumbar se despegue del suelo.', 'Tirar del cuello hacia arriba.'],
+    paraSi: ['Molestia lumbar: dobla las rodillas y acorta el tiempo.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
+  'elevaciones-colgado': {
+    id: 'elevaciones-colgado',
+    titulo: 'Elevaciones de piernas colgado',
+    paraQue: 'Subir los pies con el tronco firme, como al poner un pie alto en un desplome. La dosis es decisión de diseño.',
+    material: 'Barra de dominadas',
+    pasos: [
+      'Cuélgate de la barra con agarre cómodo y los hombros activos (no colgado de los ligamentos).',
+      'Sube las rodillas al pecho sin balancearte; más difícil: piernas estiradas.',
+      'Baja despacio, en unos 2 s.',
+      'Si te balanceas, para un momento antes de la siguiente.',
+    ],
+    errores: ['Balancearse para subir.', 'Hombros encogidos y sueltos.', 'Bajar de golpe.'],
+    paraSi: ['Molestia en dedos, muñeca u hombro: hazlas tumbado.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
+  'elevaciones-tumbado': {
+    id: 'elevaciones-tumbado',
+    titulo: 'Elevaciones de piernas tumbado',
+    paraQue: 'La versión sin colgarse de las elevaciones de piernas: sin barra o sin poder cargar dedos y hombros. La dosis es decisión de diseño.',
+    material: 'Ninguno (una esterilla si la hay)',
+    pasos: [
+      'Tumbado boca arriba, manos junto a la cadera o bajo los glúteos.',
+      'Pega la zona lumbar al suelo.',
+      'Sube las piernas hasta la vertical y bájalas despacio sin tocar el suelo.',
+      'Más fácil: con las rodillas dobladas.',
+    ],
+    errores: ['Arquear la espalda al bajar.', 'Bajar de golpe.'],
+    paraSi: ['Molestia lumbar: dobla las rodillas y acorta el recorrido.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
+  'plancha-lateral': {
+    id: 'plancha-lateral',
+    titulo: 'Plancha lateral',
+    paraQue: 'Tensión lateral del tronco, la que sujeta la cadera pegada a la pared en los movimientos de lado. La dosis es decisión de diseño.',
+    material: 'Ninguno (una esterilla si la hay)',
+    pasos: [
+      'De lado, apoyado en un antebrazo con el codo bajo el hombro.',
+      'Sube la cadera hasta que el cuerpo quede recto.',
+      'Aguanta sin dejar caer la cadera; luego el otro lado.',
+      'Más fácil: con la rodilla de abajo apoyada.',
+    ],
+    errores: ['Dejar caer la cadera.', 'Girar el pecho hacia el suelo.'],
+    paraSi: ['Molestia en el hombro de apoyo: apoya la rodilla o acorta el tiempo.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+    dibujo: 'plancha',
+  },
+  rana: {
+    id: 'rana',
+    titulo: 'Rana',
+    paraQue: 'Apertura de cadera para pegar la cadera a la pared con los pies abiertos. La dosis es decisión de diseño.',
+    material: 'Esterilla o algo blando para las rodillas',
+    pasos: [
+      'A cuatro patas, separa las rodillas todo lo que sea cómodo, con los pies hacia fuera.',
+      'Tobillos a la altura de las rodillas.',
+      'Lleva la cadera hacia atrás despacio hasta notar estiramiento en la ingle.',
+      'Respira tranquilo y mantén sin rebotes.',
+    ],
+    errores: ['Rebotar.', 'Forzar hasta notar dolor en la rodilla.'],
+    paraSi: ['Dolor en la rodilla o pinchazo en la ingle: cierra un poco las rodillas.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
+  'cadera-90-90': {
+    id: 'cadera-90-90',
+    titulo: '90/90 de cadera',
+    paraQue: 'Rotación de cadera, útil para los talones, los drop knee y pegar la cadera a la pared. La dosis es decisión de diseño.',
+    material: 'Ninguno (una esterilla si la hay)',
+    pasos: [
+      'Sentado, una pierna delante y otra al lado, las dos con la rodilla a 90 grados.',
+      'Con el tronco recto, gira las dos rodillas al otro lado sin usar las manos si puedes.',
+      'Vuelve despacio: eso es una repetición.',
+      'Si cuesta, apoya las manos detrás.',
+    ],
+    errores: ['Encorvar la espalda.', 'Hacerlo deprisa a base de impulso.'],
+    paraSi: ['Molestia en la rodilla o la cadera: reduce el recorrido.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
+  'dislocaciones-hombro': {
+    id: 'dislocaciones-hombro',
+    titulo: 'Dislocaciones de hombro con cinta o palo',
+    paraQue: 'Movilidad del hombro por encima de la cabeza, sin carga. La dosis es decisión de diseño.',
+    material: 'Una cinta, una toalla larga o un palo',
+    pasos: [
+      'De pie, agarra la cinta con las manos muy separadas.',
+      'Con los brazos estirados, pásala por encima de la cabeza hasta detrás y vuelve.',
+      'Si no pasa sin doblar los codos, separa más las manos.',
+      'Despacio, sin forzar.',
+    ],
+    errores: ['Doblar los codos para pasar.', 'Arquear la espalda para compensar.'],
+    paraSi: ['Pinchazo en el hombro: separa más las manos o reduce el recorrido.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
 }
 
 export interface Grupo {
@@ -550,7 +675,14 @@ export const GRUPOS: Grupo[] = [
     titulo: 'Hombro y antagonistas',
     fichas: ['retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda', 'face-pull-banda', 'extensores-dedos-banda', 'plancha-toques-hombro'],
   },
-  { id: 'movilidad', titulo: 'Movilidad', fichas: ['movilidad'] },
+  {
+    id: 'movilidad',
+    titulo: 'Movilidad y core',
+    fichas: [
+      'movilidad', 'rana', 'cadera-90-90', 'dislocaciones-hombro', 'plancha-frontal', 'hollow', 'elevaciones-colgado',
+      'elevaciones-tumbado', 'plancha-lateral',
+    ],
+  },
 ]
 
 // La ficha de un id que viene de fuera (una propuesta guardada, la URL): undefined si no existe.

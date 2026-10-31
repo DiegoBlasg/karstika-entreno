@@ -305,6 +305,21 @@ function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
 }
 
 export function proponerSesion(p: Peticion): Propuesta {
+  return conCoreMovilidad(p, proponerSesionBase(p))
+}
+
+// P-72: cuando la propuesta es descanso y no hay rojo, «Core y movilidad» como primera alternativa (si cabe y es válida).
+function conCoreMovilidad(p: Peticion, r: Propuesta): Propuesta {
+  if (r.principal !== null || !r.descanso) return r
+  if (r.estado && Object.values(r.estado.zonas).includes('rojo')) return r
+  if (r.alternativas.some((a) => a.sesion.tipo === 'core-movilidad')) return r
+  const { huecos: _huecos, seguimiento: _seguimiento, ...sinHuecos } = p
+  const c = evaluar('core-movilidad', r.estado ? { ...sinHuecos, estado: r.estado } : sinHuecos)
+  if (!c || c.violaciones.length > 0) return r
+  return { ...r, alternativas: [c.plan, ...r.alternativas] }
+}
+
+function proponerSesionBase(p: Peticion): Propuesta {
   validarPeticion(p)
   const { huecos, ...sinHuecos } = p
   // Sin `huecos`, el generador de siempre. Con `huecos` (aunque esté vacío, como en el último hueco de la semana) se

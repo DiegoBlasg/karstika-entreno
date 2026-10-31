@@ -1,7 +1,7 @@
 // GENERADO por scripts/generar-metadatos.ts desde docs/evidencia/parametros.md. No editar a mano.
 import type { MetadatoParametro } from './niveles'
 
-export const PARAMETRO_IDS = ["P-01","P-02","P-03","P-04","P-05","P-06","P-07","P-08","P-09","P-10","P-11","P-12","P-13","P-14","P-15","P-16","P-17","P-18","P-19","P-20","P-21","P-22","P-23","P-24","P-25","P-26","P-27","P-28","P-29","P-30","P-31","P-32","P-33","P-34","P-35","P-36","P-37","P-38","P-39","P-40","P-41","P-42","P-43","P-44","P-45","P-46","P-47","P-48","P-49","P-50","P-51","P-52","P-53","P-54","P-55","P-56","P-57","P-58","P-59","P-60","P-61","P-62","P-63","P-64","P-65","P-66","P-67","P-68","P-69","P-70","P-71"] as const
+export const PARAMETRO_IDS = ["P-01","P-02","P-03","P-04","P-05","P-06","P-07","P-08","P-09","P-10","P-11","P-12","P-13","P-14","P-15","P-16","P-17","P-18","P-19","P-20","P-21","P-22","P-23","P-24","P-25","P-26","P-27","P-28","P-29","P-30","P-31","P-32","P-33","P-34","P-35","P-36","P-37","P-38","P-39","P-40","P-41","P-42","P-43","P-44","P-45","P-46","P-47","P-48","P-49","P-50","P-51","P-52","P-53","P-54","P-55","P-56","P-57","P-58","P-59","P-60","P-61","P-62","P-63","P-64","P-65","P-66","P-67","P-68","P-69","P-70","P-71","P-72"] as const
 export type ParametroId = (typeof PARAMETRO_IDS)[number]
 
 export const METADATOS: Record<ParametroId, MetadatoParametro<ParametroId>> = {
@@ -76,4 +76,5 @@ export const METADATOS: Record<ParametroId, MetadatoParametro<ParametroId>> = {
   "P-69": {"id":"P-69","titulo":"Diagnóstico por la respuesta de cierre","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
   "P-70": {"id":"P-70","titulo":"Los tests corrigen la autoatribución física","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
   "P-71": {"id":"P-71","titulo":"Fortaleza mostrada","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
+  "P-72": {"id":"P-72","titulo":"Core y movilidad cuando toca descansar","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
 }

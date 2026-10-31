@@ -28,19 +28,25 @@ export function corregible(fecha: string, hoy: string): boolean {
   return fecha >= sumarDias(hoy, -DIAS_CORRECCION) && fecha <= hoy
 }
 
-export function vistaHoy(d: DatosAtleta, fecha: string): VistaHoy {
+// Una tarjeta por sesión, en el orden del historial. `fecha` es hoy (decide qué sesiones dicen si ya no encajan).
+export function tarjetasDe(d: DatosAtleta, fecha: string): Tarjeta[] {
   const registros = new Map(d.registros.map((r) => [r.sesion_id, r]))
   const historial = historialMotor(d.sesiones)
   const porId = new Map(d.sesiones.map((s) => [s.id, s]))
   const chequeo = new Map(d.chequeos.map((c) => [c.fecha, c.molestias]))
   const estado = estadoAtleta(historial, seguimientoMotor(d), fecha)
-  const tarjetas: Tarjeta[] = historial.map((s) => {
+  return historial.map((s): Tarjeta => {
     const fila = porId.get(s.id)!
     const registro = registros.get(s.id)
     const molestiasChequeo = chequeo.get(s.fecha) ?? []
     const noEncaja = s.fecha === fecha && fila.propuesta && !registro ? motivosNoEncaja(s, estado) : []
     return registro ? { fila, registro, molestiasChequeo, noEncaja } : { fila, molestiasChequeo, noEncaja }
   })
+}
+
+export function vistaHoy(d: DatosAtleta, fecha: string): VistaHoy {
+  const estado = estadoAtleta(historialMotor(d.sesiones), seguimientoMotor(d), fecha)
+  const tarjetas = tarjetasDe(d, fecha)
   const desde = sumarDias(fecha, -DIAS_CORRECCION)
   return {
     hoy: tarjetas.filter((t) => t.fila.fecha === fecha),

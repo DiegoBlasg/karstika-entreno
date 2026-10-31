@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { AvisoMedico } from '@/components/AvisoMedico'
+import { FilaSesion } from '@/components/FilaSesion'
+import { GenerarEntreno } from '@/components/GenerarEntreno'
 import { FondoTopo } from '@/components/FondoTopo'
 import { MiniVia } from '@/components/MiniVia'
 import { PieDeVia } from '@/components/PieDeVia'
@@ -9,10 +11,11 @@ import { Etiqueta } from '@/components/ui/Etiqueta'
 import { pasosArranque } from '@/lib/datos/arranque'
 import { testsSinResultado, vistaHoy } from '@/lib/datos/hoy'
 import { progresoLargo, tituloLargo } from '@/lib/datos/largo'
-import { proximoHueco } from '@/lib/datos/semana'
 import { posicionSiSePuede, type PosicionTemporada } from '@/lib/datos/temporada'
-import { ahoraMadrid, fechaLarga, hhmmDeMinutos } from '@/lib/fecha'
-import { NOMBRE_ZONA, nombreSesion } from '@/lib/nombres'
+import { claveFila, franjasLibres, inicialGenerar } from '@/lib/datos/agenda'
+import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
+import { chequeoDelDia } from '@/lib/formulario'
+import { NOMBRE_ZONA } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonAlta } from './_hoy/BotonAlta'
 import { LimpiezaCronometro } from './_hoy/LimpiezaCronometro'
@@ -27,7 +30,8 @@ export default async function PaginaHoy() {
   const { datos } = await requerirDatos()
   const ahora = ahoraMadrid(new Date())
   const hoy = ahora.fecha
-  const proximo = proximoHueco(datos, { fecha: hoy, minutos: Math.round(ahora.hora * 60) })
+  const enTemporada = hoy >= datos.perfil.inicio_temporada && hoy <= datos.perfil.objetivo_temporada
+  const libresHoy = franjasLibres(datos, hoy)
   const v = vistaHoy(datos, hoy)
   const sinResultado = testsSinResultado(datos, hoy)
   const largo = progresoLargo(datos, hoy)
@@ -71,19 +75,21 @@ export default async function PaginaHoy() {
       {v.pedirChequeo && <TarjetaChequeo hoy={hoy} />}
 
       {v.hoy.length === 0 ? (
-        <EstadoVacio titulo="Nada para hoy" texto="No tienes ninguna sesión para hoy." accion={{ href: '/entrenar', texto: 'Preparar una' }} />
+        <div className="space-y-3">
+          <EstadoVacio titulo="Nada para hoy" texto={enTemporada ? 'No tienes ninguna sesión para hoy.' : 'Fuera de la temporada: cambia las fechas en Yo para planificar otra.'} />
+          {enTemporada && (
+            <GenerarEntreno fecha={hoy} titulo="hoy" inicial={inicialGenerar(datos, hoy)} libres={libresHoy} principal
+              pedirChequeo={!chequeoDelDia(datos.chequeos, hoy)} />
+          )}
+        </div>
       ) : (
-        v.hoy.map((t, i) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} />)
-      )}
-
-      {proximo && (
-        <p className="text-sm text-texto-2">
-          Próximo rato: {fechaLarga(proximo.fila.fecha)} {hhmmDeMinutos(proximo.fila.inicio_min)} ·{' '}
-          {proximo.estado.tipo === 'planeado'
-            ? `${nombreSesion(proximo.estado.sesion)}${proximo.estado.cargaAlta ? ' ★' : ''}`
-            : proximo.estado.tipo === 'libre' ? 'libre' : 'sin plan'}
-          {' · '}<Link href="/semana" className="text-progreso underline">Semana</Link>
-        </p>
+        <>
+          {v.hoy.map((t, i) => <TarjetaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} />)}
+          {enTemporada && libresHoy.length > 0 && (
+            <GenerarEntreno fecha={hoy} titulo="hoy" inicial={inicialGenerar(datos, hoy)} libres={libresHoy} compacto
+              pedirChequeo={!chequeoDelDia(datos.chequeos, hoy)} />
+          )}
+        </>
       )}
 
       {v.pendientes.length > 0 && (
@@ -100,18 +106,17 @@ export default async function PaginaHoy() {
       )}
 
       {v.proximas.length > 0 && (
-        <details className={PLEGABLE}>
-          <summary className={RESUMEN}>Próximas</summary>
-          <div className="space-y-3 p-3 pt-0">
-            {v.proximas.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)}
-          </div>
-        </details>
+        <section aria-label="Próximas" className="space-y-2">
+          <h2 className="font-titular text-lg font-bold uppercase">Próximas</h2>
+          {v.proximas.slice(0, 5).map((t) => <FilaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} />)}
+          <Link href="/semana" className="inline-flex min-h-11 items-center text-sm text-progreso underline">Ver la semana</Link>
+        </section>
       )}
       {v.recientes.length > 0 && (
         <details className={PLEGABLE}>
           <summary className={RESUMEN}>Últimos 7 días</summary>
-          <div className="space-y-3 p-3 pt-0">
-            {[...v.recientes].reverse().map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)}
+          <div className="space-y-2 p-3 pt-0">
+            {[...v.recientes].reverse().map((t) => <FilaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} />)}
           </div>
         </details>
       )}

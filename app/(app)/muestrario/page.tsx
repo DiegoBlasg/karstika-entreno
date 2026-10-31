@@ -48,11 +48,11 @@ export default function PaginaMuestrario() {
       <Aviso tono="ok">Todo en verde.</Aviso>
       <Aviso tono="ambar">En ámbar: no subas la carga de los dedos.</Aviso>
       <Aviso tono="rojo">En rojo: no cargues el hombro.</Aviso>
-      <EstadoVacio titulo="Sin sesión hoy" texto="No tienes nada planeado para hoy." accion={{ href: '/entrenar', texto: 'Preparar una' }} />
+      <EstadoVacio titulo="Sin sesión hoy" texto="No tienes nada planeado para hoy." />
       <Hoja disparador="¿Por qué?" titulo="¿Por qué esta sesión?"><p className="text-sm text-texto-2">Contenido de la hoja.</p></Hoja>
-      <PieDeVia pasos={{ huecos: false, sesion: false, test: false, completo: false }} />
-      <PieDeVia pasos={{ huecos: true, sesion: false, test: false, completo: false }} />
-      <PieDeVia pasos={{ huecos: true, sesion: true, test: false, completo: false }} />
+      <PieDeVia pasos={{ generado: false, sesion: false, test: false, completo: false }} />
+      <PieDeVia pasos={{ generado: true, sesion: false, test: false, completo: false }} />
+      <PieDeVia pasos={{ generado: true, sesion: true, test: false, completo: false }} />
       <div className="flex gap-4 text-texto-2">
         <House aria-hidden="true" /><IconoMultipresa /><IconoChapa /><IconoReunion /><IconoCima className="text-cima" /><IconoPresa /><IconoCuerda />
       </div>

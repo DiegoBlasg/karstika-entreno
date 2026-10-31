@@ -1,20 +1,13 @@
 import Link from 'next/link'
-import { BOTON, BOTON_SECUNDARIO } from '@/components/estilos'
-import { Aviso } from '@/components/ui/Aviso'
+import { FilaSesion } from '@/components/FilaSesion'
+import { GenerarEntreno } from '@/components/GenerarEntreno'
+import { BOTON_SECUNDARIO } from '@/components/estilos'
 import { Etiqueta } from '@/components/ui/Etiqueta'
-import { enlacePreparar } from '@/lib/datos/huecos'
-import { proximosDias, type HuecoPlan } from '@/lib/datos/plan'
-import { vistaSemana, type HuecoVista } from '@/lib/datos/semana'
-import { ahoraMadrid, hhmmDeMinutos, lunesDe, sumarDias } from '@/lib/fecha'
-import { DESCANSO_ACTIVO, NOMBRE_LUGAR, nombreSesion } from '@/lib/nombres'
+import { claveFila, vistaAgenda } from '@/lib/datos/agenda'
+import { ahoraMadrid, lunesDe, sumarDias } from '@/lib/fecha'
+import { chequeoDelDia } from '@/lib/formulario'
 import { requerirDatos } from '@/lib/servidor/consultas'
-import { AnadirRato } from './AnadirRato'
-import { BotonBorrarHueco } from './BotonBorrarHueco'
-import { ConfirmacionRatos } from './Confirmacion'
-import { enRatos } from './ratos'
-
-const AVISO_SEMANA_VACIA = 'Añade cuándo puedes entrenar esta semana con el + de cada día.'
-const AVISO_ORIENTATIVO = ' Mientras tanto, esto es lo que haría el entrenador con tu semana habitual:'
+import { esCargaAlta } from '@/motor'
 
 const fechaUTC = (fecha: string): Date => new Date(`${fecha}T12:00:00Z`)
 const ABREV = new Intl.DateTimeFormat('es-ES', { weekday: 'short', timeZone: 'UTC' })
@@ -22,95 +15,25 @@ const NOMBRE = new Intl.DateTimeFormat('es-ES', { weekday: 'long', timeZone: 'UT
 const RANGO = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', timeZone: 'UTC' })
 const abrev = (fecha: string): string => ABREV.format(fechaUTC(fecha)).replace(/\./g, '')
 const numero = (fecha: string): number => fechaUTC(fecha).getUTCDate()
-// «lunes 2»: para el título de la hoja y el nombre del «+».
+// «jueves 6»: para el título de la hoja.
 const nombreDia = (fecha: string): string => `${NOMBRE.format(fechaUTC(fecha))} ${numero(fecha)}`
 const rango = (fecha: string): string => RANGO.format(fechaUTC(fecha))
 
 const NAVEGAR = `${BOTON_SECUNDARIO} px-3 text-base`
-const PREPARAR_PRINCIPAL = `${BOTON} min-h-11 px-3 py-1.5 text-base`
-const PREPARAR = `${BOTON_SECUNDARIO} min-h-11 px-3 py-1.5 text-base`
-const ESTRELLA = <span className="text-cima"><span aria-hidden="true">★</span><span className="sr-only">(carga alta)</span></span>
 
-// hora · sitio · minutos
-function Cuando({ inicio, lugar, minutos }: { inicio: number; lugar: keyof typeof NOMBRE_LUGAR; minutos: number }) {
-  return <p className="text-sm text-texto-2">{hhmmDeMinutos(inicio)} · <span className="capitalize">{NOMBRE_LUGAR[lugar]}</span> · {minutos} min</p>
-}
-
-// Un rato declarado: hora y sitio con el ✕ de borrar a su derecha (si aún no ha pasado), lo que toca y «Preparar» (o
-// «Entrenar igualmente» si el plan lo deja libre).
-// `atenuado`: ya ha pasado en un día que no va atenuado entero (hoy).
-function Rato({ h, principal, atenuado }: { h: HuecoVista; principal: boolean; atenuado: boolean }) {
-  const { fila, estado } = h
-  const pasado = estado.tipo === 'pasado'
-  const preparable = estado.tipo === 'planeado' || estado.tipo === 'libre' || estado.tipo === 'sin-plan'
-  return (
-    <div className={atenuado ? 'opacity-50' : ''}>
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1"><Cuando inicio={fila.inicio_min} lugar={fila.lugar} minutos={fila.minutos} /></div>
-        {!pasado && <BotonBorrarHueco id={fila.id} conSesion={estado.tipo === 'ocupado'} />}
-      </div>
-      {estado.tipo === 'planeado' && <p className="font-semibold">{nombreSesion(estado.sesion)} {estado.cargaAlta && ESTRELLA}</p>}
-      {estado.tipo === 'libre' && <p className="text-sm text-texto-2">{estado.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.'}</p>}
-      {estado.tipo === 'sin-plan' && <p className="text-texto-2">Sin plan: prepáralo cuando llegue.</p>}
-      {estado.tipo === 'ocupado' && (
-        <p>
-          <span className="font-semibold">{nombreSesion(estado.sesion.sesion)}</span> · {estado.registrada ? 'Registrada' : 'Aceptada'} ·{' '}
-          <Link href="/" className="text-progreso underline underline-offset-2">Ver en Hoy</Link>
-        </p>
-      )}
-      {pasado && estado.sesion && <p>{nombreSesion(estado.sesion.sesion)}</p>}
-      {preparable && (
-        <div className="mt-1.5">
-          <Link href={enlacePreparar(fila)} className={principal ? PREPARAR_PRINCIPAL : PREPARAR}>
-            {estado.tipo === 'libre' ? 'Entrenar igualmente' : 'Preparar'}
-          </Link>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Un rato del plan orientativo (la semana habitual): solo lo que haría el entrenador, sin botones.
-function RatoOrientativo({ h }: { h: HuecoPlan }) {
-  const { hueco, sesion, estado } = h
-  return (
-    <div>
-      <Cuando inicio={hueco.inicio_min} lugar={hueco.lugar} minutos={hueco.minutos} />
-      {sesion
-        ? <p className="font-semibold">{nombreSesion(sesion)} {h.cargaAlta && ESTRELLA}</p>
-        : <p className="text-sm text-texto-2">{estado === 'libre' ? (h.descansoActivo ? DESCANSO_ACTIVO : 'Libre: no hace falta entrenar.') : 'Sin plan todavía.'}</p>}
-    </div>
-  )
-}
-
+// La semana como agenda: cada día con sus sesiones en filas compactas y «Generar entreno» (desde hoy y dentro de la
+// temporada). Sin ratos ni horas: mañana o tarde.
 export default async function PaginaSemana({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { datos } = await requerirDatos()
-  const ahora = ahoraMadrid(new Date())
-  const hoy = ahora.fecha
+  const hoy = ahoraMadrid(new Date()).fecha
   const estaSemana = lunesDe(hoy)
   const siguiente = sumarDias(estaSemana, 7)
-  const pedido = (await searchParams).lunes
-  const lunes = pedido === siguiente ? siguiente : estaSemana
-  const momento = { fecha: hoy, minutos: Math.round(ahora.hora * 60) }
-  const v = vistaSemana(datos, lunes, momento)
-  const vacia = v.huecos.length === 0
-  // Sin ratos declarados: lo que haría el entrenador con la semana habitual (lo que ya ha pasado no se enseña).
-  const orientativa = vacia ? proximosDias(datos, momento).semanas.find((s) => s.lunes === lunes && s.orientativo) : undefined
-  const conPlan = orientativa?.huecos.some((h) => h.estado !== 'pasado') ?? false
-  // Sin nada pendiente (todo ha pasado o ya tiene sesión), el aviso del plan («no te quedan… pendientes») solo repetiría
-  // lo que ya enseña la agenda: no se pinta. Se mira en los datos, no en el texto del aviso.
-  const sinPendientes = vacia
-    ? (orientativa !== undefined && orientativa.huecos.length > 0 && orientativa.huecos.every((h) => h.estado === 'pasado' || h.estado === 'aceptada'))
-    : v.huecos.every((h) => h.estado.tipo === 'pasado' || h.estado.tipo === 'ocupado')
-  const avisoPlan = vacia ? orientativa?.aviso : v.aviso
-  const aviso = avisoPlan && !sinPendientes ? enRatos(avisoPlan) : undefined
-  // El único botón principal de la pantalla: el primer rato con sesión planeada y, si no hay, el primero sin plan.
-  // Los libres («Entrenar igualmente») van siempre en secundario.
-  const primero = v.huecos.find((h) => h.estado.tipo === 'planeado') ?? v.huecos.find((h) => h.estado.tipo === 'sin-plan')
-  const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))
-  const conEstrella = vacia
-    ? orientativa?.huecos.some((h) => h.estado !== 'pasado' && h.cargaAlta)
-    : v.huecos.some((h) => h.estado.tipo === 'planeado' && h.estado.cargaAlta)
+  const lunes = (await searchParams).lunes === siguiente ? siguiente : estaSemana
+  const v = vistaAgenda(datos, lunes, hoy)
+  // El único botón principal: el primer día en que se puede generar y aún no tiene nada.
+  const primero = v.dias.find((d) => d.generable && d.tarjetas.length === 0)?.fecha
+  const chequeoHoy = chequeoDelDia(datos.chequeos, hoy)
+  const conEstrella = v.dias.some((d) => d.tarjetas.some((t) => esCargaAlta(t.fila.sesion)))
   return (
     <div className="space-y-5">
       <header className="space-y-2">
@@ -123,47 +46,45 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
         </p>
         <nav aria-label="Cambiar de semana" className="flex justify-between gap-2">
           {/* Solo hay dos semanas: el enlace que no lleva a ninguna parte deja su sitio vacío (no un botón apagado). */}
-          {lunes === estaSemana
-            ? <span aria-hidden="true" />
-            : <Link href="/semana" className={NAVEGAR}>‹ Anterior</Link>}
-          {lunes === estaSemana
-            ? <Link href={`/semana?lunes=${siguiente}`} className={NAVEGAR}>Siguiente ›</Link>
-            : <span aria-hidden="true" />}
+          {lunes === estaSemana ? <span aria-hidden="true" /> : <Link href="/semana" className={NAVEGAR}>‹ Anterior</Link>}
+          {lunes === estaSemana ? <Link href={`/semana?lunes=${siguiente}`} className={NAVEGAR}>Siguiente ›</Link> : <span aria-hidden="true" />}
         </nav>
       </header>
-      {vacia && <Aviso tono="info">{AVISO_SEMANA_VACIA}{conPlan && AVISO_ORIENTATIVO}</Aviso>}
-      {aviso && <Aviso tono="ambar">{aviso}</Aviso>}
-      <ConfirmacionRatos>
       <ol className="border-t border-borde">
-        {dias.map((fecha) => {
-          const esHoy = fecha === hoy
-          const pasadoDia = fecha < hoy
-          const ratos = v.huecos.filter((h) => h.fila.fecha === fecha)
-          const plan = orientativa?.huecos.filter((h) => h.hueco.fecha === fecha && h.estado !== 'pasado') ?? []
+        {v.dias.map((d) => {
+          const esHoy = d.fecha === hoy
+          const pasado = d.fecha < hoy
           return (
             <li
-              key={fecha}
+              key={d.fecha}
+              data-fecha={d.fecha}
               aria-current={esHoy ? 'date' : undefined}
-              className={`grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] gap-x-3 gap-y-2 border-b border-borde py-3 ${pasadoDia ? 'opacity-50' : ''}`}
+              className={`grid grid-cols-[2.75rem_minmax(0,1fr)] gap-x-3 border-b border-borde py-3 ${pasado ? 'opacity-50' : ''}`}
             >
-              <div className={`col-start-1 row-start-1 ${esHoy ? 'border-l-[3px] border-progreso pl-2' : ''}`}>
-                <Etiqueta as="p" className={esHoy ? 'text-progreso' : ''}>{abrev(fecha)}</Etiqueta>
-                <p className="font-titular text-2xl font-bold leading-none">{numero(fecha)}</p>
+              <div className={esHoy ? 'border-l-[3px] border-progreso pl-2' : ''}>
+                <Etiqueta as="p" className={esHoy ? 'text-progreso' : ''}>{abrev(d.fecha)}</Etiqueta>
+                <p className="font-titular text-2xl font-bold leading-none">{numero(d.fecha)}</p>
                 {esHoy && <p className="sr-only">hoy</p>}
               </div>
-              <div className="col-start-2 row-start-1 min-w-0 space-y-3">
-                {ratos.length > 0
-                  ? ratos.map((h) => <Rato key={h.fila.id} h={h} principal={h === primero} atenuado={!pasadoDia && h.estado.tipo === 'pasado'} />)
-                  : plan.length > 0
-                    ? plan.map((h) => <RatoOrientativo key={h.hueco.id} h={h} />)
-                    : <p className="flex min-h-11 items-center text-texto-2">Sin ratos para entrenar</p>}
+              <div className="min-w-0 space-y-2">
+                {d.tarjetas.map((t) => <FilaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} conDia={false} />)}
+                {d.tarjetas.length === 0 && !d.generable && <p className="flex min-h-11 items-center text-texto-2">Nada</p>}
+                {d.generable && (
+                  <GenerarEntreno
+                    fecha={d.fecha}
+                    titulo={esHoy ? 'hoy' : nombreDia(d.fecha)}
+                    inicial={d.inicial}
+                    libres={d.libres}
+                    pedirChequeo={esHoy && !chequeoHoy}
+                    principal={d.fecha === primero}
+                    compacto={d.tarjetas.length > 0}
+                  />
+                )}
               </div>
-              {!pasadoDia && <AnadirRato fecha={fecha} dia={nombreDia(fecha)} />}
             </li>
           )
         })}
       </ol>
-      </ConfirmacionRatos>
       {conEstrella && <p className="text-xs text-texto-2"><span className="text-cima">★</span> = carga alta.</p>}
     </div>
   )
