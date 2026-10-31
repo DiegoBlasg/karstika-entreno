@@ -56,26 +56,34 @@ test('primera vez: perfil, entrenar, aceptar y registrar', async ({ page }) => {
   await expect(page.getByText(/Hecha · RPE 7/)).toBeVisible()
 })
 
-test('Mi semana: declarar un hueco, prepararlo y aceptarlo', async ({ page }) => {
+test('Mi semana: añadir un rato para entrenar, prepararlo y aceptarlo', async ({ page }) => {
   await page.goto('/entrar')
   await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await page.getByRole('link', { name: 'Semana', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Próximos días' })).toBeVisible()
-  await page.getByRole('link', { name: 'Semana siguiente →' }).click()
-  // Esperar a que cargue la semana siguiente: si no, el hueco se añadiría a la semana actual.
-  await expect(page.getByRole('link', { name: '← Esta semana' })).toBeVisible()
-  await page.getByLabel('Hora').fill('19:00')
-  await page.getByLabel('Rocódromo').check()
-  await page.getByRole('button', { name: 'Añadir hueco' }).click()
-  await expect(page.getByText('Hueco añadido.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Tu semana' })).toBeVisible()
+  await page.getByRole('link', { name: 'Siguiente ›' }).click()
+  // Esperar a que cargue la semana siguiente: si no, el rato se añadiría a la semana actual.
+  await expect(page.getByRole('link', { name: '‹ Anterior' })).toBeVisible()
+  // Vacía: el aviso único y el plan orientativo, sin botones de «Preparar».
+  await expect(page.getByText(/Añade cuándo puedes entrenar esta semana/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Preparar' })).toHaveCount(0)
+  // El «+» del lunes abre la hoja con ese día ya elegido.
+  await page.getByRole('button', { name: /^Añadir un rato para entrenar el lunes/ }).click()
+  const hoja = page.getByRole('dialog')
+  await expect(hoja.getByRole('heading', { name: /^Rato para entrenar · lunes/ })).toBeVisible()
+  await hoja.getByLabel('Hora').fill('19:00')
+  await hoja.getByLabel('Rocódromo').check()
+  await hoja.getByRole('button', { name: 'Añadir rato' }).click()
+  await expect(page.getByText('Rato añadido.')).toBeVisible()
+  await expect(hoja).toBeHidden()
   await page.getByRole('link', { name: 'Preparar' }).first().click()
   await expect(page).toHaveURL(/\/entrenar\?/)
   await page.getByRole('button', { name: 'Preparar sesión' }).click()
   await page.getByRole('button', { name: 'Aceptar esta sesión' }).first().click()
   await expect(page).toHaveURL(/\/$/)
   await page.goto(`/semana?lunes=${sumarDias(lunesDeEstaSemana(), 7)}`)
-  // Sale en la lista de la semana (ya no se repite en «Próximos días»).
+  // Sale en la fila de su día.
   await expect(page.getByText(/Aceptada/)).toBeVisible()
 })
 
