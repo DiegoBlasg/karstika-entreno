@@ -5,6 +5,7 @@ import { cifra, fechaCorta, firmado, plural } from '@/components/progreso/format
 import { GraficaFuerza } from '@/components/progreso/GraficaFuerza'
 import { Logros } from '@/components/progreso/Logros'
 import { Perfil } from '@/components/progreso/Perfil'
+import { TusTests } from '@/components/progreso/TusTests'
 import { Aviso } from '@/components/ui/Aviso'
 import { CifraGrande } from '@/components/ui/CifraGrande'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
@@ -14,13 +15,16 @@ import { testsSinResultado } from '@/lib/datos/hoy'
 import { evaluacionMotor } from '@/lib/datos/mapeo'
 import { vistaPerfil } from '@/lib/datos/perfil-limitantes'
 import { constancia, logros, resumenEscalada, UMBRAL_IGUAL } from '@/lib/datos/progreso'
+import { vistaTests } from '@/lib/datos/tests'
 import type { ResultadoTest } from '@/lib/datos/via'
 import { vistaVia } from '@/lib/datos/via'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
 import { NOMBRE_FRENO } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonBorrarEvaluacion } from './BotonBorrarEvaluacion'
+import { BotonBorrarPruebaCasa } from './BotonBorrarPruebaCasa'
 import { FormularioEvaluacion } from './FormularioEvaluacion'
+import { FormularioPruebaCasa } from './FormularioPruebaCasa'
 
 const TITULO_SECCION = 'font-titular text-2xl font-bold uppercase leading-none'
 
@@ -77,6 +81,7 @@ export default async function PaginaProgreso() {
   const tests = vistaVia(datos, hoy).tests.filter((t) => t.fecha <= hoy)
   const escalada = resumenEscalada(datos, hoy)
   const perfil = vistaPerfil(datos, hoy)
+  const casa = [...(datos.pruebasCasa ?? [])].reverse()
   return (
     <div className="space-y-5">
       <header className="relative -mx-4 overflow-hidden px-4 pb-1 pt-2">
@@ -98,6 +103,8 @@ export default async function PaginaProgreso() {
       <Fuerza tests={tests} />
 
       {perfil && <Perfil v={perfil} />}
+
+      <TusTests v={vistaTests(datos, hoy)} />
 
       <Tarjeta aria-label="Grado">
         <Etiqueta as="h2">Grado</Etiqueta>
@@ -138,9 +145,20 @@ export default async function PaginaProgreso() {
         </details>
       )}
 
+      <details className="group rounded-2xl border border-borde bg-superficie">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 text-texto-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso [&::-webkit-details-marker]:hidden">
+          ¿Hiciste el test en casa por tu cuenta?
+          <span aria-hidden className="text-xl text-texto-2 transition-transform group-open:rotate-90">›</span>
+        </summary>
+        <div className="space-y-3 p-4 pt-1">
+          <p className="text-sm text-texto-2">Dominadas máximas y apertura de cadera. El entrenador te lo propone en casa en los días siguientes al test de dedos.</p>
+          <FormularioPruebaCasa hoy={hoy} />
+        </div>
+      </details>
+
       <section className="space-y-2">
         <h2 className={TITULO_SECCION}>Historial</h2>
-        {lista.length === 0 && <p className="text-sm text-texto-2">Todavía no hay tests. El entrenador te propondrá el primero.</p>}
+        {lista.length === 0 && casa.length === 0 && <p className="text-sm text-texto-2">Todavía no hay tests. El entrenador te propondrá el primero.</p>}
         <ul className="space-y-2">
           {lista.map((e) => (
             <li key={e.id} className="flex items-start justify-between gap-3 rounded-2xl border border-borde bg-superficie p-3 text-sm">
@@ -148,11 +166,24 @@ export default async function PaginaProgreso() {
                 <p className="font-medium">{fechaLarga(e.fecha)}</p>
                 <p className="text-texto-2">
                   Lastre {e.lastre_kg} kg con {e.peso_corporal_kg} kg · <span className="text-texto">{fuerzaRelativa(evaluacionMotor(e)).toFixed(1)} % del peso</span>
-                  {e.resistencia_s !== null ? ` · resistencia ${e.resistencia_s} s` : ''}
+                  {e.colgado_30_s != null ? ` · colgado ${e.colgado_30_s} s` : ''}
+                  {e.power_slap_cm != null ? ` · power slap ${e.power_slap_cm} cm` : ''}
+                  {e.resistencia_s !== null ? ` · 7:3 ${e.resistencia_s} s` : ''}
                   {e.tecnica !== null ? ` · técnica ${e.tecnica}` : ''}
                 </p>
               </div>
               <BotonBorrarEvaluacion id={e.id} fecha={e.fecha} />
+            </li>
+          ))}
+          {casa.map((c) => (
+            <li key={c.id} className="flex items-start justify-between gap-3 rounded-2xl border border-borde bg-superficie p-3 text-sm">
+              <div>
+                <p className="font-medium">{fechaLarga(c.fecha)} · test en casa</p>
+                <p className="text-texto-2">
+                  {[c.dominadas !== null ? `${c.dominadas} dominadas` : null, c.cadera_cm !== null ? `cadera ${c.cadera_cm} cm` : null].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <BotonBorrarPruebaCasa id={c.id} fecha={c.fecha} />
             </li>
           ))}
         </ul>

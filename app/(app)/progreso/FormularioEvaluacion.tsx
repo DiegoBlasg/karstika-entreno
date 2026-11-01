@@ -19,7 +19,12 @@ export function FormularioEvaluacion({ hoy, fechaInicial, peso }: { hoy: string;
         <input name="lastre_kg" inputMode="decimal" required className={CAMPO} />
         <span className="text-xs text-texto-2">Negativo si usaste descarga (polea o banda).</span>
       </label>
-      <label className="block">Resistencia: segundos hasta el fallo en 7:3 al 60 % (opcional)<input name="resistencia_s" inputMode="decimal" className={CAMPO} /></label>
+      <label className="block">
+        Resistencia: segundos colgado en canto de 30 mm (opcional)
+        <input name="colgado_30_s" inputMode="decimal" className={CAMPO} />
+        <span className="text-xs text-texto-2">A peso corporal, hasta soltar.</span>
+      </label>
+      <label className="block">Power slap: cm por encima de la mano, el mejor de 3 (opcional)<input name="power_slap_cm" inputMode="decimal" className={CAMPO} /></label>
       <label className="block">Técnica: autoevaluación del vídeo de 1 a 7 (opcional)<input name="tecnica" inputMode="decimal" className={CAMPO} /></label>
       <button className={BOTON} disabled={pendiente}>Guardar evaluación</button>
       {estado?.error && <p role="alert" className="text-sm text-rojo">{estado.error}</p>}

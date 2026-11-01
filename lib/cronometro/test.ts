@@ -29,7 +29,7 @@ export function textoLastre(kg: number): string {
 
 // El intento cuyo formulario se muestra en el paso `indice`: el último intento ya hecho, hasta que empiece otro
 // colgado o el fallo. Con `indice === pasos.length` (sesión terminada) da el último intento si la sesión acaba en él
-// (test sin 7:3).
+// (test sin el colgado en 30 mm).
 export function intentoAbierto(pasos: readonly Paso[], indice: number): { n: number; de: number } | null {
   const actual = pasos[indice]
   if (actual?.tipo === 'colgado' || actual?.tipo === 'fallo') return null
