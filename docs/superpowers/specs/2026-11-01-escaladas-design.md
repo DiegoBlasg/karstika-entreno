@@ -66,7 +66,7 @@ cada letra desde el 5; bloques en Font 4…8A+. `distanciaGrados` cuenta escalon
 ## 4. La pista (P-75, `sinEvidencia`)
 
 Si en los últimos 90 días, en un mismo lugar y en vías, el máximo encadenado (trabajado) está **4 escalones o más**
-(2 grados, p. ej. 6a a vista frente a 6b+) por encima del máximo a vista o flash, «Tu perfil» muestra la pista: «Encadenas
+(2 grados, p. ej. 6a a vista frente a 6c trabajado) por encima del máximo a vista o flash, «Tu perfil» muestra la pista: «Encadenas
 bastante por encima de lo que haces a vista: trabajar la lectura y la táctica puede darte grado». Necesita al menos un
 encadene a vista o flash y uno trabajado en esa ventana. Fuente: informe 2026-10-31 (tabla de señales derivadas: una
 diferencia de ~1 grado es lo normal según consenso de foros, C; el umbral de 2 grados no tiene estudio). No cambia el
