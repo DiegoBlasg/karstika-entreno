@@ -93,9 +93,9 @@ const pesoValido = (texto: string): number | null => {
   return texto.trim() !== '' && Number.isFinite(v) && v >= PESO.min && v <= PESO.max ? v : null
 }
 
-export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy, posicion, escaladas }: {
+export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy, posicion, escaladas, lugar }: {
   plan: SesionPlan; pasos: Paso[]; molestiasChequeo: Molestia[]; hoy: string; pesoInicial: number; evaluacionHoy: boolean
-  posicion: PosicionTemporada | null; escaladas: readonly FilaEscalada[]
+  posicion: PosicionTemporada | null; escaladas: readonly FilaEscalada[]; lugar: FilaEscalada['lugar']
 }) {
   const clave = `cronometro:${plan.sesion.id}`
   // Test de dedos guiado: peso e intentos. Las demás sesiones no usan nada de esto.
@@ -412,6 +412,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           minutosIniciales={minutosReales(estado, ahora)}
           escaladas={escaladas}
           hoy={hoy}
+          lugar={lugar}
         />
         <button type="button" className={BOTON_SECUNDARIO} onClick={volverALaSesion}>Volver a la sesión</button>
       </div>

@@ -169,8 +169,10 @@ export async function insertarEscalada(sql: Sql, e: FilaEscalada): Promise<void>
   await consultaEscalada(sql, e)
 }
 
-export async function borrarEscaladaBd(sql: Sql, id: string): Promise<void> {
-  await sql`delete from escaladas where id = ${id}`
+// Devuelve si existía.
+export async function borrarEscaladaBd(sql: Sql, id: string): Promise<boolean> {
+  const filas = await sql`delete from escaladas where id = ${id} returning id`
+  return filas.length > 0
 }
 
 export async function insertarAlta(sql: Sql, a: Omit<FilaAlta, 'id'>): Promise<void> {

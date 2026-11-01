@@ -121,7 +121,7 @@ export default async function PaginaHoy() {
         </details>
       )}
 
-      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} />
+      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} escaladas={datos.escaladas ?? []} />
     </div>
   )
 }

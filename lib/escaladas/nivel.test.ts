@@ -14,7 +14,7 @@ describe('vistaNivel', () => {
   it('sin escaladas: el grado del perfil y lo que falta desde él', () => {
     const v = vistaNivel([], perfil, HOY)
     expect(v.vias).toEqual([])
-    expect(v.objetivo).toEqual({ grado: '7a', actual: '6b', desde: 'perfil', faltan: 4 })
+    expect(v.objetivo).toEqual({ grado: '7a', actual: '6b', desde: 'perfil', escalones: ['6b+', '6c', '6c+', '7a'] })
     expect(v.bloque).toBeNull()
   })
   it('por lugar, roca primero: máximo encadenado y a vista, en 90 días y de siempre', () => {
@@ -29,11 +29,16 @@ describe('vistaNivel', () => {
       { lugar: 'roca', encadenado: '6b', encadenadoSiempre: '6c', aVista: '6a+', aVistaSiempre: '6a+' },
       { lugar: 'rocodromo', encadenado: '6c+', encadenadoSiempre: '6c+', aVista: '6b', aVistaSiempre: '6b' },
     ])
-    expect(v.objetivo).toEqual({ grado: '7a', actual: '6c', desde: 'roca', faltan: 2 })
+    expect(v.objetivo).toEqual({ grado: '7a', actual: '6c', desde: 'roca', escalones: ['6c+', '7a'] })
   })
-  it('sin vías en roca, el objetivo se mide desde el rocódromo; ya en el objetivo, faltan 0', () => {
-    expect(vistaNivel([esc('2026-10-07', '6c', { lugar: 'rocodromo' })], perfil, HOY).objetivo).toMatchObject({ desde: 'rocodromo', faltan: 2 })
-    expect(vistaNivel([esc('2026-10-07', '7a+')], perfil, HOY).objetivo.faltan).toBe(0)
+  it('sin vías en roca, el mayor entre el rocódromo y el perfil; ya en el objetivo, no falta nada', () => {
+    expect(vistaNivel([esc('2026-10-07', '6c', { lugar: 'rocodromo' })], perfil, HOY).objetivo).toMatchObject({ desde: 'rocodromo', escalones: ['6c+', '7a'] })
+    // Una vía fácil de rocódromo no baja el grado que diste en el perfil.
+    expect(vistaNivel([esc('2026-10-07', '5c', { lugar: 'rocodromo' })], perfil, HOY).objetivo).toMatchObject({ desde: 'perfil', actual: '6b' })
+    expect(vistaNivel([esc('2026-10-07', '7a+')], perfil, HOY).objetivo.escalones).toEqual([])
+  })
+  it('el grado del perfil se lee aunque tenga mayúsculas o espacios', () => {
+    expect(vistaNivel([], { grado_actual: ' 6B ', grado_objetivo: '7A' }, HOY).objetivo).toMatchObject({ actual: '6b', grado: '7a', escalones: ['6b+', '6c', '6c+', '7a'] })
   })
   it('los días de pegues no son encadenes; los bloques van aparte; lo futuro no cuenta', () => {
     const v = vistaNivel([
@@ -45,7 +50,7 @@ describe('vistaNivel', () => {
     expect(v.bloque).toBe('6B+')
   })
   it('un grado del perfil fuera de la escala no da distancia', () => {
-    expect(vistaNivel([], { grado_actual: 'V3', grado_objetivo: '7a' }, HOY).objetivo.faltan).toBeNull()
+    expect(vistaNivel([], { grado_actual: 'V3', grado_objetivo: '7a' }, HOY).objetivo.escalones).toBeNull()
   })
 })
 
@@ -63,7 +68,25 @@ describe('proyectos', () => {
     const v = vistaNivel(xs, perfil, HOY)
     expect(v.abiertos.map((p) => p.nombre)).toEqual(['La fisura'])
     expect(v.encadenados.map((p) => p.encadenado)).toEqual(['2026-10-15'])
-    expect(v.objetivo).toMatchObject({ actual: '7a', faltan: 0 })
+    expect(v.objetivo).toMatchObject({ actual: '7a', escalones: [] })
+  })
+})
+
+describe('proyectos: un proyecto se cierra al encadenarlo', () => {
+  it('el mismo nombre después del encadene abre otro proyecto', () => {
+    const ps = proyectos([
+      esc('2026-05-01', '7a', { estilo: 'encadenada', proyecto: true, nombre: 'Ojo de pez' }),
+      esc('2026-10-01', '7a+', { estilo: 'pegues', proyecto: true, nombre: 'Ojo de pez', pegues: 2 }),
+    ], HOY)
+    expect(ps.map((p) => [p.encadenado, p.pegues])).toEqual([[null, 2], ['2026-05-01', 1]])
+    expect(ps[0]!.clave).toBe('ojo de pez|via|roca')
+  })
+  it('mismo nombre en bloque o en rocódromo son proyectos distintos; los abiertos, el más reciente primero', () => {
+    const ps = proyectos([
+      esc('2026-10-01', null, { estilo: 'pegues', proyecto: true, nombre: 'Rojo' }),
+      esc('2026-10-05', null, { estilo: 'pegues', proyecto: true, nombre: 'Rojo', tipo: 'bloque', lugar: 'rocodromo' }),
+    ], HOY)
+    expect(ps.map((p) => p.clave)).toEqual(['rojo|bloque|rocodromo', 'rojo|via|roca'])
   })
 })
 

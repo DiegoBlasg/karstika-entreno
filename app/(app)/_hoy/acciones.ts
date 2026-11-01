@@ -39,9 +39,10 @@ function leerRegistro(fd: FormData, fila: FilaSesion): FilaRegistro {
 // esta misma sesión (al corregir, se sustituye). Si cayó un proyecto, el registro cuenta como «encadené».
 function leerEscaladas(fd: FormData, fila: FilaSesion, datos: DatosAtleta, hoy: string, r: FilaRegistro): { registro: FilaRegistro; escaladas: FilaEscalada[] } {
   if (!TIPOS_AL_LIMITE.includes(fila.sesion.tipo)) return { registro: r, escaladas: [] }
-  const otras = (datos.escaladas ?? []).filter((e) => e.sesion_id !== fila.id)
-  const abiertos = proyectos(otras, hoy).filter((p) => p.encadenado === null)
-  const escaladas = escaladasDelRegistro(fd, fila, abiertos)
+  const todas = datos.escaladas ?? []
+  const abiertos = proyectos(todas.filter((e) => e.sesion_id !== fila.id), hoy).filter((p) => p.encadenado === null)
+  const previa = todas.find((e) => e.sesion_id === fila.id && e.proyecto)
+  const escaladas = escaladasDelRegistro(fd, fila, abiertos, previa)
   const encadenado = escaladas.some((e) => e.estilo !== 'pegues')
   return { registro: { ...r, encadene: r.encadene || encadenado }, escaladas }
 }
@@ -249,6 +250,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
   const { sql, datos } = await requerirDatos()
   let libre: FilaSesion
   let leido: FilaRegistro
+  let escaladas: FilaEscalada[]
   try {
     const dia = leerFecha(fd, 'fecha', 'El día')
     if (!corregible(dia, hoy)) return { error: 'Solo puedes apuntar entrenamientos de hoy o de los 7 días anteriores.' }
@@ -263,7 +265,9 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
       duracionMin: entero(fd, 'minutos', 'Los minutos', 1, 1440),
       ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
     })
-    leido = leerRegistro(fd, libre)
+    const leidas = leerEscaladas(fd, libre, datos, hoy, leerRegistro(fd, libre))
+    leido = leidas.registro
+    escaladas = leidas.escaladas
     validarDatos(conRegistro(conSesion(datos, libre), leido), libre.id)
     const avisos = validarSesion(libre.sesion, historialMotor(datos.sesiones), perfilMotor(datos.perfil)).map((v) => v.mensaje)
     if (avisos.length > 0 && fd.get('confirmar') !== 'on') {
@@ -273,7 +277,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
     return { error: mensajeDe(e) }
   }
   try {
-    await insertarSesionRegistrada(sql, libre, leido)
+    await insertarSesionRegistrada(sql, libre, leido, escaladas)
   } catch (e) {
     return { error: `No se ha podido guardar el entrenamiento: ${mensajeDe(e)}` }
   }

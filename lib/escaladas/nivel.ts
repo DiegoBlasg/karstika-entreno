@@ -2,7 +2,7 @@
 // lectura y táctica (P-75). Puro. Solo informa: el motor no lo usa (no hay umbrales de grado con estudio para prescribir).
 import { diaNumero, VALORES } from '../../motor'
 import type { FilaEscalada } from '../datos/filas'
-import { distanciaGrados, esGradoValido, maxGrado } from './grados'
+import { distanciaGrados, esGradoValido, GRADOS_VIA, maxGrado } from './grados'
 
 type Lugar = FilaEscalada['lugar']
 
@@ -15,6 +15,7 @@ export interface NivelLugar {
 }
 
 export interface Proyecto {
+  clave: string                      // nombre normalizado|tipo|lugar: identifica al proyecto abierto
   nombre: string
   tipo: FilaEscalada['tipo']
   lugar: Lugar
@@ -27,7 +28,8 @@ export interface Proyecto {
 export interface VistaNivel {
   vias: NivelLugar[]                 // roca primero; solo los lugares con alguna vía encadenada
   bloque: string | null              // máximo encadenado en bloque, últimos 90 días
-  objetivo: { grado: string; actual: string; desde: Lugar | 'perfil'; faltan: number | null }
+  // `escalones`: los grados que faltan hasta el objetivo, en orden (vacío si ya llegaste; null si un grado no es de la escala).
+  objetivo: { grado: string; actual: string; desde: Lugar | 'perfil'; escalones: string[] | null }
   abiertos: Proyecto[]
   encadenados: Proyecto[]            // proyectos encadenados en los últimos 90 días
 }
@@ -43,15 +45,28 @@ const grados = (xs: readonly FilaEscalada[]): string[] => xs.flatMap((e) => (e.g
 // «Ojo de Pez» y « ojo  de pez » son el mismo proyecto.
 export const claveNombre = (nombre: string): string => nombre.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es')
 
+export const claveProyecto = (e: Pick<FilaEscalada, 'tipo' | 'lugar'> & { nombre: string }): string => `${claveNombre(e.nombre)}|${e.tipo}|${e.lugar}`
+
+// Los proyectos en orden: un proyecto se cierra al encadenarlo, y el mismo nombre después abre otro. Los abiertos, el
+// de actividad más reciente primero.
 export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proyecto[] {
-  const grupos = new Map<string, FilaEscalada[]>()
+  const grupos: FilaEscalada[][] = []
+  const abiertos = new Map<string, FilaEscalada[]>()
   for (const e of [...escaladas].filter((x) => x.proyecto && x.nombre !== null && x.fecha <= hoy).sort((a, b) => a.fecha.localeCompare(b.fecha))) {
-    const clave = `${claveNombre(e.nombre!)}|${e.tipo}|${e.lugar}`
-    grupos.set(clave, [...(grupos.get(clave) ?? []), e])
+    const clave = claveProyecto({ ...e, nombre: e.nombre! })
+    let grupo = abiertos.get(clave)
+    if (!grupo) {
+      grupo = []
+      grupos.push(grupo)
+      abiertos.set(clave, grupo)
+    }
+    grupo.push(e)
+    if (encadene(e)) abiertos.delete(clave)
   }
-  return [...grupos.values()].map((xs) => {
+  return grupos.map((xs): Proyecto => {
     const ultima = xs.at(-1)!
     return {
+      clave: claveProyecto({ ...ultima, nombre: ultima.nombre! }),
       nombre: xs[0]!.nombre!.trim(),   // como se escribió la primera vez
       tipo: ultima.tipo,
       lugar: ultima.lugar,
@@ -60,8 +75,11 @@ export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proy
       ultimo: ultima.fecha,
       encadenado: xs.find(encadene)?.fecha ?? null,
     }
-  })
+  }).sort((a, b) => b.ultimo.localeCompare(a.ultimo))
 }
+
+// El grado del perfil es texto libre: «6B » vale como 6b.
+const gradoPerfil = (g: string): string => g.trim().toLowerCase()
 
 export function vistaNivel(
   escaladas: readonly FilaEscalada[],
@@ -82,16 +100,26 @@ export function vistaNivel(
       aVistaSiempre: maxGrado('via', grados(de(pasadas).filter(aVista))),
     }]
   })
-  // El objetivo se mide desde la roca; sin vías en roca, desde el rocódromo; sin nada, el grado del perfil.
-  const base = vias[0]
-  const actual = base?.encadenadoSiempre ?? perfil.grado_actual
-  const meta = perfil.grado_objetivo
-  const faltan = esGradoValido('via', actual) && esGradoValido('via', meta) ? Math.max(0, distanciaGrados('via', actual, meta)) : null
+  // El objetivo se mide desde la roca; sin vías en roca, desde lo mayor entre el rocódromo y el grado del perfil (unas
+  // vías fáciles de rocódromo no bajan el grado que dijiste).
+  const roca = vias.find((n) => n.lugar === 'roca')
+  const rocodromo = vias.find((n) => n.lugar === 'rocodromo')
+  const delPerfil = gradoPerfil(perfil.grado_actual)
+  const meta = esGradoValido('via', gradoPerfil(perfil.grado_objetivo)) ? gradoPerfil(perfil.grado_objetivo) : perfil.grado_objetivo
+  let actual: string
+  let desde: Lugar | 'perfil'
+  if (roca) [actual, desde] = [roca.encadenadoSiempre!, 'roca']
+  else if (rocodromo && (!esGradoValido('via', delPerfil) || distanciaGrados('via', delPerfil, rocodromo.encadenadoSiempre!) > 0)) {
+    [actual, desde] = [rocodromo.encadenadoSiempre!, 'rocodromo']
+  } else [actual, desde] = [esGradoValido('via', delPerfil) ? delPerfil : perfil.grado_actual, 'perfil']
+  const escalones = esGradoValido('via', actual) && esGradoValido('via', meta)
+    ? GRADOS_VIA.slice(GRADOS_VIA.indexOf(actual) + 1, Math.max(GRADOS_VIA.indexOf(actual) + 1, GRADOS_VIA.indexOf(meta) + 1))
+    : null
   const todos = proyectos(pasadas, hoy)
   return {
     vias,
     bloque: maxGrado('bloque', grados(recientes.filter((e) => e.tipo === 'bloque' && encadene(e)))),
-    objetivo: { grado: meta, actual, desde: base?.lugar ?? 'perfil', faltan },
+    objetivo: { grado: meta, actual, desde, escalones },
     abiertos: todos.filter((p) => p.encadenado === null),
     encadenados: todos.filter((p) => p.encadenado !== null && diaNumero(p.encadenado) > diaNumero(hoy) - VENTANA),
   }

@@ -114,13 +114,16 @@ export async function guardarEscalada(_previo: EstadoAccion, fd: FormData): Prom
     return { error: `No se ha podido guardar la escalada: ${mensajeDe(e)}` }
   }
   revalidatePath('/progreso')
+  revalidatePath('/')
   return { ok: 'Escalada apuntada.' }
 }
 
 export async function borrarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const { sql } = await requerirDatos()
+  const id = fd.get('id')
+  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) return { error: 'Esa escalada ya no existe.' }
   try {
-    await borrarEscaladaBd(sql, texto(fd, 'id', 'La escalada'))
+    if (!(await borrarEscaladaBd(sql, id))) return { error: 'Esa escalada ya no existe.' }
   } catch (e) {
     return { error: `No se ha podido borrar la escalada: ${mensajeDe(e)}` }
   }

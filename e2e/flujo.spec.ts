@@ -371,7 +371,7 @@ test('al límite: «¿Qué te frenó hoy?», encadené, último freno y «Tu per
   const escaladas = await sql`select tipo, lugar, grado, estilo from escaladas where sesion_id = ${id}`
   expect(escaladas).toEqual([{ tipo: 'bloque', lugar: 'rocodromo', grado: '6B+', estilo: 'flash' }])
   await page.goto('/progreso')
-  await expect(page.getByRole('region', { name: 'Tu nivel' }).getByText(/Bloque · 90 días: 6B\+/)).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Tu nivel' }).getByText(/Bloque, últimos 90 días: 6B\+/)).toBeVisible()
   await expect(page.getByText('Lo último que te frenó: Miedo, no me atreví')).toBeVisible()
   const perfil = page.getByRole('region', { name: 'Tu perfil' })
   // Con una sola respuesta aún no decide: se muestra el orden general y cuánto falta.
@@ -392,8 +392,8 @@ test('Escaladas: una vía suelta en «Tu nivel» y un proyecto con un día de pe
   const apuntar = async (campos: { grado?: string; estilo: string; nombre?: string; pegues?: string }) => {
     await page.getByText('+ Apuntar escalada').click()
     const form = page.locator('#apuntar-escalada')
-    if (campos.grado) await form.getByLabel(/^Grado/).selectOption(campos.grado)
     await form.getByLabel(campos.estilo).check()
+    if (campos.grado) await form.getByLabel(/^Grado/).selectOption(campos.grado)
     if (campos.nombre) await form.getByLabel(/^Nombre/).fill(campos.nombre)
     if (campos.pegues) await form.getByLabel('Pegues ese día').fill(campos.pegues)
     await form.getByRole('button', { name: 'Apuntar escalada' }).click()
@@ -403,11 +403,13 @@ test('Escaladas: una vía suelta en «Tu nivel» y un proyecto con un día de pe
   // Una vía a vista en roca (la opción por defecto).
   await apuntar({ grado: '6b', estilo: 'A vista' })
   await expect(nivel.getByText('Tu mejor vía encadenada en roca.', { exact: false })).toBeVisible()
-  await expect(nivel.getByText(/te faltan 4 grados/)).toBeVisible()
+  await expect(nivel.getByText(/Hasta tu objetivo te faltan 6b\+, 6c, 6c\+ y 7a/)).toBeVisible()
   // Un proyecto: un día de pegues y luego encadenado.
   await apuntar({ estilo: 'Pegues a un proyecto, sin encadenar', nombre: 'Ojo de pez', pegues: '3' })
-  await expect(nivel.getByText(/Ojo de pez.*3 pegues/)).toBeVisible()
+  await expect(nivel.getByText(/Ojo de pez · vía en roca · 3 pegues/)).toBeVisible()
   await apuntar({ grado: '6c', estilo: 'Trabajada', nombre: 'ojo de pez', pegues: '2' })
   await expect(nivel.getByText(/Ojo de pez · 6c · encadenado el .* en 5 pegues/)).toBeVisible()
-  await expect(nivel.getByText(/te faltan 2 grados/)).toBeVisible()
+  await expect(nivel.getByText(/Hasta tu objetivo te faltan 6c\+ y 7a/)).toBeVisible()
+  // Las últimas escaladas, con su botón de borrar.
+  await expect(page.getByRole('button', { name: 'Borrar Ojo de pez · vía 6c' })).toBeVisible()
 })

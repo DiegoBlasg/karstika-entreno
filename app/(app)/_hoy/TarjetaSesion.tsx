@@ -18,6 +18,7 @@ import {
 } from '@/lib/nombres'
 import { OtraOpcion } from '@/components/OtraOpcion'
 import { franja } from '@/lib/datos/agenda'
+import { lugarDeSesion } from '@/lib/escaladas/formulario'
 import { FormularioRegistro } from './FormularioRegistro'
 import { borrarRegistrada, noLaHice, otraCosa } from './acciones'
 
@@ -132,7 +133,7 @@ export function Registrada({ tarjeta, hoy, escaladas }: { tarjeta: Tarjeta & { r
           </div>
         )}
       </div>
-      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} escaladas={escaladas} hoy={hoy} />}
+      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} />}
     </>
   )
 }
@@ -208,7 +209,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada, escaladas }: 
           {pasada && !cambiando && terminando && (
             <>
               {/* Sin alTerminar: registrar redirige a la chapa, así que nunca devuelve ok (solo corregir lo usa). */}
-              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} escaladas={escaladas} hoy={hoy} />
+              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} />
               <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}

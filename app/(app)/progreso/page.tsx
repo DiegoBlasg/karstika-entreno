@@ -137,6 +137,28 @@ export default async function PaginaProgreso() {
         </div>
       </details>
 
+      {ultimasEscaladas.length > 0 && (
+        <section className="space-y-2">
+          <h2 className={TITULO_SECCION}>Últimas escaladas</h2>
+          <ul className="space-y-2">
+            {ultimasEscaladas.map((e) => {
+              const texto = `${e.nombre ? `${e.nombre} · ` : ''}${e.tipo === 'via' ? 'vía' : 'bloque'}${e.grado ? ` ${e.grado}` : ''}`
+              return (
+                <li key={e.id} className="flex items-start justify-between gap-3 rounded-2xl border border-borde bg-superficie p-3 text-sm">
+                  <div>
+                    <p className="font-medium">{texto}</p>
+                    <p className="text-texto-2">
+                      {fechaLarga(e.fecha)} · {e.lugar === 'roca' ? 'roca' : 'rocódromo'} · {ESTILO_ESCALADA[e.estilo]}{e.pegues > 1 || e.estilo === 'pegues' ? ` · ${plural(e.pegues, 'pegue', 'pegues')}` : ''}
+                    </p>
+                  </div>
+                  <BotonBorrarEscalada id={e.id} texto={texto} />
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+
       <Constancia c={constancia(datos, hoy)} />
 
       <Logros lista={logros(datos, hoy)} />
@@ -205,27 +227,6 @@ export default async function PaginaProgreso() {
         </ul>
       </section>
 
-      {ultimasEscaladas.length > 0 && (
-        <section className="space-y-2">
-          <h2 className={TITULO_SECCION}>Últimas escaladas</h2>
-          <ul className="space-y-2">
-            {ultimasEscaladas.map((e) => {
-              const texto = `${e.nombre ? `${e.nombre} · ` : ''}${e.tipo === 'via' ? 'vía' : 'bloque'}${e.grado ? ` ${e.grado}` : ''}`
-              return (
-                <li key={e.id} className="flex items-start justify-between gap-3 rounded-2xl border border-borde bg-superficie p-3 text-sm">
-                  <div>
-                    <p className="font-medium">{texto}</p>
-                    <p className="text-texto-2">
-                      {fechaLarga(e.fecha)} · {e.lugar === 'roca' ? 'roca' : 'rocódromo'} · {ESTILO_ESCALADA[e.estilo]}{e.pegues > 1 || e.estilo === 'pegues' ? ` · ${plural(e.pegues, 'pegue', 'pegues')}` : ''}
-                    </p>
-                  </div>
-                  <BotonBorrarEscalada id={e.id} texto={texto} />
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-      )}
     </div>
   )
 }

@@ -124,7 +124,7 @@ export function logros(d: DatosAtleta, hoy: string): Logro[] {
   return [
     logro('primera-semana', 'Primera semana cumplida', 'Registraste todas las sesiones de una semana.', cumplidas[0] ? domingo(cumplidas[0].lunes) : null),
     logro('cuatro-seguidas', '4 semanas seguidas', 'Cuatro semanas cumplidas una detrás de otra.', cuatro),
-    logro('primer-encadene', 'Primer encadene', 'Encadenaste una vía o un bloque al límite.', fechasEncadene[0] ?? null),
+    logro('primer-encadene', 'Primer encadene', 'Encadenaste una vía o un bloque.', fechasEncadene[0] ?? null),
     logro('record-fuerza', 'Récord de fuerza de dedos', 'Un test mejor que todos los anteriores.', record),
     ...via.largos.map((l) =>
       logro(`largo-${l.numero}`, `Largo ${l.numero} · ${l.fase}`, 'Largo completado.',

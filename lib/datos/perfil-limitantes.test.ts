@@ -21,7 +21,7 @@ describe('vistaPerfil', () => {
     const esc = (n: number, grado: string, estilo: 'a-vista' | 'encadenada') =>
       ({ id: uuid(700 + n), fecha: '2026-11-05', sesion_id: null, tipo: 'via' as const, lugar: 'roca' as const, grado, estilo, pegues: 1, nombre: null, proyecto: false })
     const v = vistaPerfil(datosVacios({ escaladas: [esc(1, '6a', 'a-vista'), esc(2, '6c', 'encadenada')] }), '2026-11-10')!
-    expect(v.lectura).toBe('En roca encadenas trabajado 6c y a vista o flash 6a: trabajar la lectura y la táctica puede darte grado.')
+    expect(v.lectura).toBe('En roca tu mejor vía trabajada es 6c y a vista o flash, 6a: trabajar la lectura y la táctica puede darte grado.')
     expect(v.explicaciones.at(-1)?.parametros).toEqual(['P-75'])
     expect(vistaPerfil(datosVacios(), '2026-11-10')!.lectura).toBeNull()
   })

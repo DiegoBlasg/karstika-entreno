@@ -9,7 +9,7 @@ export function BotonBorrarEscalada({ id, texto }: { id: string; texto: string }
   return (
     <form action={accion} onSubmit={(e) => { if (!confirm(`¿Borrar ${texto}?`)) e.preventDefault() }} className="text-right">
       <input type="hidden" name="id" value={id} />
-      <button className="inline-flex min-h-11 items-center text-rojo" disabled={pendiente}>{pendiente ? 'Borrando…' : 'Borrar'}</button>
+      <button className="inline-flex min-h-11 items-center text-rojo" disabled={pendiente} aria-label={`Borrar ${texto}`}>{pendiente ? 'Borrando…' : 'Borrar'}</button>
       {estado?.error && <p role="alert" className="mt-1 text-sm text-rojo">{estado.error}</p>}
     </form>
   )

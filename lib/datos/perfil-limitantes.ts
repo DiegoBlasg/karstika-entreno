@@ -52,10 +52,10 @@ export function vistaPerfil(d: DatosAtleta, hoy: string): VistaPerfil | null {
           : `Tus respuestas aún no deciden: en ${n} ningún motivo destaca lo bastante.`
     const p = pistaLectura(d.escaladas ?? [], hoy)
     const lectura = p
-      ? `En ${p.lugar === 'roca' ? 'roca' : 'rocódromo'} encadenas trabajado ${p.trabajado} y a vista o flash ${p.aVista}: trabajar la lectura y la táctica puede darte grado.`
+      ? `En ${p.lugar === 'roca' ? 'roca' : 'rocódromo'} tu mejor vía trabajada es ${p.trabajado} y a vista o flash, ${p.aVista}: trabajar la lectura y la táctica puede darte grado.`
       : null
     const explicacionLectura = p
-      ? [explicar('escaladas.pista-lectura', ['P-75'], 'Una diferencia de 2 grados o más entre lo que encadenas trabajado y lo que haces a vista, en los últimos 90 días, apunta a la lectura y la táctica. Lo normal ronda 1 grado según los foros de escalada; el umbral de 2 no tiene estudio, así que es solo una pista: no cambia tus sesiones.')]
+      ? [explicar('escaladas.pista-lectura', ['P-75'], 'Una diferencia de 2 grados o más (4 escalones, de 6a a 6c) entre tu mejor vía trabajada y tu mejor a vista o flash, en los últimos 90 días, apunta a la lectura y la táctica. Lo normal ronda 1 grado según el consenso de los foros (Mountain Project); el umbral de 2 no tiene estudio y puede confundir preferencia con debilidad, así que es solo una pista: no cambia tus sesiones.')]
       : []
     return {
       limita: {
