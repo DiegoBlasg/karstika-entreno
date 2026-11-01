@@ -305,7 +305,38 @@ function elegidosDe(validos: readonly Valido[], n: number): Valido[] {
 }
 
 export function proponerSesion(p: Peticion): Propuesta {
-  return conCoreMovilidad(p, proponerSesionBase(p))
+  return conCoreMovilidad(p, conTestCasa(p, proponerSesionBase(p)))
+}
+
+// El test en casa (dominadas máximas y cadera) toca en los 10 días siguientes a un test de dedos, si no se ha hecho
+// desde entonces: así la batería completa queda cerca en el tiempo (informe 2026-10-31, «batería en 2 días»).
+export const DIAS_TEST_CASA = 10
+
+export function testCasaPendiente(historial: readonly Sesion[], fecha: string): boolean {
+  const d = diaNumero(fecha)
+  const dedos = historial.filter((s) => s.tipo === 'evaluacion-dedos' && diaNumero(s.fecha) < d && diaNumero(s.fecha) >= d - DIAS_TEST_CASA)
+  if (dedos.length === 0) return false
+  const ultimo = dedos.reduce((a, s) => (s.fecha > a ? s.fecha : a), '')
+  return !historial.some((s) => s.tipo === 'test-casa' && s.fecha >= ultimo)
+}
+
+// En casa, con el test pendiente y sin ninguna zona fuera del verde, el test en casa va de principal; lo que había
+// pasa a alternativas. Si hoy tocaba descanso, se ofrece como primera alternativa (el descanso manda).
+function conTestCasa(p: Peticion, r: Propuesta): Propuesta {
+  if (p.contexto.lugar !== 'casa' || !testCasaPendiente(p.historial, p.fecha)) return r
+  if (r.estado && Object.values(r.estado.zonas).some((z) => z !== 'verde')) return r
+  if ([r.principal, ...r.alternativas].some((o) => o?.sesion.tipo === 'test-casa')) return r
+  const { huecos: _huecos, seguimiento: _seguimiento, ...sinHuecos } = p
+  const c = evaluar('test-casa', r.estado ? { ...sinHuecos, estado: r.estado } : sinHuecos)
+  if (!c || c.violaciones.length > 0) return r
+  const explicacion = explicar(
+    'generador.test-casa',
+    ['P-19'],
+    `Hiciste el test de dedos hace poco: toca el test en casa (dominadas máximas y apertura de cadera, ${c.plan.sesion.duracionMin} min) para completar la batería. Si hoy prefieres otra cosa, tienes las alternativas.`,
+  )
+  const test: SesionPlan = { ...c.plan, explicaciones: [explicacion, ...c.plan.explicaciones] }
+  if (r.principal === null) return { ...r, alternativas: [test, ...r.alternativas] }
+  return { ...r, principal: test, alternativas: [r.principal, ...r.alternativas].slice(0, 3) }
 }
 
 // P-72: cuando la propuesta es descanso y no hay rojo, «Core y movilidad» como primera alternativa (si cabe y es válida).

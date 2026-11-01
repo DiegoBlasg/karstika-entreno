@@ -20,7 +20,7 @@ export const VALORES = {
   'P-37': { bloques: 4, vueltas: 4, descansoVueltaMin: 4 },
   'P-61': { maxIntentos: 4 },
   'P-23': { orden: ['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'] },
-  'P-24': { trabajoS: 7, descansoS: 3, fraccion: 0.6 },
+  'P-24': { regletaMm: 30, minimoS: 10 },
   'P-27': { minimo: 1, maximo: 7 },
   'P-31': { fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 },
   'P-02': { trabajoS: 7, descansoS: 3 },

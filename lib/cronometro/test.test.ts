@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { construirSesion, FASES } from '../../motor'
 import { pasosDeSesion, type Paso } from './pasos'
-import { intentoAbierto, lastre73, leerDatosTest, mejorLastre, textoLastre } from './test'
+import { intentoAbierto, leerDatosTest, mejorLastre, textoLastre } from './test'
 
 describe('mejorLastre', () => {
   it('el mayor lastre de los intentos completados', () => {
@@ -13,16 +13,6 @@ describe('mejorLastre', () => {
   it('un intento sin decidir (ni Sí ni No) no cuenta, aunque tenga más carga', () => {
     expect(mejorLastre([{ lastreKg: 10, completado: true }, { lastreKg: 20, completado: null }])).toBe(10)
     expect(mejorLastre([{ lastreKg: 20, completado: null }])).toBeNull()
-  })
-})
-
-describe('lastre73', () => {
-  it('60 % de (peso + mejor) menos el peso, hacia abajo a 0,5 kg (fórmula del motor)', () => {
-    expect(lastre73('2026-11-02', 72, 15)).toBe(-20)   // 0,6 × 87 = 52,2 → −19,8 → −20
-    expect(lastre73('2026-11-02', 70, 10)).toBe(-22)   // 0,6 × 80 = 48 → −22
-  })
-  it('si el cálculo no vale devuelve null', () => {
-    expect(lastre73('2026-11-02', Number.NaN, 15)).toBeNull()
   })
 })
 

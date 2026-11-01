@@ -8,8 +8,8 @@ import { guardarEvaluacion } from '@/app/(app)/progreso/acciones'
 
 // Guarda la evaluación de hoy con la misma acción (y las mismas validaciones) que la pantalla Progreso.
 // El lastre es texto normal, no decimal, para que en iPhone se pueda escribir el signo menos al corregirlo.
-export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS, alGuardar }: {
-  hoy: string; pesoKg: number; lastreKg: number; resistenciaS: number | null; alGuardar: () => void
+export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, colgadoS, alGuardar }: {
+  hoy: string; pesoKg: number; lastreKg: number; colgadoS: number | null; alGuardar: () => void
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarEvaluacion, null)
   useEffect(() => {
@@ -22,7 +22,8 @@ export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, resistenciaS, a
       <input type="hidden" name="fecha" value={hoy} />
       <label className="block">Peso hoy (kg)<input name="peso_corporal_kg" type="text" inputMode="decimal" defaultValue={fmt(pesoKg)} required className={CAMPO} /></label>
       <label className="block">Lastre del mejor intento (kg, negativo = descarga)<input name="lastre_kg" type="text" defaultValue={fmt(lastreKg)} required className={CAMPO} /></label>
-      <label className="block">Resistencia: segundos colgado en el 7:3<input name="resistencia_s" type="text" inputMode="decimal" defaultValue={resistenciaS ?? ''} className={CAMPO} /></label>
+      <label className="block">Resistencia: segundos colgado en 30 mm (opcional)<input name="colgado_30_s" type="text" inputMode="decimal" defaultValue={colgadoS ?? ''} className={CAMPO} /></label>
+      <label className="block">Power slap: cm por encima de la mano, el mejor (opcional)<input name="power_slap_cm" type="text" inputMode="decimal" className={CAMPO} /></label>
       <label className="block">
         Técnica de 1 a 7 (opcional)
         <select name="tecnica" defaultValue="" className={CAMPO}>

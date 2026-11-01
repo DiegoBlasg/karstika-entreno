@@ -5,7 +5,7 @@ import { FRACCION_INICIAL_REPEATERS, VALORES, type ParametroId } from '../../mot
 import type { DibujoId } from './dibujos'
 
 export const FICHA_IDS = [
-  'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo',
+  'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'colgado-30mm', 'power-slap',
   'calentamiento-progresivo', 'calentamiento-barra',
   'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'via-de-practica', 'practica-tecnica', 'video-autoevaluacion',
   'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas', 'colgarse-barra',
@@ -14,6 +14,7 @@ export const FICHA_IDS = [
   'movilidad',
   'plancha-frontal', 'hollow', 'elevaciones-colgado', 'elevaciones-tumbado', 'plancha-lateral', 'rana', 'cadera-90-90',
   'dislocaciones-hombro',
+  'dominadas-maximas', 'apertura-cadera',
 ] as const
 export type FichaId = (typeof FICHA_IDS)[number]
 
@@ -44,7 +45,7 @@ const SEGURIDAD: ParametroId[] = ['P-43', 'P-44']
 const { trabajoS: R_T, descansoS: R_D } = VALORES['P-02']
 const RF = VALORES['P-36']
 const MAX = VALORES['P-18']
-const T73 = VALORES['P-24']
+const T30 = VALORES['P-24']
 const DOM = VALORES['P-39']
 const ARC = VALORES['P-35']
 const X4 = VALORES['P-37']
@@ -150,29 +151,46 @@ export const FICHAS: Record<FichaId, Ficha> = {
     parametros: ['P-17', 'P-18', 'P-09', 'P-10', 'P-12', 'P-49', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
-  'test-7-3-fallo': {
-    id: 'test-7-3-fallo',
-    titulo: `Test ${T73.trabajoS}:${T73.descansoS} hasta el fallo`,
-    paraQue: 'Medir tu resistencia de dedos en segundos totales colgado.',
-    material: `Multipresa, regleta de ${REGLETA}, lastre o polea para descargar`,
+  'colgado-30mm': {
+    id: 'colgado-30mm',
+    titulo: `Colgado en canto de ${T30.regletaMm} mm`,
+    paraQue: `Medir tu resistencia de dedos: segundos colgado a peso corporal hasta soltar. Es el test de la batería IRCRA (r 0,81-0,87 con el grado; Draper 2021); como varía bastante de un día a otro, solo un cambio de un ${VALORES['P-19'].colgadoPct} % o más cuenta como real.`,
+    material: `Multipresa con canto de ${T30.regletaMm} mm (polea o un taburete para los pies si no llegas a ${T30.minimoS} s)`,
     pasos: [
       'Descansa unos minutos tras la suspensión máxima.',
-      `Prepara la carga: el ${pct(T73.fraccion)} de tu máximo de hoy (peso más lastre del mejor intento). Si sale por debajo de tu peso, descarga con polea o banda.`,
       ...PASOS_COLGARSE,
-      `Repite ${T73.trabajoS} s colgado y ${T73.descansoS} s de descanso hasta que no completes una repetición: eso es el fallo.`,
-      'Apunta los segundos totales colgado.',
+      'Cuélgate sin lastre y pulsa empezar: el cronómetro cuenta hacia arriba.',
+      'Aguanta hasta soltar o hasta perder el semiarqueado y pulsa «No puedo más».',
+      `Si no llegas a ${T30.minimoS} s, descansa 3 min y repítelo quitando peso con polea o apoyando un poco los pies; apunta ese tiempo y hazlo igual la próxima vez.`,
       NOVEL,
     ],
     errores: [
       'Seguir con el agarre cerrado hacia el arqueado para arañar segundos.',
-      'Usar otra regleta u otra carga que en el test anterior: no serían comparables.',
+      'Cambiar de canto, de agarre o de descarga entre un test y otro: no serían comparables.',
     ],
     paraSi: [
       'Pierdes el semiarqueado: el test termina ahí.',
       ...PARA_SI,
     ],
-    parametros: ['P-24', 'P-10', 'P-12', ...SEGURIDAD],
+    parametros: ['P-24', 'P-19', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
+  },
+  'power-slap': {
+    id: 'power-slap',
+    titulo: 'Power slap',
+    paraQue: `Medir la potencia de tirón con una cinta métrica: una dominada explosiva y una palmada lo más alto posible. Es muy repetible (CCI 0,95-0,98; Faggian 2024) y se relaciona con el grado (r 0,69-0,79); cambio real a partir de ${VALORES['P-19'].powerSlapCm} cm.`,
+    material: 'Barra o presas grandes junto a una pared, cinta métrica pegada en vertical y tiza en la mano',
+    pasos: [
+      'Pega la cinta métrica en la pared, con el 0 a la altura de la mano que cuelga.',
+      'Cuélgate con los brazos estirados y las escápulas activas.',
+      'Tira lo más explosivo que puedas y, arriba, suelta una mano y da una palmada en la cinta.',
+      'Apunta los cm de la marca por encima de la mano. Descansa 1 min.',
+      '3 intentos: vale el mejor.',
+    ],
+    errores: ['Balancearte o patear para subir más.', 'Cambiar la altura del 0 o de agarre entre tests.'],
+    paraSi: ['Notas el codo o el hombro: para.', ...PARA_SI],
+    parametros: ['P-19', 'P-39', ...SEGURIDAD],
+    dibujo: 'dominada',
   },
   'calentamiento-progresivo': {
     id: 'calentamiento-progresivo',
@@ -672,6 +690,38 @@ export const FICHAS: Record<FichaId, Ficha> = {
     parametros: ['P-72', ...SEGURIDAD],
     dibujo: 'plancha',
   },
+  'dominadas-maximas': {
+    id: 'dominadas-maximas',
+    titulo: 'Dominadas máximas',
+    paraQue: `Test de casa: cuántas dominadas estrictas seguidas haces. Se relaciona con el grado (r 0,73-0,77; Faggian 2024), aunque en niveles bajos es menos fiable; cambio real a partir de ${VALORES['P-19'].dominadas}.`,
+    material: 'Barra',
+    pasos: [
+      'Calienta en barra (mira «Calentamiento en barra»).',
+      'Agarre prono a la anchura de los hombros, desde brazos estirados.',
+      'Sube hasta pasar la barbilla sobre la barra y baja hasta estirar los brazos.',
+      'Sigue sin pararte arriba ni abajo hasta no poder hacer otra completa.',
+      'Apunta solo las completas.',
+    ],
+    errores: ['Contar las que se quedan a medias.', 'Patear o balancearte.', 'Cambiar de agarre entre tests.'],
+    paraSi: ['Notas el codo o el hombro: para.', ...PARA_SI],
+    parametros: ['P-19', 'P-39', ...SEGURIDAD],
+    dibujo: 'dominada',
+  },
+  'apertura-cadera': {
+    id: 'apertura-cadera',
+    titulo: 'Apertura de cadera (straddle de pie)',
+    paraQue: `Test de casa de movilidad: cuánto abres las piernas de pie. Se relacionó con el nivel en escaladores de competición (r −0,48; Draga 2020). Menos cm es más apertura; cambio real a partir de ${VALORES['P-19'].caderaCm} cm.`,
+    material: 'Suelo que no resbale (o calcetines sobre parqué) y una cinta métrica',
+    pasos: [
+      'De pie, con las piernas estiradas y los pies hacia delante, ábrelas despacio todo lo que puedas.',
+      'Apoya las manos en el suelo o en una silla para no caerte; sin rebotes.',
+      'Mide los cm del suelo a la ingle (o pide a alguien que lo mida).',
+      'Dos intentos: vale el mejor.',
+    ],
+    errores: ['Rebotar para bajar más.', 'Girar los pies hacia fuera un test y hacia delante el siguiente.'],
+    paraSi: ['Pinchazo en la ingle o en la rodilla: sube un poco.', ...PARA_SI],
+    parametros: ['P-19', 'P-72', ...SEGURIDAD],
+  },
   rana: {
     id: 'rana',
     titulo: 'Rana',
@@ -726,13 +776,13 @@ export interface Grupo {
 }
 
 export const GRUPOS: Grupo[] = [
-  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo'] },
+  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'colgado-30mm'] },
   {
     id: 'escalada',
     titulo: 'Escalada',
     fichas: ['calentamiento-progresivo', 'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'via-de-practica', 'practica-tecnica', 'video-autoevaluacion'],
   },
-  { id: 'barra', titulo: 'Barra', fichas: ['calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas'] },
+  { id: 'barra', titulo: 'Barra', fichas: ['calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas', 'dominadas-maximas', 'power-slap'] },
   {
     id: 'hombro',
     titulo: 'Hombro y antagonistas',
@@ -743,7 +793,7 @@ export const GRUPOS: Grupo[] = [
     titulo: 'Movilidad y core',
     fichas: [
       'movilidad', 'rana', 'cadera-90-90', 'dislocaciones-hombro', 'plancha-frontal', 'hollow', 'elevaciones-colgado',
-      'elevaciones-tumbado', 'plancha-lateral',
+      'elevaciones-tumbado', 'plancha-lateral', 'apertura-cadera',
     ],
   },
 ]

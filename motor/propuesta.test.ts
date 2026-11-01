@@ -305,3 +305,32 @@ describe('proponerSesion: hallazgos de la segunda revisión', () => {
     expect(soloHombro.principal!.sesion.incluye).toBeUndefined()
   })
 })
+
+describe('test en casa tras el test de dedos', () => {
+  const test = ses('t', '2026-10-24', 18, { tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 50 })
+  const casa = (extra: Parameters<typeof peticion>[0] = {}) =>
+    peticion({
+      fecha: '2026-10-27', horaInicio: 10, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 },
+      historial: [...BASE_OCTUBRE, test], fase: FASE_FUERZA, evaluacion: { fecha: '2026-10-24', pesoCorporalKg: 70, lastreKg: 20 }, ...extra,
+    })
+  it('en casa, a los 3 días del test, el test en casa es la principal y lo de siempre pasa a alternativas', () => {
+    const sin = proponerSesion(casa({ historial: [...BASE_OCTUBRE] }))
+    const r = proponerSesion(casa())
+    expect(r.principal?.sesion.tipo).toBe('test-casa')
+    expect(r.principal?.explicaciones[0]?.regla).toBe('generador.test-casa')
+    expect(r.principal?.explicaciones[0]?.motivo).toMatch(/15 min/)
+    expect(tipos(sin)).not.toContain('test-casa')
+    expect(r.alternativas.length).toBeGreaterThan(0)
+    for (const o of [r.principal!, ...r.alternativas]) expect(validarContexto(o.sesion, casa().contexto)).toEqual([])
+  })
+  it('no fuera de casa, ni el mismo día del test, ni a los 11 días, ni si ya se hizo', () => {
+    expect(tipos(proponerSesion(casa({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 } })))).not.toContain('test-casa')
+    expect(tipos(proponerSesion(casa({ fecha: '2026-10-24', horaInicio: 20 })))).not.toContain('test-casa')
+    expect(tipos(proponerSesion(casa({ fecha: '2026-11-04' })))).not.toContain('test-casa')
+    const hecho = ses('c', '2026-10-25', 10, { tipo: 'test-casa', intensidad: 'suave', duracionMin: 15 })
+    expect(tipos(proponerSesion(casa({ historial: [...BASE_OCTUBRE, test, hecho] })))).not.toContain('test-casa')
+  })
+  it('a los 10 días todavía toca', () => {
+    expect(proponerSesion(casa({ fecha: '2026-11-03' })).principal?.sesion.tipo).toBe('test-casa')
+  })
+})

@@ -1,5 +1,4 @@
-// Test de dedos guiado: intentos de fuerza máxima, carga del 7:3 y lo guardado al recargar. Puro.
-import { lastreRepeaters, VALORES } from '../../motor'
+// Test de dedos guiado: intentos de fuerza máxima y lo guardado al recargar. Puro.
 import type { Paso } from './pasos'
 
 export interface Intento {
@@ -18,16 +17,6 @@ const LASTRE = { min: -100, max: 150 } as const
 export function mejorLastre(intentos: readonly (Intento | null)[]): number | null {
   const completados = intentos.filter((i): i is Intento => i !== null && i.completado === true).map((i) => i.lastreKg)
   return completados.length > 0 ? Math.max(...completados) : null
-}
-
-// La carga del 7:3 al 60 % del mejor intento de hoy, con la misma fórmula del motor que los repeaters (P-24).
-export function lastre73(fecha: string, pesoKg: number, mejor: number): number | null {
-  try {
-    const kg = lastreRepeaters({ fecha, pesoCorporalKg: pesoKg, lastreKg: mejor }, VALORES['P-24'].fraccion)
-    return Number.isFinite(kg) ? kg : null
-  } catch {
-    return null
-  }
 }
 
 const fmt = (kg: number): string => String(kg).replace('.', ',')

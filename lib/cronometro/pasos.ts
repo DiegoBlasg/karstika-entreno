@@ -7,7 +7,7 @@ export type Paso = (
   | { tipo: 'descanso'; segundos: number; titulo: string }
   | { tipo: 'manual'; titulo: string; carga?: string; notas?: string }
   | { tipo: 'bloque'; segundos: number; titulo: string; detalle: string[] }
-  | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string; maxRepeticiones?: number; escalando?: boolean }
+  | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string; maxRepeticiones?: number; escalando?: boolean; continuo?: boolean }
 ) & { bloque: string; fichas?: string[] }   // fichas: ids de la biblioteca («Cómo se hace»)
 
 export const SEGUNDOS_PREPARATE = 10
@@ -47,7 +47,9 @@ function pasosDeEjercicio(bloque: string, e: Ejercicio): Paso[] {
   if (series === undefined && trabajoS === undefined) return [manual(e.nombre)]
   const preparate: Paso = { tipo: 'preparate', bloque, segundos: SEGUNDOS_PREPARATE, titulo: e.nombre, carga }
   if (series === undefined) {
-    // Sin series: hasta el fallo si hay descanso entre repeticiones (7:3 del test), si no una sola suspensión.
+    // Sin series: un colgado continuo hasta soltar (colgado en 30 mm del test), hasta el fallo si hay descanso entre
+    // repeticiones, o una sola suspensión.
+    if (e.continuo && e.hastaFallo) return [preparate, { tipo: 'fallo', bloque, trabajoS: trabajoS!, descansoS: 0, continuo: true, titulo: e.nombre, carga }]
     if (descansoS !== undefined) return [preparate, { tipo: 'fallo', bloque, trabajoS: trabajoS!, descansoS, titulo: e.nombre, carga }]
     return [preparate, { tipo: 'colgado', bloque, segundos: trabajoS!, titulo: e.nombre, carga }]
   }

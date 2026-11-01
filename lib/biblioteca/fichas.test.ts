@@ -48,7 +48,7 @@ describe('FICHAS', () => {
 
 describe('fichas de suspensiones: los números son los del motor', () => {
   const regleta = `${VALORES['P-12'].regletaMinimaMm} mm`
-  const suspensiones = ['repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo', 'agarre-semiarqueado'] as const
+  const suspensiones = ['repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'agarre-semiarqueado'] as const
   it('todas usan regleta de 20 mm, agarre semiarqueado, regleta mínima para noveles y P-10', () => {
     for (const id of suspensiones) {
       expect(texto(id), id).toContain(regleta)
@@ -83,18 +83,28 @@ describe('fichas de suspensiones: los números son los del motor', () => {
     expect(t).toContain(`${v.intentos} intentos`)
     expect(t).toContain(`${v.descansoS / 60} min`)
   })
-  it('7:3 del test: al 60 % del máximo de hoy, hasta el fallo', () => {
-    const t = texto('test-7-3-fallo')
+  it('colgado del test: canto de 30 mm a peso corporal, hasta soltar, con descarga por debajo de 10 s', () => {
+    const t = texto('colgado-30mm')
     const v = VALORES['P-24']
-    expect(t).toContain(`${v.trabajoS} s colgado y ${v.descansoS} s de descanso`)
-    expect(t).toContain(`${Math.round(v.fraccion * 100)} %`)
-    expect(t).toMatch(/fallo/)
+    expect(t).toContain(`${v.regletaMm} mm`)
+    expect(t).toMatch(/hasta soltar/)
+    expect(t).toContain(`${v.minimoS} s`)
+    expect(t).toContain(`${VALORES['P-19'].colgadoPct} %`)
+    expect(t).toMatch(/semiarqueado/)
+    expect(t).toMatch(/menos de 2 años/)
+    expect(FICHAS['colgado-30mm'].parametros).toEqual(expect.arrayContaining(['P-24', 'P-19', 'P-10', 'P-12']))
+  })
+  it('tests de casa y power slap: citan su cambio real (P-19)', () => {
+    expect(texto('power-slap')).toContain(`${VALORES['P-19'].powerSlapCm} cm`)
+    expect(texto('dominadas-maximas')).toContain(`a partir de ${VALORES['P-19'].dominadas}`)
+    expect(texto('apertura-cadera')).toContain(`${VALORES['P-19'].caderaCm} cm`)
+    for (const id of ['power-slap', 'dominadas-maximas', 'apertura-cadera'] as const) expect(FICHAS[id].parametros, id).toContain('P-19')
   })
   it('ninguna ficha de suspensiones da otros porcentajes que los del motor', () => {
     const permitidos = new Set([
       Math.round(FRACCION_INICIAL_REPEATERS * 100),
       Math.round(VALORES['P-06'].fraccionMaximaRepeaters * 100),
-      Math.round(VALORES['P-24'].fraccion * 100),
+      Math.round(VALORES['P-36'].fraccion * 100),
     ])
     for (const id of suspensiones) {
       for (const m of texto(id).matchAll(/(\d+) %/g)) expect(permitidos, `${id}: ${m[0]}`).toContain(Number(m[1]))

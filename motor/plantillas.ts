@@ -380,27 +380,23 @@ function construirPegues(p: Peticion): SesionPlan | null {
   return plan(sesionDe('pegues-proyecto', p, total(n), 'alta'), bloques)
 }
 
-// Ejemplo de la carga del test de resistencia con el último test vigente (la carga real sale del máximo de hoy).
-function ejemploResistencia(p: Peticion, fraccion: number): string {
-  if (!p.evaluacion || !evaluacionVigente(p.evaluacion, p.fecha)) return ''
-  const { pesoCorporalKg: peso, lastreKg: lastre } = p.evaluacion
-  const kg = Math.floor((fraccion * (peso + lastre) - peso) * 2 + 1e-9) / 2 + 0
-  const texto = kg > 0 ? `+${fmt(kg)} kg de lastre` : kg < 0 ? `${fmt(-kg)} kg de descarga` : 'solo tu peso corporal'
-  return `Con tu último test (${fmt(peso)} kg y ${fmt(lastre)} kg de lastre) serían ${texto}. `
-}
-
-// Tras el test máximo, si hay tiempo: 10 min de descanso y el test de resistencia intermitente (P-24). Las duraciones
-// de los bloques son decisión de diseño.
+// Tras el test máximo, si hay tiempo: 10 min de descanso, el colgado continuo en 30 mm (P-24) y el power slap (P-19).
+// Los 5 min del colgado tras 10 de descanso son los de la batería del informe 2026-10-31; los 5 del power slap dan para
+// 3 intentos con descanso completo entre ellos.
 const DESCANSO_ENTRE_TESTS_MIN = 10
 const TEST_RESISTENCIA_MIN = 5
+const POWER_SLAP_MIN = 5
+// Tope del cronómetro para el colgado continuo: nadie de este nivel se acerca a 10 min en un canto de 30 mm.
+const COLGADO_TOPE_S = 600
 
 function construirEvaluacion(p: Peticion): SesionPlan | null {
   const subidaMin = 5
   const testMin = 15
   const soloMaximo = CALENTAMIENTO_MIN + subidaMin + testMin
   if (soloMaximo > p.contexto.minutosDisponibles) return null
-  const conResistencia = soloMaximo + DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN <= p.contexto.minutosDisponibles
-  const total = conResistencia ? soloMaximo + DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN : soloMaximo
+  const extra = DESCANSO_ENTRE_TESTS_MIN + TEST_RESISTENCIA_MIN + POWER_SLAP_MIN
+  const conResistencia = soloMaximo + extra <= p.contexto.minutosDisponibles
+  const total = conResistencia ? soloMaximo + extra : soloMaximo
   const { duracionS, intentos, descansoS } = VALORES['P-18']
   const bloques: Bloque[] = [
     bloqueCalentamiento(),
@@ -439,7 +435,7 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
     },
   ]
   if (conResistencia) {
-    const { trabajoS, descansoS, fraccion } = VALORES['P-24']
+    const { regletaMm, minimoS } = VALORES['P-24']
     bloques.push(
       {
         nombre: 'Descanso entre tests',
@@ -448,22 +444,41 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
         explicacion: explicar('plantilla.descanso-tests', ['P-24'], 'Se descansa antes del test de resistencia para no mezclar la fatiga del máximo.'),
       },
       {
-        nombre: 'Test de resistencia intermitente',
+        nombre: 'Test de resistencia: colgado en 30 mm',
         minutos: TEST_RESISTENCIA_MIN,
         ejercicios: [
           {
-            nombre: `Suspensiones ${trabajoS} s : ${descansoS} s al ${Math.round(fraccion * 100)} % de tu máximo de hoy, hasta el fallo`,
-            trabajoS,
-            descansoS,
-            cargaTexto: `Carga total = ${fmt(fraccion)} × (tu peso + el lastre de tu mejor intento de hoy). Lastre = esa carga − tu peso; si sale negativo, quita ese peso con polea o banda`,
-            notas: `${ejemploResistencia(p, fraccion)}Si necesitas descarga y no tienes polea, haz este test en el rocódromo. Apunta los segundos totales hasta no poder completar una repetición. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.`,
-            ficha: 'test-7-3-fallo',
+            nombre: `Colgado continuo en canto de ${regletaMm} mm a peso corporal, hasta soltar`,
+            trabajoS: COLGADO_TOPE_S,
+            hastaFallo: true,
+            continuo: true,
+            cargaTexto: 'Peso corporal, sin lastre',
+            notas: `Semiarqueado y brazos estirados; el tiempo corre hasta que sueltas o pierdes el semiarqueado. Si no llegas a ${minimoS} s, descansa 3 min y repítelo con descarga (polea o pies apoyados) y apunta ese tiempo.`,
+            ficha: 'colgado-30mm',
           },
         ],
         explicacion: explicar(
           'plantilla.test-resistencia',
-          ['P-24', 'P-27'],
-          'Test intermitente 7 s : 3 s al 60 % de la fuerza máxima hasta el fallo (resultado en segundos) y autoevaluación técnica de 1 a 7.',
+          ['P-24', 'P-19'],
+          'Colgado continuo en canto de 30 mm a peso corporal hasta soltar (batería IRCRA, r 0,81-0,87 con el grado). Como varía bastante de un día a otro, solo cuenta como cambio real a partir de un 25 %.',
+        ),
+      },
+      {
+        nombre: 'Power slap',
+        minutos: POWER_SLAP_MIN,
+        ejercicios: [
+          {
+            nombre: 'Power slap: dominada explosiva y palmada lo más alto posible, 3 intentos',
+            series: 3,
+            cargaTexto: 'Vale el mejor intento; descansa 1 min entre intentos',
+            notas: 'Desde colgado con los brazos estirados en barra o presas grandes, tira explosivo y da una palmada en la pared sobre una cinta métrica. Apunta los cm por encima de la mano. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.',
+            ficha: 'power-slap',
+          },
+        ],
+        explicacion: explicar(
+          'plantilla.power-slap',
+          ['P-19', 'P-27'],
+          'Power slap: mide la potencia de tirón con una cinta métrica (CCI 0,95-0,98, r 0,69-0,79 con el grado; Faggian 2024). Cambio real a partir de 10 cm. Y la autoevaluación técnica de 1 a 7.',
         ),
       },
     )
@@ -1100,8 +1115,50 @@ function construirCoreMovilidad(p: Peticion): SesionPlan | null {
   ])
 }
 
+// Test en casa (2026-11-01): dominadas máximas y apertura de cadera, los dos tests de la batería del informe 2026-10-31
+// que solo necesitan la barra. Unos 15 min y suave: un esfuerzo corto que no carga los dedos. Sin poder colgarse hoy
+// (P-64, P-65) no se propone.
+export const TEST_CASA_MIN = 15
+const TEST_CASA_CALENTAMIENTO_MIN = 5
+
+function construirTestCasa(p: Peticion): SesionPlan | null {
+  if (TEST_CASA_MIN > p.contexto.minutosDisponibles || sinColgarse(p)) return null
+  const resto = (TEST_CASA_MIN - TEST_CASA_CALENTAMIENTO_MIN) / 2
+  const { dominadas, caderaCm } = VALORES['P-19']
+  return plan(sesionDe('test-casa', p, TEST_CASA_MIN, 'suave'), [
+    {
+      nombre: 'Calentamiento en barra',
+      minutos: TEST_CASA_CALENTAMIENTO_MIN,
+      ejercicios: [{ nombre: 'Movilidad de hombro y escápulas, colgarse de la barra y dominadas sin lastre de menos a más', cargaTexto: 'Esfuerzo percibido 2–4 de 10', ficha: 'calentamiento-barra' }],
+      explicacion: explicar('plantilla.calentamiento-barra', ['P-49'], 'Antes de un esfuerzo máximo se calienta de menos a más, por prudencia.'),
+    },
+    {
+      nombre: 'Dominadas máximas',
+      minutos: resto,
+      ejercicios: [{ nombre: 'Dominadas estrictas seguidas, hasta no poder hacer otra completa', series: 1, cargaTexto: 'Peso corporal; cuenta solo las completas', ficha: 'dominadas-maximas' }],
+      explicacion: explicar(
+        'plantilla.dominadas-maximas',
+        ['P-19'],
+        `Las dominadas máximas se relacionan con el grado (r 0,73-0,77; Faggian 2024), aunque en niveles bajos su fiabilidad es menor: solo cuenta como cambio real a partir de ${dominadas}.`,
+      ),
+    },
+    {
+      nombre: 'Apertura de cadera',
+      minutos: resto,
+      ejercicios: [{ nombre: 'Straddle de pie: piernas abiertas al máximo, mide la distancia del suelo a la ingle', series: 2, cargaTexto: 'Sin rebotes; vale la mejor de 2', ficha: 'apertura-cadera' }],
+      explicacion: explicar(
+        'plantilla.apertura-cadera',
+        ['P-19'],
+        `La apertura de cadera (straddle de pie) se relacionó con el nivel en escaladores de competición (r −0,48; Draga 2020). Menos cm es más apertura; cambio real a partir de ${caderaCm} cm.`,
+      ),
+    },
+  ])
+}
+
 export function construirSesion(tipo: TipoSesion, p: Peticion): SesionPlan | null {
   switch (tipo) {
+    case 'test-casa':
+      return construirTestCasa(p)
     case 'core-movilidad':
       return construirCoreMovilidad(p)
     case 'via-cuerda-limite':

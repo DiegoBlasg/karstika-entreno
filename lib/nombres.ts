@@ -92,6 +92,7 @@ export const DONDE_SE_HACE: Record<TipoSesion, string> = {
   'via-autoasegurada': 'Vías con autoasegurador',
   campus: 'Campus',
   'core-movilidad': 'Suelo y barra, en casa o en el rocódromo (en roca, en el suelo)',
+  'test-casa': 'Barra de dominadas y una cinta métrica, en casa',
   descanso: '—',
 }
 

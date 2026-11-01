@@ -15,7 +15,7 @@ describe('tiposPosibles: tabla completa de las 6 combinaciones', () => {
   ]
   const enCasa = [
     'campus', 'core-movilidad', 'descanso', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-maxima', 'multipresa-resistencia',
-    'multipresa-resistencia-fuerza',
+    'multipresa-resistencia-fuerza', 'test-casa',
   ]
   const tabla = [
     ['solo', 'rocodromo', sinCuerda],
@@ -60,7 +60,7 @@ describe('tiposPosibles', () => {
   })
   it('en casa: multipresa, dominadas, hombro, campus y descanso (sin board)', () => {
     expect(tiposPosibles(ctx({ lugar: 'casa' }))).toEqual(
-      ['campus', 'core-movilidad', 'descanso', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-maxima', 'multipresa-resistencia', 'multipresa-resistencia-fuerza'],
+      ['campus', 'core-movilidad', 'descanso', 'dominadas', 'evaluacion-dedos', 'hombro', 'multipresa-maxima', 'multipresa-resistencia', 'multipresa-resistencia-fuerza', 'test-casa'],
     )
   })
   it('siempre incluye descanso y está ordenada', () => {
@@ -120,7 +120,7 @@ describe('material en casa (multipresaEnCasa)', () => {
   it('sin multipresa en casa: solo barra (dominadas, hombro), core y movilidad, y descanso', () => {
     for (const compania of ['solo', 'con-gente'] as const) {
       const t = tiposPosibles(ctx({ compania, lugar: 'casa', multipresaEnCasa: false }))
-      expect(t).toEqual(['core-movilidad', 'descanso', 'dominadas', 'hombro'])
+      expect(t).toEqual(['core-movilidad', 'descanso', 'dominadas', 'hombro', 'test-casa'])
       for (const tipo of NECESITA_MULTIPRESA) expect(t).not.toContain(tipo)
     }
   })

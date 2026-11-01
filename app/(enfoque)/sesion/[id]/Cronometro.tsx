@@ -11,7 +11,7 @@ import { BarraProgreso } from '@/components/ui/BarraProgreso'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import type { Paso } from '@/lib/cronometro/pasos'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
-import { intentoAbierto, lastre73, leerDatosTest, mejorLastre, textoLastre, type DatosTest, type Intento } from '@/lib/cronometro/test'
+import { intentoAbierto, leerDatosTest, mejorLastre, textoLastre, type DatosTest, type Intento } from '@/lib/cronometro/test'
 import {
   atras, empezar, ESTADO_INICIAL, faseFallo, leerGuardado, minutosReales, noPuedoMas, pausar, reabrir, restanteS, siguiente,
   terminar, tick, transcurridoMs, type EstadoReloj,
@@ -20,6 +20,7 @@ import type { PosicionTemporada } from '@/lib/datos/temporada'
 import { DONDE_SE_HACE, NOMBRE_TIPO } from '@/lib/nombres'
 import { FormularioRegistro } from '@/app/(app)/_hoy/FormularioRegistro'
 import { FormularioIntento } from './FormularioIntento'
+import { FormularioResultadoCasa } from './FormularioResultadoCasa'
 import { FormularioResultadoTest } from './FormularioResultadoTest'
 
 // Fondo de cada fase (contraste AA comprobado con lib/ui/contraste.ts: fondo sobre ámbar 10,4:1 y sobre lima 14,3:1;
@@ -96,7 +97,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   posicion: PosicionTemporada | null
 }) {
   const clave = `cronometro:${plan.sesion.id}`
-  // Test de dedos guiado: peso, intentos y carga del 7:3. Las demás sesiones no usan nada de esto.
+  // Test de dedos guiado: peso e intentos. Las demás sesiones no usan nada de esto.
   const esTest = plan.sesion.tipo === 'evaluacion-dedos'
   const claveTest = `${clave}:test`
   const nIntentos = useMemo(() => pasos.filter((p) => p.tipo === 'colgado' && p.intento).length, [pasos])
@@ -360,7 +361,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   if (estado.terminado || !paso) {
     // Ya hay evaluación de hoy (de antes, o guardada aquí y luego se volvió a la sesión): no se ofrece otra.
     const yaEvaluado = (evaluacionAlEntrar || resultadoTest === 'antes') && resultadoTest !== 'en pantalla'
-    // Sin 7:3 la sesión acaba en el colgado del último intento: se apunta aquí.
+    // Sin el colgado en 30 mm ni el power slap, la sesión acaba en el colgado del último intento: se apunta aquí.
     const ultimo = esTest && !yaEvaluado && resultadoTest === 'no' ? intentoAbierto(pasos, pasos.length) : null
     return (
       <div className="space-y-4">
@@ -387,11 +388,13 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
               hoy={hoy}
               pesoKg={test.pesoKg}
               lastreKg={mejor}
-              resistenciaS={estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
+              colgadoS={estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
             />
           ) : (
             <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Progreso si quieres.</p>
           )
+        ) : plan.sesion.tipo === 'test-casa' ? (
+          <FormularioResultadoCasa hoy={hoy} />
         ) : null}
         <FormularioRegistro
           sesion={plan.sesion}
@@ -406,13 +409,12 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   const siguientePaso = pasos[estado.indice + 1]
   const fondo = FONDO[fallo ? fallo.fase : paso.tipo]
   const abierto = esTest ? intentoAbierto(pasos, estado.indice) : null
-  // La carga del 7:3 sale del mejor intento de hoy, en el propio 7:3 y en su «Prepárate».
-  const es73 = paso.tipo === 'fallo' || (paso.tipo === 'preparate' && siguientePaso?.tipo === 'fallo')
-  const l73 = esTest && es73 && mejor !== null ? lastre73(hoy, test.pesoKg, mejor) : null
   const fase = fallo ? fallo.fase : paso.tipo
   // La acción principal de cada estado (la única en lima): en pausa, seguir; en marcha, la que hace avanzar el paso
   // («Hecho», «No puedo más») o, en los pasos con reloj, la pausa.
   const escalando = paso.tipo === 'fallo' && paso.escalando === true
+  // Colgado continuo (colgado en 30 mm del test): el reloj cuenta hacia arriba, sin repeticiones.
+  const continuo = paso.tipo === 'fallo' && paso.continuo === true
   // Repetición (o vuelta) en curso de un `fallo` con máximo: «Rep 7 de 24», «Vuelta 3 de 10».
   const rep = paso.tipo === 'fallo' && paso.maxRepeticiones
     ? Math.min(paso.maxRepeticiones, Math.floor(ms / ((paso.trabajoS + paso.descansoS) * 1000)) + 1)
@@ -449,7 +451,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           {escalando ? (fallo?.fase === 'colgado' ? 'Escalando' : 'Descanso') : NOMBRE_FASE[fase]}
           {fallo?.fase === 'colgado' && !escalando && (
             <span className="block pt-1 text-lg tracking-wide">
-              {rep !== null && paso.tipo === 'fallo' ? `Rep ${rep} de ${paso.maxRepeticiones}` : 'hasta el fallo'}
+              {rep !== null && paso.tipo === 'fallo' ? `Rep ${rep} de ${paso.maxRepeticiones}` : continuo ? 'hasta soltar' : 'hasta el fallo'}
             </span>
           )}
         </h1>
@@ -462,7 +464,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           <>
             <p className={CIFRA}>{mmss(fallo.colgadoS)}</p>
             <p className="text-sm font-medium">colgado en total</p>
-            <p className="font-titular text-4xl font-bold tabular-nums">{fallo.fase === 'colgado' ? 'Cuelga' : 'Descansa'}: {fallo.restanteS} s</p>
+            {!continuo && <p className="font-titular text-4xl font-bold tabular-nums">{fallo.fase === 'colgado' ? 'Cuelga' : 'Descansa'}: {fallo.restanteS} s</p>}
           </>
         ) : restante !== null ? (
           <p className={CIFRA}>{mmss(restante)}</p>
@@ -473,9 +475,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
             {paso.titulo}
           </p>
         )}
-        {l73 !== null
-          ? <p className="text-lg font-medium">Lastre para el 7:3: {textoLastre(l73)}</p>
-          : 'carga' in paso && paso.carga && <p className="text-lg font-medium">{paso.carga}</p>}
+        {'carga' in paso && paso.carga && <p className="text-lg font-medium">{paso.carga}</p>}
         {paso.tipo === 'manual' && paso.notas && <p>{paso.notas}</p>}
         {paso.tipo === 'bloque' && (
           <ul className="space-y-0.5 text-lg">{paso.detalle.map((d, i) => <li key={`${d}-${i}`}>{d}</li>)}</ul>

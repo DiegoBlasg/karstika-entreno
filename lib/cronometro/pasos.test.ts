@@ -61,17 +61,20 @@ describe('pasosDeSesion', () => {
       if (ps[0]!.tipo === 'bloque') expect(ps[0]!.detalle[0]).toContain(pl.bloques[0]!.ejercicios[0]!.nombre)
     }
   })
-  it('test de dedos: 3 intentos de 10 s con 3 min entre ellos y el 7:3 hasta el fallo', () => {
+  it('test de dedos: 3 intentos de 10 s con 3 min entre ellos, el colgado continuo en 30 mm y 3 power slaps', () => {
     const ps = pasosDeSesion(plan('evaluacion-dedos', CASA))
     expect(tipos(ps)).toEqual([
       'bloque', 'bloque',
       'preparate', 'colgado', 'descanso', 'colgado', 'descanso', 'colgado',
       'bloque',
       'preparate', 'fallo',
+      'manual', 'manual', 'manual',
     ])
     expect(ps[3]).toMatchObject({ segundos: 10, titulo: 'Intento 1 de 3' })
     expect(ps[4]).toMatchObject({ segundos: 180 })
-    expect(ps[10]).toMatchObject({ tipo: 'fallo', trabajoS: 7, descansoS: 3 })
+    expect(ps[10]).toMatchObject({ tipo: 'fallo', trabajoS: 600, descansoS: 0, continuo: true })
+    expect(segundosDe(ps[10]!)).toBeNull()
+    expect(ps[11]).toMatchObject({ tipo: 'manual', titulo: expect.stringMatching(/^Power slap.*serie 1 de 3$/) })
   })
   it('los segundos con tiempo de cada bloque no superan sus minutos', () => {
     const casos: [TipoSesion, Contexto][] = [
@@ -122,10 +125,10 @@ describe('pasosDeSesion: fichas de «Cómo se hace»', () => {
     expect(ps.length).toBeGreaterThan(0)
     for (const p of ps) expect(p.fichas, p.titulo).toEqual(['repeaters-7-3'])
   })
-  it('el test: la máxima y el 7:3 enlazan a su ficha', () => {
+  it('el test: la máxima y el colgado enlazan a su ficha', () => {
     const ps = pasosDeSesion(plan('evaluacion-dedos', ROCO))
     expect(ps.find((p) => p.tipo === 'colgado' && p.intento)!.fichas).toEqual(['suspension-maxima-10s'])
-    expect(ps.find((p) => p.tipo === 'fallo')!.fichas).toEqual(['test-7-3-fallo'])
+    expect(ps.find((p) => p.tipo === 'fallo')!.fichas).toEqual(['colgado-30mm'])
   })
   it('sin ficha no hay campo `fichas`', () => {
     const pl: SesionPlan = {
