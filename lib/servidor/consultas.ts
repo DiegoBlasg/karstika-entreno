@@ -1,16 +1,17 @@
 import { redirect } from 'next/navigation'
 import type {
-  DatosAtleta, FilaAlta, FilaChequeo, FilaConsejo, FilaEvaluacion, FilaHueco, FilaIntento, FilaPerfil, FilaRegistro, FilaSesion, PerfilNuevo,
+  DatosAtleta, FilaAlta, FilaChequeo, FilaConsejo, FilaEvaluacion, FilaHueco, FilaIntento, FilaPerfil, FilaPruebaCasa, FilaRegistro, FilaSesion,
+  PerfilNuevo,
 } from '../datos/filas'
 import { bd, type Sql } from './bd'
 
 // Una sola transacción de lectura para tener una foto coherente. Fechas como texto 'AAAA-MM-DD'.
 export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
-  const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos, huecos] = await sql.transaction(
+  const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos, huecos, pruebasCasa] = await sql.transaction(
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
             objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, dias_semana, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
-      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, creada_en::text as creada_en from evaluaciones order by fecha`,
+      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, power_slap_cm, creada_en::text as creada_en from evaluaciones order by fecha`,
       sql`select id::text as id, fecha::text as fecha, sesion, propuesta, origen from sesiones order by fecha, creada_en`,
       sql`select sesion_id::text as sesion_id, rpe, duracion_min, molestias, registrado_en::text as registrado_en, freno, encadene from registros`,
       sql`select fecha::text as fecha, sueno, fatiga, ganas, molestias from chequeos order by fecha`,
@@ -18,6 +19,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
       sql`select consejo_id, fecha::text as fecha from consejos_mostrados order by fecha`,
       sql`select id::text as id, sesion_id::text as sesion_id, fecha::text as fecha, encadenado, motivo_caida from intentos_limite order by fecha`,
       sql`select id::text as id, fecha::text as fecha, inicio_min, compania, lugar, minutos from huecos order by fecha, inicio_min`,
+      sql`select id::text as id, fecha::text as fecha, dominadas, cadera_cm from pruebas_casa order by fecha`,
     ],
     { readOnly: true },
   )
@@ -33,6 +35,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
     consejos: consejos as FilaConsejo[],
     intentos: intentos as FilaIntento[],
     huecos: huecos as FilaHueco[],
+    pruebasCasa: pruebasCasa as FilaPruebaCasa[],
   }
 }
 
@@ -53,8 +56,16 @@ export async function guardarPerfilBd(sql: Sql, f: PerfilNuevo): Promise<void> {
 }
 
 export async function insertarEvaluacion(sql: Sql, e: FilaEvaluacion): Promise<void> {
-  await sql`insert into evaluaciones (id, fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica)
-    values (${e.id}, ${e.fecha}, ${e.peso_corporal_kg}, ${e.lastre_kg}, ${e.resistencia_s}, ${e.tecnica})`
+  await sql`insert into evaluaciones (id, fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, power_slap_cm)
+    values (${e.id}, ${e.fecha}, ${e.peso_corporal_kg}, ${e.lastre_kg}, ${e.resistencia_s}, ${e.tecnica}, ${e.colgado_30_s ?? null}, ${e.power_slap_cm ?? null})`
+}
+
+export async function insertarPruebaCasa(sql: Sql, p: FilaPruebaCasa): Promise<void> {
+  await sql`insert into pruebas_casa (id, fecha, dominadas, cadera_cm) values (${p.id}, ${p.fecha}, ${p.dominadas}, ${p.cadera_cm})`
+}
+
+export async function borrarPruebaCasaBd(sql: Sql, id: string): Promise<void> {
+  await sql`delete from pruebas_casa where id = ${id}`
 }
 
 export async function borrarEvaluacionBd(sql: Sql, id: string): Promise<void> {

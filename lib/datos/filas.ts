@@ -25,7 +25,17 @@ export interface FilaEvaluacion {
   lastre_kg: number
   resistencia_s: number | null
   tecnica: number | null
+  colgado_30_s?: number | null   // colgado continuo en 30 mm a peso corporal (P-24); la base siempre lo devuelve
+  power_slap_cm?: number | null
   creada_en?: string   // cuándo se apuntó (la base siempre lo devuelve)
+}
+
+// El «test en casa»: dominadas máximas y apertura de cadera (menos cm, más apertura).
+export interface FilaPruebaCasa {
+  id: string
+  fecha: string
+  dominadas: number | null
+  cadera_cm: number | null
 }
 
 export interface FilaSesion {
@@ -95,4 +105,5 @@ export interface DatosAtleta {
   consejos: FilaConsejo[]
   intentos: FilaIntento[]
   huecos: FilaHueco[]
+  pruebasCasa?: FilaPruebaCasa[]   // la base siempre las devuelve; opcional para los datos construidos a mano
 }
