@@ -129,6 +129,12 @@ describe('VALORES del diagnóstico', () => {
     expect(columnas('P-73')[2]).toMatch(/excéntricas 3 × 3-5 bajadas de 3-5 s con 2 min; 20 min/)
     expect(VALORES['P-73']).toMatchObject({ minutos: 20, explosivasSeries: 4, explosivasDescansoMin: 3, excentricasSeries: 3, excentricasDescansoMin: 2 })
   })
+  it('P-74 coincide con el documento', () => {
+    expect(columnas('P-74')[2]).toMatch(/las 6 semanas anteriores/)
+    expect(columnas('P-74')[2]).toMatch(/con menos de 3 semanas de historial, el mínimo del rango/)
+    expect(VALORES['P-74']).toEqual({ semanasHistorial: 6, semanasMinimas: 3, vecesHabitual: 2 })
+    expect(columnas('P-74')[2]).toMatch(/habitual si se repite en al menos 2 semanas/)
+  })
   it('P-72 coincide con el documento', () => {
     expect(columnas('P-72')[2]).toMatch(/^Sesión suave de core y movilidad de 20-30 min/)
     expect(VALORES['P-72']).toEqual({ minutosMin: 20, minutosMax: 30 })

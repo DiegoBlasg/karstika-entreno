@@ -83,3 +83,16 @@ test('Progreso: apuntar un test lleva a la reunión', async ({ page }) => {
   await page.getByRole('link', { name: 'Seguir escalando' }).click()
   await expect(page).toHaveURL(/\/via$/)
 })
+
+test('Semana invita a decir cuántos días entrenas y deja de hacerlo al contestar en Yo', async ({ page }) => {
+  await page.goto('/semana')
+  await expect(page.getByText(/^Dime en Yo cuántos días sueles entrenar/)).toBeVisible()
+  await page.getByRole('link', { name: 'Ir a Yo' }).click()
+  await expect(page).toHaveURL(/\/perfil$/)
+  await page.getByLabel('3–4').check()
+  await page.getByRole('button', { name: 'Guardar perfil' }).click()
+  await expect(page.getByText('Perfil guardado.')).toBeVisible()
+  await page.goto('/semana')
+  await expect(page.getByRole('heading', { name: 'Tu semana' })).toBeVisible()
+  await expect(page.getByText(/^Dime en Yo cuántos días sueles entrenar/)).toHaveCount(0)
+})

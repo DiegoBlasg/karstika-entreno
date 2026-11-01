@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { AvisoMedico } from '@/components/AvisoMedico'
 import { BOTON, CAMPO } from '@/components/estilos'
 import { Etiqueta } from '@/components/ui/Etiqueta'
+import { Opciones } from '@/components/ui/Opciones'
 import { Tarjeta } from '@/components/ui/Tarjeta'
 import type { FilaPerfil } from '@/lib/datos/filas'
 import type { EstadoAccion } from '@/lib/estado'
@@ -28,6 +29,9 @@ export function FormularioPerfil({ perfil }: { perfil: FilaPerfil | null }) {
         <p className="text-xs text-texto-2">Solo para tu registro: el entrenador no lo tiene en cuenta; usa las molestias del chequeo y del registro.</p>
         <label className="block">Inicio de la temporada<input type="date" name="inicio_temporada" required defaultValue={perfil?.inicio_temporada ?? '2026-11-02'} className={CAMPO} /></label>
         <p className="text-xs text-texto-2">La temporada cuenta por semanas de lunes a domingo: si eliges un jueves, empieza el lunes de esa semana y ese jueves ya es la semana 1.</p>
+        <Opciones nombre="dias_semana" leyenda="¿Cuántos días sueles entrenar por semana?" valor={perfil?.dias_semana ?? undefined} columnas={3}
+          opciones={[{ valor: '1', texto: '1' }, { valor: '2', texto: '2' }, { valor: '3-4', texto: '3–4' }, { valor: '5-6', texto: '5–6' }, { valor: 'todos', texto: 'Todos' }]} />
+        <p className="text-xs text-texto-2">Con esto y lo que vas haciendo, la app supone el resto de tu semana al generar un entreno, para repartir bien la carga.</p>
         <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="multipresa_en_casa" defaultChecked={perfil?.multipresa_en_casa ?? false} className={CASILLA} /> Tengo multipresa en casa</label>
         <label className="block">Fecha objetivo<input type="date" name="objetivo_temporada" required defaultValue={perfil?.objetivo_temporada ?? '2027-10-04'} className={CAMPO} /></label>
         {perfil && <p className="text-xs text-texto-2">Cambiar las fechas replanifica toda la temporada.</p>}
