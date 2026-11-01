@@ -10,7 +10,8 @@ import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
 import { entero, fecha, mensajeDe, numero, numeroOpcional, texto, textoOpcional } from '@/lib/formulario'
-import { borrarEvaluacionBd, borrarPruebaCasaBd, insertarEvaluacion, insertarPruebaCasa, requerirDatos } from '@/lib/servidor/consultas'
+import { escaladaSuelta } from '@/lib/escaladas/formulario'
+import { borrarEscaladaBd, borrarEvaluacionBd, borrarPruebaCasaBd, insertarEscalada, insertarEvaluacion, insertarPruebaCasa, requerirDatos } from '@/lib/servidor/consultas'
 
 export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const { sql, datos } = await requerirDatos()
@@ -94,4 +95,34 @@ export async function borrarPruebaCasa(_previo: EstadoAccion, fd: FormData): Pro
   }
   revalidatePath('/progreso')
   return { ok: 'Test en casa borrado.' }
+}
+
+// Una escalada suelta (encadene o día de pegues a un proyecto), de hoy o de los 30 días anteriores.
+export async function guardarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const { sql } = await requerirDatos()
+  let fila
+  try {
+    fila = escaladaSuelta(fd, ahoraMadrid(new Date()).fecha)
+  } catch (e) {
+    return { error: mensajeDe(e) }
+  }
+  try {
+    await insertarEscalada(sql, fila)
+  } catch (e) {
+    return { error: `No se ha podido guardar la escalada: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/progreso')
+  return { ok: 'Escalada apuntada.' }
+}
+
+export async function borrarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const { sql } = await requerirDatos()
+  try {
+    await borrarEscaladaBd(sql, texto(fd, 'id', 'La escalada'))
+  } catch (e) {
+    return { error: `No se ha podido borrar la escalada: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/progreso')
+  revalidatePath('/')
+  return { ok: 'Escalada borrada.' }
 }

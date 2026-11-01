@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Freno } from '@/motor'
 import { Opciones } from '@/components/ui/Opciones'
 import { FRENOS, NOMBRE_FRENO } from '@/lib/nombres'
 
 // Al terminar una sesión al límite: una sola pregunta (P-69) y, aparte, si se encadenó algo. Las dos opcionales: una
 // respuesta tocada por error se puede quitar. La casilla va como las Opciones: el input real encima y transparente.
-export function CamposFreno({ freno, encadene }: { freno?: Freno | null; encadene?: boolean }) {
+// `encadenes`: los campos de qué se encadenó, que aparecen al marcar la casilla.
+export function CamposFreno({ freno, encadene, encadenes }: { freno?: Freno | null; encadene?: boolean; encadenes?: ReactNode }) {
   const [elegido, setElegido] = useState<string>(freno ?? '')
   const [encadenado, setEncadenado] = useState(encadene ?? false)
   return (
@@ -34,6 +35,7 @@ export function CamposFreno({ freno, encadene }: { freno?: Freno | null; encaden
           {encadenado ? '✓ ' : ''}Hoy encadené algo al límite
         </span>
       </label>
+      {encadenado && encadenes}
     </div>
   )
 }
