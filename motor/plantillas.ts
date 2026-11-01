@@ -448,7 +448,7 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
         minutos: TEST_RESISTENCIA_MIN,
         ejercicios: [
           {
-            nombre: `Colgado continuo en canto de ${regletaMm} mm a peso corporal, hasta soltar`,
+            nombre: `Colgado continuo a dos manos en canto de ${regletaMm} mm a peso corporal, hasta soltar`,
             trabajoS: COLGADO_TOPE_S,
             hastaFallo: true,
             continuo: true,
@@ -468,17 +468,18 @@ function construirEvaluacion(p: Peticion): SesionPlan | null {
         minutos: POWER_SLAP_MIN,
         ejercicios: [
           {
-            nombre: 'Power slap: dominada explosiva y palmada lo más alto posible, 3 intentos',
+            nombre: 'Power slap',
             series: 3,
-            cargaTexto: 'Vale el mejor intento; descansa 1 min entre intentos',
-            notas: 'Desde colgado con los brazos estirados en barra o presas grandes, tira explosivo y da una palmada en la pared sobre una cinta métrica. Apunta los cm por encima de la mano. Después, puntúa tu técnica de 1 a 7 (paso alto, drop knee, talón, pies precisos) sobre un vídeo tuyo.',
+            descansoSeriesS: 60,
+            cargaTexto: '3 intentos con 1 min de descanso; vale el mejor',
+            notas: 'Agarre estrecho, a la anchura de los hombros, en barra o presas grandes. Desde los brazos estirados, tira explosivo y da una palmada en la cinta métrica de la pared. Apunta los cm por encima de la mano.',
             ficha: 'power-slap',
           },
         ],
         explicacion: explicar(
           'plantilla.power-slap',
           ['P-19', 'P-27'],
-          'Power slap: mide la potencia de tirón con una cinta métrica (CCI 0,95-0,98, r 0,69-0,79 con el grado; Faggian 2024). Cambio real a partir de 10 cm. Y la autoevaluación técnica de 1 a 7.',
+          'Power slap: mide la potencia de tirón con una cinta métrica (CCI 0,95-0,98; con agarre estrecho, r 0,69-0,79 con el grado; Faggian 2024). Cambio real a partir de 10 cm o un 15 %. Al guardar el resultado, puntúa también tu técnica de 1 a 7 sobre un vídeo tuyo.',
         ),
       },
     )
@@ -1135,7 +1136,7 @@ function construirTestCasa(p: Peticion): SesionPlan | null {
     {
       nombre: 'Dominadas máximas',
       minutos: resto,
-      ejercicios: [{ nombre: 'Dominadas estrictas seguidas, hasta no poder hacer otra completa', series: 1, cargaTexto: 'Peso corporal; cuenta solo las completas', ficha: 'dominadas-maximas' }],
+      ejercicios: [{ nombre: 'Dominadas estrictas seguidas, hasta no poder hacer otra completa', cargaTexto: 'Peso corporal; cuenta solo las completas', ficha: 'dominadas-maximas' }],
       explicacion: explicar(
         'plantilla.dominadas-maximas',
         ['P-19'],

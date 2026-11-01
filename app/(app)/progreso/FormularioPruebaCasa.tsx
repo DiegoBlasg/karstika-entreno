@@ -6,11 +6,12 @@ import type { EstadoAccion } from '@/lib/estado'
 import { guardarPruebaCasa } from './acciones'
 
 // El test en casa apuntado a mano: dominadas máximas, apertura de cadera o las dos.
-export function FormularioPruebaCasa({ hoy }: { hoy: string }) {
+// `fechaInicial`: la del último test en casa registrado sin resultado, o hoy.
+export function FormularioPruebaCasa({ hoy, fechaInicial }: { hoy: string; fechaInicial: string }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarPruebaCasa, null)
   return (
     <form action={accion} className="space-y-4">
-      <label className="block">Fecha<input type="date" name="fecha" max={hoy} defaultValue={hoy} required className={CAMPO} /></label>
+      <label className="block">Fecha<input type="date" name="fecha" max={hoy} defaultValue={fechaInicial} required className={CAMPO} /></label>
       <label className="block">Dominadas estrictas seguidas<input name="dominadas" inputMode="numeric" className={CAMPO} /></label>
       <label className="block">
         Apertura de cadera (cm)

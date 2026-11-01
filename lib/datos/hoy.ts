@@ -68,3 +68,13 @@ export function testsSinResultado(d: DatosAtleta, hoy: string): string[] {
     .map((s) => s.fecha)
   return [...new Set(fechas)].sort()
 }
+
+// Lo mismo para el test en casa: días con la sesión registrada (hasta hoy) y sin resultado apuntado.
+export function testsCasaSinResultado(d: DatosAtleta, hoy: string): string[] {
+  const registradas = new Set(d.registros.map((r) => r.sesion_id))
+  const conResultado = new Set((d.pruebasCasa ?? []).map((c) => c.fecha))
+  const fechas = d.sesiones
+    .filter((s) => s.sesion.tipo === 'test-casa' && s.fecha <= hoy && registradas.has(s.id) && !conResultado.has(s.fecha))
+    .map((s) => s.fecha)
+  return [...new Set(fechas)].sort()
+}

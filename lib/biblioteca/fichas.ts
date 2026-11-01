@@ -159,7 +159,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
     pasos: [
       'Descansa unos minutos tras la suspensión máxima.',
       ...PASOS_COLGARSE,
-      'Cuélgate sin lastre y pulsa empezar: el cronómetro cuenta hacia arriba.',
+      'Cuélgate a dos manos, sin lastre, cuando acabe la cuenta atrás de 10 s: el cronómetro cuenta hacia arriba.',
       'Aguanta hasta soltar o hasta perder el semiarqueado y pulsa «No puedo más».',
       `Si no llegas a ${T30.minimoS} s, descansa 3 min y repítelo quitando peso con polea o apoyando un poco los pies; apunta ese tiempo y hazlo igual la próxima vez.`,
       NOVEL,
@@ -178,16 +178,16 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'power-slap': {
     id: 'power-slap',
     titulo: 'Power slap',
-    paraQue: `Medir la potencia de tirón con una cinta métrica: una dominada explosiva y una palmada lo más alto posible. Es muy repetible (CCI 0,95-0,98; Faggian 2024) y se relaciona con el grado (r 0,69-0,79); cambio real a partir de ${VALORES['P-19'].powerSlapCm} cm.`,
+    paraQue: `Medir la potencia de tirón con una cinta métrica: una dominada explosiva y una palmada lo más alto posible. Es muy repetible (CCI 0,95-0,98; Faggian 2024) y, con agarre estrecho, se relaciona con el grado (r 0,69-0,79); cambio real a partir de ${VALORES['P-19'].powerSlapCm} cm o un ${VALORES['P-19'].powerSlapPct} %.`,
     material: 'Barra o presas grandes junto a una pared, cinta métrica pegada en vertical y tiza en la mano',
     pasos: [
       'Pega la cinta métrica en la pared, con el 0 a la altura de la mano que cuelga.',
-      'Cuélgate con los brazos estirados y las escápulas activas.',
+      'Cuélgate con agarre estrecho (manos a la anchura de los hombros), los brazos estirados y las escápulas activas.',
       'Tira lo más explosivo que puedas y, arriba, suelta una mano y da una palmada en la cinta.',
       'Apunta los cm de la marca por encima de la mano. Descansa 1 min.',
       '3 intentos: vale el mejor.',
     ],
-    errores: ['Balancearte o patear para subir más.', 'Cambiar la altura del 0 o de agarre entre tests.'],
+    errores: ['Balancearte o patear para subir más.', 'Cambiar la altura del 0 o el agarre entre tests: no serían comparables.'],
     paraSi: ['Notas el codo o el hombro: para.', ...PARA_SI],
     parametros: ['P-19', 'P-39', ...SEGURIDAD],
     dibujo: 'dominada',

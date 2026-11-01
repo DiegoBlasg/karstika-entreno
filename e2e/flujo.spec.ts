@@ -138,6 +138,7 @@ test('test guiado: apuntar el intento, colgado continuo en 30 mm y guardar el re
     bloques: [
       { nombre: 'Test máx', minutos: 5, explicacion, ejercicios: [{ nombre: 'Suspensión máxima', series: 1, trabajoS: 10, descansoSeriesS: 180, cargaTexto: 'Máximo' }] },
       { nombre: 'Resistencia', minutos: 5, explicacion, ejercicios: [{ nombre: 'Colgado en 30 mm', trabajoS: 600, hastaFallo: true, continuo: true, cargaTexto: 'Peso corporal, sin lastre' }] },
+      { nombre: 'Power slap', minutos: 5, explicacion, ejercicios: [{ nombre: 'Power slap', series: 1, cargaTexto: 'Vale el mejor', ficha: 'power-slap' }] },
     ],
     explicaciones: [explicacion],
   }
@@ -166,8 +167,10 @@ test('test guiado: apuntar el intento, colgado continuo en 30 mm y guardar el re
   await expect(page.getByText('hasta soltar')).toBeVisible()
   await expect(page.getByText(/Cuelga:/)).toHaveCount(0)
   await page.getByRole('button', { name: 'No puedo más' }).click()
+  await page.getByRole('button', { name: 'Hecho' }).click() // power slap
   await expect(page.getByText('Resultado del test', { exact: true })).toBeVisible()
   await page.getByLabel(/segundos colgado en 30 mm/).fill('35')
+  await expect(page.getByLabel(/Con descarga/)).not.toBeChecked()
   await page.getByLabel(/Power slap/).fill('45')
   await page.getByRole('button', { name: 'Guardar resultado' }).click()
   await expect(page.getByText('Evaluación guardada.')).toBeVisible()

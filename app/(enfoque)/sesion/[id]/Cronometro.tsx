@@ -99,6 +99,9 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   const clave = `cronometro:${plan.sesion.id}`
   // Test de dedos guiado: peso e intentos. Las demás sesiones no usan nada de esto.
   const esTest = plan.sesion.tipo === 'evaluacion-dedos'
+  // Qué partes del test trae el plan (sin tiempo, solo la máxima): el resultado pide solo esas.
+  const conColgado = pasos.some((p) => p.tipo === 'fallo' && p.continuo === true)
+  const conPowerSlap = pasos.some((p) => (p.fichas ?? []).includes('power-slap'))
   const claveTest = `${clave}:test`
   const nIntentos = useMemo(() => pasos.filter((p) => p.tipo === 'colgado' && p.intento).length, [pasos])
   const [test, setTest] = useState<DatosTest>({ pesoKg: pesoInicial, intentos: [] })
@@ -222,7 +225,9 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
     if (!estado.enMarcha || estado.terminado || !paso) return
     let fase = `${reinicios.current}:${estado.indice}`
     let tipo: Paso['tipo'] = paso.tipo
-    if (paso.tipo === 'fallo' && fallo) {
+    // El colgado continuo es una sola fase: solo el pitido de inicio, sin cuenta atrás (el tope no es un final).
+    if (paso.tipo === 'fallo' && paso.continuo) tipo = 'colgado'
+    else if (paso.tipo === 'fallo' && fallo) {
       fase += `:${Math.floor(ms / ((paso.trabajoS + paso.descansoS) * 1000))}:${fallo.fase}`
       tipo = fallo.fase
     }
@@ -239,6 +244,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
         return
       }
     }
+    if (paso.tipo === 'fallo' && paso.continuo) return
     if (restante !== null && restante >= 1 && restante <= 3 && s.corto !== `${fase}:${restante}`) {
       s.corto = `${fase}:${restante}`
       if (!silencio) pitidos.corto()
@@ -388,7 +394,10 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
               hoy={hoy}
               pesoKg={test.pesoKg}
               lastreKg={mejor}
-              colgadoS={estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
+              // Solo con el colgado continuo de ahora: el `fallo` de un plan guardado antes (7:3) no es un colgado en 30 mm.
+              conColgado={conColgado}
+              conPowerSlap={conPowerSlap}
+              colgadoS={conColgado && estado.colgadoFalloS !== null && estado.colgadoFalloS >= 1 ? estado.colgadoFalloS : null}
             />
           ) : (
             <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Progreso si quieres.</p>

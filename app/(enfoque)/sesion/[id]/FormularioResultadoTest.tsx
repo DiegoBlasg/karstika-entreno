@@ -8,8 +8,8 @@ import { guardarEvaluacion } from '@/app/(app)/progreso/acciones'
 
 // Guarda la evaluación de hoy con la misma acción (y las mismas validaciones) que la pantalla Progreso.
 // El lastre es texto normal, no decimal, para que en iPhone se pueda escribir el signo menos al corregirlo.
-export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, colgadoS, alGuardar }: {
-  hoy: string; pesoKg: number; lastreKg: number; colgadoS: number | null; alGuardar: () => void
+export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, colgadoS, conColgado, conPowerSlap, alGuardar }: {
+  hoy: string; pesoKg: number; lastreKg: number; colgadoS: number | null; conColgado: boolean; conPowerSlap: boolean; alGuardar: () => void
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarEvaluacion, null)
   useEffect(() => {
@@ -22,8 +22,19 @@ export function FormularioResultadoTest({ hoy, pesoKg, lastreKg, colgadoS, alGua
       <input type="hidden" name="fecha" value={hoy} />
       <label className="block">Peso hoy (kg)<input name="peso_corporal_kg" type="text" inputMode="decimal" defaultValue={fmt(pesoKg)} required className={CAMPO} /></label>
       <label className="block">Lastre del mejor intento (kg, negativo = descarga)<input name="lastre_kg" type="text" defaultValue={fmt(lastreKg)} required className={CAMPO} /></label>
-      <label className="block">Resistencia: segundos colgado en 30 mm (opcional)<input name="colgado_30_s" type="text" inputMode="decimal" defaultValue={colgadoS ?? ''} className={CAMPO} /></label>
-      <label className="block">Power slap: cm por encima de la mano, el mejor (opcional)<input name="power_slap_cm" type="text" inputMode="decimal" className={CAMPO} /></label>
+      {conColgado && (
+        <>
+          <label className="block">
+            Resistencia: segundos colgado en 30 mm (opcional)
+            <input name="colgado_30_s" type="text" inputMode="decimal" defaultValue={colgadoS ?? ''} className={CAMPO} />
+            <span className="text-xs text-texto-2">Si no llegaste a 10 s y lo repetiste con descarga, apunta ese tiempo y marca la casilla.</span>
+          </label>
+          <label className="flex min-h-11 items-center gap-2"><input type="checkbox" name="colgado_con_descarga" className="size-5" /> Con descarga (polea o pies)</label>
+        </>
+      )}
+      {conPowerSlap && (
+        <label className="block">Power slap: cm por encima de la mano, el mejor de 3 (opcional)<input name="power_slap_cm" type="text" inputMode="decimal" className={CAMPO} /></label>
+      )}
       <label className="block">
         Técnica de 1 a 7 (opcional)
         <select name="tecnica" defaultValue="" className={CAMPO}>

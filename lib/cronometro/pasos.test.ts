@@ -68,13 +68,14 @@ describe('pasosDeSesion', () => {
       'preparate', 'colgado', 'descanso', 'colgado', 'descanso', 'colgado',
       'bloque',
       'preparate', 'fallo',
-      'manual', 'manual', 'manual',
+      'manual', 'descanso', 'manual', 'descanso', 'manual',
     ])
     expect(ps[3]).toMatchObject({ segundos: 10, titulo: 'Intento 1 de 3' })
     expect(ps[4]).toMatchObject({ segundos: 180 })
     expect(ps[10]).toMatchObject({ tipo: 'fallo', trabajoS: 600, descansoS: 0, continuo: true })
     expect(segundosDe(ps[10]!)).toBeNull()
-    expect(ps[11]).toMatchObject({ tipo: 'manual', titulo: expect.stringMatching(/^Power slap.*serie 1 de 3$/) })
+    expect(ps[11]).toMatchObject({ tipo: 'manual', titulo: 'Power slap · serie 1 de 3' })
+    expect(ps[12]).toMatchObject({ tipo: 'descanso', segundos: 60 })
   })
   it('los segundos con tiempo de cada bloque no superan sus minutos', () => {
     const casos: [TipoSesion, Contexto][] = [

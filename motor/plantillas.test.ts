@@ -131,9 +131,10 @@ describe('evaluacion-dedos', () => {
     expect(colgado.notas).toMatch(/no llegas a 10 s.*descarga/)
     expect(plan.bloques[4]!.explicacion.parametros).toEqual(['P-19', 'P-24'])
     const slap = plan.bloques[5]!
-    expect(slap.ejercicios[0]).toMatchObject({ series: 3, ficha: 'power-slap' })
+    expect(slap.ejercicios[0]).toMatchObject({ nombre: 'Power slap', series: 3, descansoSeriesS: 60, ficha: 'power-slap' })
     expect(slap.ejercicios[0]!.trabajoS).toBeUndefined()
-    expect(slap.ejercicios[0]!.notas).toMatch(/cm por encima de la mano.*técnica de 1 a 7/)
+    expect(slap.ejercicios[0]!.notas).toMatch(/Agarre estrecho.*cm por encima de la mano/)
+    expect(slap.explicacion.motivo).toMatch(/técnica de 1 a 7/)
     expect(slap.explicacion.parametros).toEqual(['P-19', 'P-27'])
   })
   it('con 30-49 min solo el test máximo: 10 + 5 + 15 = 30', () => {
