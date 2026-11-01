@@ -20,6 +20,8 @@ const casos: [string, () => Promise<unknown>][] = [
   ['peso de 10 kg', () => sql`update perfil set peso_kg = 10`],
   ['días por semana desconocidos', () => sql`update perfil set dias_semana = '8'`],
   ['colgado de 0 s', () => sql`insert into evaluaciones (fecha, peso_corporal_kg, lastre_kg, colgado_30_s) values ('2026-11-06', 70, 10, 0)`],
+  ['colgado de más de 600 s', () => sql`insert into evaluaciones (fecha, peso_corporal_kg, lastre_kg, colgado_30_s) values ('2026-11-06', 70, 10, 601)`],
+  ['descarga sin colgado', () => sql`insert into evaluaciones (fecha, peso_corporal_kg, lastre_kg, colgado_con_descarga) values ('2026-11-06', 70, 10, true)`],
   ['power slap negativo', () => sql`insert into evaluaciones (fecha, peso_corporal_kg, lastre_kg, power_slap_cm) values ('2026-11-06', 70, 10, -5)`],
   ['test en casa vacío', () => sql`insert into pruebas_casa (fecha) values ('2026-11-06')`],
   ['test en casa con 101 dominadas', () => sql`insert into pruebas_casa (fecha, dominadas) values ('2026-11-06', 101)`],

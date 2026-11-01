@@ -38,6 +38,19 @@ describe('vistaTests', () => {
     expect(fila(v, 'dominadas')).toMatchObject({ cambio: 1, real: null })
     expect(fila(v, 'cadera')).toMatchObject({ cambio: -4, real: 'mejora' })
   })
+  it('power slap: también cuenta un 15 % aunque no llegue a 10 cm', () => {
+    const v = vistaTests(datosVacios({ evaluaciones: [ev(1, '2026-10-01', { power_slap_cm: 40 }), ev(2, '2026-11-01', { power_slap_cm: 47 })] }), '2026-11-10')
+    expect(fila(v, 'power-slap')).toMatchObject({ cambio: 7, cambioPct: expect.closeTo(17.5, 5), real: 'mejora', umbral: '10 cm o 15 %' })
+  })
+  it('el colgado se compara solo con los del mismo protocolo (con o sin descarga)', () => {
+    const v = vistaTests(datosVacios({
+      evaluaciones: [
+        ev(1, '2026-09-01', { colgado_30_s: 40 }), ev(2, '2026-10-01', { colgado_30_s: 8, colgado_con_descarga: true }), ev(3, '2026-11-01', { colgado_30_s: 42 }),
+      ],
+    }), '2026-11-10')
+    expect(fila(v, 'colgado')).toMatchObject({ ultimo: 42, cambio: 2, medidas: 2 })
+    expect(fila(v, 'colgado')?.conDescarga).toBeUndefined()
+  })
   it('tres medidas seguidas en la misma dirección cuentan como cambio real aunque cada paso sea pequeño', () => {
     const v = vistaTests(datosVacios({ pruebasCasa: [casa(1, '2026-09-01', 5, null), casa(2, '2026-10-01', 6, null), casa(3, '2026-11-01', 7, null)] }), '2026-11-10')
     expect(fila(v, 'dominadas')).toMatchObject({ cambio: 1, real: 'mejora', medidas: 3 })

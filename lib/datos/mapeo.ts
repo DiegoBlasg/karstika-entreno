@@ -13,7 +13,7 @@ export function evaluacionMotor(f: FilaEvaluacion): EvaluacionDedos {
     lastreKg: f.lastre_kg,
     ...(f.resistencia_s !== null ? { resistenciaS: f.resistencia_s } : {}),
     ...(f.tecnica !== null ? { tecnica: f.tecnica } : {}),
-    ...(f.colgado_30_s != null ? { colgado30S: f.colgado_30_s } : {}),
+    ...(f.colgado_30_s != null ? { colgado30S: f.colgado_30_s, ...(f.colgado_con_descarga ? { colgadoConDescarga: true } : {}) } : {}),
     ...(f.power_slap_cm != null ? { powerSlapCm: f.power_slap_cm } : {}),
   }
 }

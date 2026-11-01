@@ -21,12 +21,14 @@ export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Pr
       fecha: fecha(fd, 'fecha', 'La fecha'),
       peso_corporal_kg: numero(fd, 'peso_corporal_kg', 'El peso', 30, 200),
       lastre_kg: numero(fd, 'lastre_kg', 'El lastre', -100, 150),
-      resistencia_s: numeroOpcional(fd, 'resistencia_s', 'La resistencia', 1, 3600),
+      resistencia_s: null,   // el 7:3 antiguo ya no se apunta; sus datos se conservan
       tecnica: numeroOpcional(fd, 'tecnica', 'La técnica', 1, 7),
-      colgado_30_s: numeroOpcional(fd, 'colgado_30_s', 'Los segundos colgado en 30 mm', 1, 3600),
+      colgado_30_s: numeroOpcional(fd, 'colgado_30_s', 'Los segundos colgado en 30 mm', 1, 600),
+      colgado_con_descarga: fd.get('colgado_con_descarga') === 'on',
       power_slap_cm: numeroOpcional(fd, 'power_slap_cm', 'El power slap', 0, 300),
     }
     if (fila.fecha > ahoraMadrid(new Date()).fecha) return { error: 'La fecha del test no puede ser futura.' }
+    if (fila.colgado_con_descarga && fila.colgado_30_s === null) return { error: 'Marca «con descarga» solo si apuntas los segundos del colgado.' }
     validarEvaluacion(evaluacionMotor(fila))
     validarDatos(conEvaluacion(datos, fila))
   } catch (e) {

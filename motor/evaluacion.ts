@@ -8,7 +8,7 @@ const PESO_MIN_KG = 30
 const PESO_MAX_KG = 200
 const LASTRE_MIN_FRACCION = -0.6   // descarga de hasta el 60 % del peso
 const LASTRE_MAX_FRACCION = 1.0    // lastre de hasta el 100 % del peso (200 % del peso colgado)
-const RESISTENCIA_MAX_S = 600      // 10 min colgando al 60 % es imposible: casi seguro un error al teclear
+const RESISTENCIA_MAX_S = 600      // 10 min colgado (al 60 % o en 30 mm a peso corporal) es imposible: casi seguro un error al teclear
 
 function comprobar(e: EvaluacionDedos): void {
   if (!Number.isFinite(e.pesoCorporalKg) || e.pesoCorporalKg <= 0) {
@@ -24,6 +24,7 @@ function comprobar(e: EvaluacionDedos): void {
   if (e.colgado30S !== undefined && !(Number.isFinite(e.colgado30S) && e.colgado30S > 0 && e.colgado30S <= RESISTENCIA_MAX_S)) {
     throw new Error(`colgado30S debe estar entre 0 y ${RESISTENCIA_MAX_S} s: ${e.colgado30S}`)
   }
+  if (e.colgadoConDescarga && e.colgado30S === undefined) throw new Error('colgadoConDescarga sin colgado30S')
   if (e.powerSlapCm !== undefined && !(Number.isFinite(e.powerSlapCm) && e.powerSlapCm >= 0 && e.powerSlapCm <= 300)) {
     throw new Error(`powerSlapCm debe estar entre 0 y 300 cm: ${e.powerSlapCm}`)
   }

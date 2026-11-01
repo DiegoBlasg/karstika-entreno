@@ -26,6 +26,7 @@ export interface FilaEvaluacion {
   resistencia_s: number | null
   tecnica: number | null
   colgado_30_s?: number | null   // colgado continuo en 30 mm a peso corporal (P-24); la base siempre lo devuelve
+  colgado_con_descarga?: boolean  // el colgado se hizo con descarga (no llegaba a 10 s): no se compara con uno sin ella
   power_slap_cm?: number | null
   creada_en?: string   // cuándo se apuntó (la base siempre lo devuelve)
 }

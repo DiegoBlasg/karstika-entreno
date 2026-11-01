@@ -15,9 +15,10 @@ const frenos = (freno: Freno, n: number, desdeHace = 1): RespuestaFreno[] =>
 const fuerzaSubeResistenciaNo = [
   ev('2026-12-01', 20, { colgado30S: 80 }), ev('2027-01-19', 30, { colgado30S: 81 }), ev('2027-03-02', 34, { colgado30S: 80 }),
 ]
-// Tres tests: la resistencia (colgado) mejora (80 → 105 → 120 s, más del 25 %) y la fuerza no (20 → 20,5 → 21 kg: < 10 %).
+// Tres tests: la resistencia (colgado) mejora (80 → 105 → 120 s, más del 25 %) y la fuerza no (20 → 21 → 20,5 kg: < 10 % y
+// sin ir siempre en la misma dirección).
 const resistenciaSubeFuerzaNo = [
-  ev('2026-12-01', 20, { colgado30S: 80 }), ev('2027-01-19', 20.5, { colgado30S: 105 }), ev('2027-03-02', 21, { colgado30S: 120 }),
+  ev('2026-12-01', 20, { colgado30S: 80 }), ev('2027-01-19', 21, { colgado30S: 105 }), ev('2027-03-02', 20.5, { colgado30S: 120 }),
 ]
 
 describe('diagnosticar: progreso frente a la propia línea base (P-19: una medición no basta)', () => {
@@ -30,10 +31,12 @@ describe('diagnosticar: progreso frente a la propia línea base (P-19: una medic
     expect(d.progreso.fuerza.cambio).toBeCloseTo(8.7, 1) // 92/72 → 100/72
     expect(d.progreso.fuerza.mediciones).toBe(2)
   })
-  it('con 3 o más, «mejora» exige que las 2 últimas superen el 10 % frente a la primera (P-19)', () => {
+  it('con 3 o más, «mejora» exige que las 2 últimas superen el 10 % frente a la primera, o 3 seguidas en la misma dirección (P-19)', () => {
     expect(diagnosticar([ev('2026-12-01', 20), ev('2027-01-19', 30), ev('2027-03-02', 34)], [], HOY).progreso.fuerza.tendencia).toBe('mejora')
-    // La penúltima solo +6,5 %: no confirma.
-    expect(diagnosticar([ev('2026-12-01', 20), ev('2027-01-19', 26), ev('2027-03-02', 34)], [], HOY).progreso.fuerza.tendencia).toBe('sin-cambio')
+    // La última solo +6,5 % y baja respecto a la penúltima: no confirma.
+    expect(diagnosticar([ev('2026-12-01', 20), ev('2027-01-19', 30), ev('2027-03-02', 26)], [], HOY).progreso.fuerza.tendencia).toBe('sin-cambio')
+    // Pasos pequeños (+6,5 % y luego más) pero siempre hacia arriba: cuenta.
+    expect(diagnosticar([ev('2026-12-01', 20), ev('2027-01-19', 26), ev('2027-03-02', 27)], [], HOY).progreso.fuerza.tendencia).toBe('mejora')
     expect(diagnosticar([ev('2026-12-01', 20), ev('2027-01-19', 10), ev('2027-03-02', 8)], [], HOY).progreso.fuerza.tendencia).toBe('empeora')
   })
   it('la técnica (escala 1-7) se mide en puntos: mejora si las 2 últimas suben al menos 1 punto', () => {
@@ -43,6 +46,13 @@ describe('diagnosticar: progreso frente a la propia línea base (P-19: una medic
     )
     expect(d.progreso.tecnica).toMatchObject({ inicial: 3, actual: 4, cambio: 1, unidad: 'puntos', tendencia: 'mejora' })
     expect(d.explicaciones[0]!.motivo).toMatch(/\+1 punto con 3 tests/)
+  })
+  it('la resistencia sigue el protocolo del último colgado: con descarga no se compara con los de peso corporal', () => {
+    const d = diagnosticar(
+      [ev('2026-12-01', 20, { colgado30S: 80 }), ev('2027-01-19', 22, { colgado30S: 30, colgadoConDescarga: true }), ev('2027-03-02', 24, { colgado30S: 100 })],
+      [], HOY,
+    )
+    expect(d.progreso.resistencia).toMatchObject({ inicial: 80, actual: 100, mediciones: 2 })
   })
   it('la resistencia usa solo las evaluaciones que la midieron', () => {
     const d = diagnosticar(

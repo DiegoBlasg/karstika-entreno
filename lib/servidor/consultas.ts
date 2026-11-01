@@ -11,7 +11,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
             objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, dias_semana, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
-      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, power_slap_cm, creada_en::text as creada_en from evaluaciones order by fecha`,
+      sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, colgado_con_descarga, power_slap_cm, creada_en::text as creada_en from evaluaciones order by fecha`,
       sql`select id::text as id, fecha::text as fecha, sesion, propuesta, origen from sesiones order by fecha, creada_en`,
       sql`select sesion_id::text as sesion_id, rpe, duracion_min, molestias, registrado_en::text as registrado_en, freno, encadene from registros`,
       sql`select fecha::text as fecha, sueno, fatiga, ganas, molestias from chequeos order by fecha`,
@@ -56,8 +56,9 @@ export async function guardarPerfilBd(sql: Sql, f: PerfilNuevo): Promise<void> {
 }
 
 export async function insertarEvaluacion(sql: Sql, e: FilaEvaluacion): Promise<void> {
-  await sql`insert into evaluaciones (id, fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, power_slap_cm)
-    values (${e.id}, ${e.fecha}, ${e.peso_corporal_kg}, ${e.lastre_kg}, ${e.resistencia_s}, ${e.tecnica}, ${e.colgado_30_s ?? null}, ${e.power_slap_cm ?? null})`
+  await sql`insert into evaluaciones (id, fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, colgado_con_descarga, power_slap_cm)
+    values (${e.id}, ${e.fecha}, ${e.peso_corporal_kg}, ${e.lastre_kg}, ${e.resistencia_s}, ${e.tecnica}, ${e.colgado_30_s ?? null},
+      ${e.colgado_con_descarga ?? false}, ${e.power_slap_cm ?? null})`
 }
 
 export async function insertarPruebaCasa(sql: Sql, p: FilaPruebaCasa): Promise<void> {
