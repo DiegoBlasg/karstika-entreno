@@ -81,7 +81,7 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     fase,
     seguimiento,
     consejosMostrados: consejosMostradosMotor(d.consejos),
-    ...(huecos.length > 0 ? { huecos } : {}),
+    ...(huecos ? { huecos } : {}),
     ...(diagnostico.limitantes[0] ? { limitantePrincipal: diagnostico.limitantes[0] } : {}),
     ...(evaluacion ? { evaluacion } : {}),
   }

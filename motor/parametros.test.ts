@@ -132,7 +132,8 @@ describe('VALORES del diagnóstico', () => {
   it('P-74 coincide con el documento', () => {
     expect(columnas('P-74')[2]).toMatch(/las 6 semanas anteriores/)
     expect(columnas('P-74')[2]).toMatch(/con menos de 3 semanas de historial, el mínimo del rango/)
-    expect(VALORES['P-74']).toEqual({ semanasHistorial: 6, semanasMinimas: 3 })
+    expect(VALORES['P-74']).toEqual({ semanasHistorial: 6, semanasMinimas: 3, vecesHabitual: 2 })
+    expect(columnas('P-74')[2]).toMatch(/habitual si se repite en al menos 2 semanas/)
   })
   it('P-72 coincide con el documento', () => {
     expect(columnas('P-72')[2]).toMatch(/^Sesión suave de core y movilidad de 20-30 min/)
