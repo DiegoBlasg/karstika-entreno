@@ -41,6 +41,7 @@ export interface Ejercicio {
   cargaTexto: string
   notas?: string
   ficha?: string                                  // id de la ficha de la biblioteca que explica cómo se hace (lib/biblioteca)
+  fichasExtra?: string[]                          // otras fichas que ayudan (p. ej. respirar y decidir «voy» en un intento al límite)
 }
 
 export interface Bloque {

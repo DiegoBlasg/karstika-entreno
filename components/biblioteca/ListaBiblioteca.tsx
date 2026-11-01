@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { Dibujo } from '@/components/dibujos'
 import { IconoCima, IconoCuerda, IconoMultipresa } from '@/components/iconos/Escalada'
 import { ETIQUETA } from '@/components/estilos'
-import { FICHAS, GRUPOS, type FichaId, type Grupo } from '@/lib/biblioteca/fichas'
+import { FICHAS, GRUPOS, LUGARES_FICHA, NOMBRE_LUGAR_FICHA, usoFicha, type FichaId, type Grupo, type LugarFicha } from '@/lib/biblioteca/fichas'
 import { resumenMaterial } from './material'
 
 // Sin tildes ni mayúsculas, para que «rotacion» encuentre «Rotación».
@@ -13,9 +13,11 @@ const normaliza = (s: string): string => s.normalize('NFD').replace(/\p{M}/gu, '
 
 // Para las fichas sin miniatura propia.
 const ICONO_GRUPO: Record<Grupo['id'], ReactNode> = {
-  suspensiones: <IconoMultipresa size={26} />,
-  escalada: <IconoCuerda size={26} />,
-  barra: <IconoMultipresa size={26} />,
+  fuerza: <IconoMultipresa size={26} />,
+  resistencia: <IconoCuerda size={26} />,
+  potencia: <IconoMultipresa size={26} />,
+  tecnica: <IconoCuerda size={26} />,
+  cabeza: <IconoCuerda size={26} />,
   hombro: <IconoCima size={26} />,
   movilidad: <IconoCima size={26} />,
 }
@@ -38,9 +40,13 @@ const CHIP = 'inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-
 export function ListaBiblioteca() {
   const [texto, setTexto] = useState('')
   const [grupo, setGrupo] = useState<Grupo['id'] | 'todos'>('todos')
+  const [lugar, setLugar] = useState<LugarFicha | 'todos'>('todos')
   const q = normaliza(texto)
   const secciones = GRUPOS.filter((g) => grupo === 'todos' || g.id === grupo)
-    .map((g) => ({ g, ids: g.fichas.filter((id) => q === '' || normaliza(FICHAS[id].titulo).includes(q)) }))
+    .map((g) => ({
+      g,
+      ids: g.fichas.filter((id) => (q === '' || normaliza(FICHAS[id].titulo).includes(q)) && (lugar === 'todos' || LUGARES_FICHA[id].includes(lugar))),
+    }))
     .filter((s) => s.ids.length > 0)
 
   return (
@@ -50,7 +56,8 @@ export function ListaBiblioteca() {
         autoComplete="off" enterKeyHint="search"
         className="min-h-11 w-full rounded-xl border border-borde bg-superficie-2 px-3 text-base text-texto placeholder:text-texto-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso"
       />
-      <div role="group" aria-label="Filtrar por grupo" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+      <div role="group" aria-label="Filtrar por cualidad" className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-1">
+        <span aria-hidden className="w-14 shrink-0 text-xs font-medium uppercase text-texto-2">Qué</span>
         {[{ id: 'todos' as const, titulo: 'Todos' }, ...GRUPOS].map((g) => (
           <button
             key={g.id} type="button" aria-pressed={grupo === g.id} onClick={() => setGrupo(g.id)}
@@ -60,8 +67,29 @@ export function ListaBiblioteca() {
           </button>
         ))}
       </div>
+      <div role="group" aria-label="Filtrar por lugar" className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-1">
+        <span aria-hidden className="w-14 shrink-0 text-xs font-medium uppercase text-texto-2">Dónde</span>
+        {(['todos', 'rocodromo', 'roca', 'casa'] as const).map((l) => (
+          <button
+            key={l} type="button" aria-pressed={lugar === l} onClick={() => setLugar(l)}
+            className={`${CHIP} ${lugar === l ? 'bg-texto font-semibold text-fondo' : 'border border-borde text-texto'}`}
+          >
+            {l === 'todos' ? 'Todos' : NOMBRE_LUGAR_FICHA[l]}
+          </button>
+        ))}
+      </div>
       {secciones.length === 0 ? (
-        <p role="status" className="py-6 text-center text-texto-2">Ningún ejercicio con «{texto.trim()}»</p>
+        <div role="status" className="space-y-2 py-6 text-center text-texto-2">
+          <p>
+            Ningún ejercicio
+            {texto.trim() !== '' && ` con «${texto.trim()}»`}
+            {grupo !== 'todos' && ` de ${GRUPOS.find((g) => g.id === grupo)!.titulo.toLowerCase()}`}
+            {lugar !== 'todos' && ` en ${NOMBRE_LUGAR_FICHA[lugar].toLowerCase()}`}
+          </p>
+          <button type="button" onClick={() => { setTexto(''); setGrupo('todos'); setLugar('todos') }} className="inline-flex min-h-11 items-center text-progreso underline">
+            Quitar filtros
+          </button>
+        </div>
       ) : (
         secciones.map(({ g, ids }) => (
           <section key={g.id} className="space-y-1.5">
@@ -84,7 +112,9 @@ export function ListaBiblioteca() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-titular text-base font-bold uppercase leading-tight">{f.titulo}</span>
-                        <span className="block truncate text-xs text-texto-2">{resumenMaterial(f.material)}</span>
+                        <span className="block truncate text-xs text-texto-2">
+                          {usoFicha(id) === 'consulta' ? 'De consulta · ' : ''}{resumenMaterial(f.material)}
+                        </span>
                       </span>
                       <span aria-hidden className="text-xl text-texto-2">›</span>
                     </Link>

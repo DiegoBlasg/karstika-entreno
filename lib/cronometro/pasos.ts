@@ -24,7 +24,7 @@ export function segundosDe(p: Paso): number | null {
 
 // Las fichas de unos ejercicios, sin repetir y en orden; sin ninguna, el paso no lleva el campo.
 const conFichas = <P extends Paso>(p: P, ejercicios: readonly Ejercicio[]): P => {
-  const fichas = [...new Set(ejercicios.flatMap((e) => (e.ficha ? [e.ficha] : [])))]
+  const fichas = [...new Set(ejercicios.flatMap((e) => [...(e.ficha ? [e.ficha] : []), ...(e.fichasExtra ?? [])]))]
   return fichas.length > 0 ? { ...p, fichas } : p
 }
 

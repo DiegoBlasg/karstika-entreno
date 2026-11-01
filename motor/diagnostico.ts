@@ -249,7 +249,7 @@ export function ajusteCiclo2(d: Diagnostico): AjusteCiclo2 {
     'fuerza-dedos': 'Tu limitante principal es la fuerza de dedos: el ciclo 2 alarga la fuerza a 10 semanas y acorta la resistencia a 4.',
     resistencia: 'Tu limitante principal es la resistencia: el ciclo 2 alarga la resistencia a 8 semanas y acorta la fuerza a 6.',
     tecnica: 'Tu limitante principal es la técnica o la lectura: el ciclo 2 mantiene 8 + 6 semanas y añade un cupo de técnica por semana, que se usa cuando hay hueco (días suaves, descargas y rendimiento); no desplaza a las sesiones de fuerza.',
-    cabeza: 'Tu limitante principal es la cabeza: el ciclo 2 mantiene 8 + 6 semanas; el trabajo mental va en los consejos (no hay protocolo con evidencia, P-62).',
+    cabeza: 'Tu limitante principal es la cabeza: el ciclo 2 mantiene 8 + 6 semanas; el trabajo mental va en los consejos y en las caídas progresivas de las vías al límite (P-76; no hay protocolo con evidencia, P-62).',
   }[principal]
   return {
     fuerza,

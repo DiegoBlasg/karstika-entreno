@@ -32,6 +32,12 @@ describe('core-movilidad (P-72)', () => {
     expect(corto?.sesion.duracionMin).toBe(20)
     expect(proponerSesion(peticion('casa', 15)).alternativas.some((o) => o.sesion.tipo === 'core-movilidad')).toBe(false)
   })
+  it('paso alto y tobillo solo en la de 30 min (en la de 20 no caben)', () => {
+    const fichas = (m: number) => proponerSesion(peticion('casa', m)).alternativas.find((o) => o.sesion.tipo === 'core-movilidad')!.bloques.flatMap((b) => b.ejercicios.map((e) => e.ficha))
+    expect(fichas(30)).toEqual(expect.arrayContaining(['paso-alto', 'tobillo']))
+    expect(fichas(25)).not.toContain('paso-alto')
+    expect(fichas(25)).not.toContain('tobillo')
+  })
   it('con barra hay elevaciones colgado; en roca, tumbado', () => {
     const nombres = (lugar: Lugar): string[] => {
       const r = proponerSesion(peticion(lugar))
