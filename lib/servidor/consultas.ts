@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation'
 import type {
-  DatosAtleta, FilaAlta, FilaChequeo, FilaConsejo, FilaEvaluacion, FilaHueco, FilaIntento, FilaPerfil, FilaPruebaCasa, FilaRegistro, FilaSesion,
+  DatosAtleta, FilaAlta, FilaChequeo, FilaConsejo, FilaEscalada, FilaEvaluacion, FilaHueco, FilaIntento, FilaPerfil, FilaPruebaCasa, FilaRegistro, FilaSesion,
   PerfilNuevo,
 } from '../datos/filas'
 import { bd, type Sql } from './bd'
 
 // Una sola transacción de lectura para tener una foto coherente. Fechas como texto 'AAAA-MM-DD'.
 export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
-  const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos, huecos, pruebasCasa] = await sql.transaction(
+  const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos, huecos, pruebasCasa, escaladas] = await sql.transaction(
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
             objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, dias_semana, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
@@ -20,6 +20,8 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
       sql`select id::text as id, sesion_id::text as sesion_id, fecha::text as fecha, encadenado, motivo_caida from intentos_limite order by fecha`,
       sql`select id::text as id, fecha::text as fecha, inicio_min, compania, lugar, minutos from huecos order by fecha, inicio_min`,
       sql`select id::text as id, fecha::text as fecha, dominadas, cadera_cm from pruebas_casa order by fecha`,
+      sql`select id::text as id, fecha::text as fecha, sesion_id::text as sesion_id, tipo, lugar, grado, estilo, pegues, nombre, proyecto
+            from escaladas order by fecha, creada_en`,
     ],
     { readOnly: true },
   )
@@ -36,6 +38,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
     intentos: intentos as FilaIntento[],
     huecos: huecos as FilaHueco[],
     pruebasCasa: pruebasCasa as FilaPruebaCasa[],
+    escaladas: escaladas as FilaEscalada[],
   }
 }
 
@@ -131,25 +134,45 @@ export async function sustituirSesion(sql: Sql, idViejo: string, nueva: FilaSesi
   return filas.length > 0
 }
 
-export async function insertarRegistro(sql: Sql, r: FilaRegistro): Promise<void> {
-  await sql`insert into registros (sesion_id, rpe, duracion_min, molestias, freno, encadene)
+const consultaEscalada = (sql: Sql, e: FilaEscalada) =>
+  sql`insert into escaladas (id, fecha, sesion_id, tipo, lugar, grado, estilo, pegues, nombre, proyecto)
+    values (${e.id}, ${e.fecha}, ${e.sesion_id}, ${e.tipo}, ${e.lugar}, ${e.grado}, ${e.estilo}, ${e.pegues}, ${e.nombre}, ${e.proyecto})`
+
+const consultaRegistro = (sql: Sql, r: FilaRegistro) =>
+  sql`insert into registros (sesion_id, rpe, duracion_min, molestias, freno, encadene)
     values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb, ${r.freno ?? null}, ${r.encadene ?? false})`
+
+// El registro y sus escaladas (encadenes y pegues a un proyecto) en una transacción.
+export async function insertarRegistro(sql: Sql, r: FilaRegistro, escaladas: readonly FilaEscalada[] = []): Promise<void> {
+  await sql.transaction([consultaRegistro(sql, r), ...escaladas.map((e) => consultaEscalada(sql, e))])
 }
 
-// Un entrenamiento no planeado: la sesión y su registro en una transacción.
-export async function insertarSesionRegistrada(sql: Sql, f: FilaSesion, r: FilaRegistro): Promise<void> {
+// Un entrenamiento no planeado: la sesión, su registro y sus escaladas en una transacción.
+export async function insertarSesionRegistrada(sql: Sql, f: FilaSesion, r: FilaRegistro, escaladas: readonly FilaEscalada[] = []): Promise<void> {
+  await sql.transaction([consultaSesion(sql, f), consultaRegistro(sql, r), ...escaladas.map((e) => consultaEscalada(sql, e))])
+}
+
+// Corrige un registro y sustituye sus escaladas. Los intentos antiguos de la sesión (de antes de «¿Qué te frenó hoy?»)
+// no se tocan.
+export async function corregirRegistroBd(sql: Sql, r: FilaRegistro, escaladas: readonly FilaEscalada[] = []): Promise<void> {
   await sql.transaction([
-    consultaSesion(sql, f),
-    sql`insert into registros (sesion_id, rpe, duracion_min, molestias, freno, encadene)
-      values (${r.sesion_id}, ${r.rpe}, ${r.duracion_min}, ${JSON.stringify(r.molestias)}::jsonb, ${r.freno ?? null}, ${r.encadene ?? false})`,
+    sql`update registros set rpe = ${r.rpe}, duracion_min = ${r.duracion_min}, molestias = ${JSON.stringify(r.molestias)}::jsonb,
+        freno = ${r.freno ?? null}, encadene = ${r.encadene ?? false}
+      where sesion_id = ${r.sesion_id}`,
+    sql`delete from escaladas where sesion_id = ${r.sesion_id}`,
+    ...escaladas.map((e) => consultaEscalada(sql, e)),
   ])
 }
 
-// Corrige un registro. Los intentos antiguos de la sesión (de antes de «¿Qué te frenó hoy?») no se tocan.
-export async function corregirRegistroBd(sql: Sql, r: FilaRegistro): Promise<void> {
-  await sql`update registros set rpe = ${r.rpe}, duracion_min = ${r.duracion_min}, molestias = ${JSON.stringify(r.molestias)}::jsonb,
-      freno = ${r.freno ?? null}, encadene = ${r.encadene ?? false}
-    where sesion_id = ${r.sesion_id}`
+// Una escalada suelta (sin sesión), apuntada en Progreso.
+export async function insertarEscalada(sql: Sql, e: FilaEscalada): Promise<void> {
+  await consultaEscalada(sql, e)
+}
+
+// Devuelve si existía.
+export async function borrarEscaladaBd(sql: Sql, id: string): Promise<boolean> {
+  const filas = await sql`delete from escaladas where id = ${id} returning id`
+  return filas.length > 0
 }
 
 export async function insertarAlta(sql: Sql, a: Omit<FilaAlta, 'id'>): Promise<void> {

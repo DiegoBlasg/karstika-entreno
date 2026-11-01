@@ -8,7 +8,7 @@ import { enviarSinVaciar } from '@/components/enviarSinVaciar'
 import { ContextoTemporada } from '@/components/ContextoTemporada'
 import { BOTON, BOTON_SECUNDARIO, CAMPO, TARJETA, TARJETA_DESTACADA } from '@/components/estilos'
 import { PlanSesion } from '@/components/PlanSesion'
-import type { FilaRegistro, FilaSesion } from '@/lib/datos/filas'
+import type { FilaEscalada, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { corregible, type Tarjeta } from '@/lib/datos/hoy'
 import type { PosicionTemporada } from '@/lib/datos/temporada'
 import type { EstadoAccion } from '@/lib/estado'
@@ -18,6 +18,7 @@ import {
 } from '@/lib/nombres'
 import { OtraOpcion } from '@/components/OtraOpcion'
 import { franja } from '@/lib/datos/agenda'
+import { lugarDeSesion } from '@/lib/escaladas/formulario'
 import { FormularioRegistro } from './FormularioRegistro'
 import { borrarRegistrada, noLaHice, otraCosa } from './acciones'
 
@@ -112,7 +113,7 @@ function BotonBorrar({ id }: { id: string }) {
   )
 }
 
-export function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string }) {
+export function Registrada({ tarjeta, hoy, escaladas }: { tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string; escaladas?: readonly FilaEscalada[] }) {
   const { fila, registro } = tarjeta
   const [corrigiendo, setCorrigiendo] = useState(false)
   const cerrar = (): void => setCorrigiendo(false)
@@ -132,13 +133,15 @@ export function Registrada({ tarjeta, hoy }: { tarjeta: Tarjeta & { registro: Fi
           </div>
         )}
       </div>
-      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} />}
+      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} />}
     </>
   )
 }
 
 // `posicion`: dónde cae el día de la sesión en la temporada (se calcula en el servidor); solo se muestra si hay plan.
-export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null; destacada?: boolean }) {
+export function TarjetaSesion({ tarjeta, hoy, posicion, destacada, escaladas }: {
+  tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null; destacada?: boolean; escaladas?: readonly FilaEscalada[]
+}) {
   const { fila, registro } = tarjeta
   const s = fila.sesion
   const pasada = fila.fecha <= hoy
@@ -176,7 +179,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
       )}
       {registro ? (
         <>
-          <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} />
+          <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} escaladas={escaladas} />
           {fila.propuesta && (
             <details className="group border-t border-borde pt-1">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm text-texto-2 [&::-webkit-details-marker]:hidden">
@@ -206,7 +209,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
           {pasada && !cambiando && terminando && (
             <>
               {/* Sin alTerminar: registrar redirige a la chapa, así que nunca devuelve ok (solo corregir lo usa). */}
-              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} />
+              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} />
               <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}

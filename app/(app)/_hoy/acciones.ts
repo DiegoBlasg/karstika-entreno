@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { TIPOS_SESION, validarSesion, ZONAS, type TipoSesion, type Zona } from '@/motor'
 import { conAlta, conChequeo, conRegistro, conRegistroCorregido, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
-import type { DatosAtleta, FilaChequeo, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
+import type { DatosAtleta, FilaChequeo, FilaEscalada, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
+import { escaladasDelRegistro } from '@/lib/escaladas/formulario'
+import { proyectos } from '@/lib/escaladas/nivel'
 import { corregible, vistaHoy } from '@/lib/datos/hoy'
 import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { validarDatos } from '@/lib/datos/validar'
@@ -33,6 +35,18 @@ function leerRegistro(fd: FormData, fila: FilaSesion): FilaRegistro {
   }
 }
 
+// Los encadenes y los pegues a un proyecto de una sesión al límite. Los proyectos abiertos, sin contar lo ya apuntado en
+// esta misma sesión (al corregir, se sustituye). Si cayó un proyecto, el registro cuenta como «encadené».
+function leerEscaladas(fd: FormData, fila: FilaSesion, datos: DatosAtleta, hoy: string, r: FilaRegistro): { registro: FilaRegistro; escaladas: FilaEscalada[] } {
+  if (!TIPOS_AL_LIMITE.includes(fila.sesion.tipo)) return { registro: r, escaladas: [] }
+  const todas = datos.escaladas ?? []
+  const abiertos = proyectos(todas.filter((e) => e.sesion_id !== fila.id), hoy).filter((p) => p.encadenado === null)
+  const previa = todas.find((e) => e.sesion_id === fila.id && e.proyecto)
+  const escaladas = escaladasDelRegistro(fd, fila, abiertos, previa)
+  const encadenado = escaladas.some((e) => e.estilo !== 'pegues')
+  return { registro: { ...r, encadene: r.encadene || encadenado }, escaladas }
+}
+
 function sesionDe(fd: FormData, datos: DatosAtleta): FilaSesion | null {
   const id = texto(fd, 'sesion_id', 'La sesión')
   return datos.sesiones.find((s) => s.id === id) ?? null
@@ -42,17 +56,20 @@ export async function registrar(_previo: EstadoAccion, fd: FormData): Promise<Es
   const hoy = ahoraMadrid(new Date()).fecha
   const { sql, datos } = await requerirDatos()
   let leido: FilaRegistro
+  let escaladas: FilaEscalada[]
   try {
     const fila = sesionDe(fd, datos)
     if (!fila) return { error: 'Esa sesión ya no existe.' }
     if (fila.fecha > hoy) return { error: 'No puedes registrar una sesión de un día futuro.' }
-    leido = leerRegistro(fd, fila)
+    const leidas = leerEscaladas(fd, fila, datos, hoy, leerRegistro(fd, fila))
+    leido = leidas.registro
+    escaladas = leidas.escaladas
     validarDatos(conRegistro(datos, leido))
   } catch (e) {
     return { error: mensajeDe(e) }
   }
   try {
-    await insertarRegistro(sql, leido)
+    await insertarRegistro(sql, leido, escaladas)
   } catch (e) {
     return { error: `No se ha podido guardar el registro: ${mensajeDe(e)}` }
   }
@@ -66,18 +83,21 @@ export async function corregirRegistro(_previo: EstadoAccion, fd: FormData): Pro
   const hoy = ahoraMadrid(new Date()).fecha
   const { sql, datos } = await requerirDatos()
   let leido: FilaRegistro
+  let escaladas: FilaEscalada[]
   try {
     const fila = sesionDe(fd, datos)
     if (!fila) return { error: 'Esa sesión ya no existe.' }
     if (!datos.registros.some((r) => r.sesion_id === fila.id)) return { error: 'Esa sesión todavía no está registrada.' }
     if (!corregible(fila.fecha, hoy)) return { error: 'Solo puedes corregir registros de los últimos 7 días.' }
-    leido = leerRegistro(fd, fila)
+    const leidas = leerEscaladas(fd, fila, datos, hoy, leerRegistro(fd, fila))
+    leido = leidas.registro
+    escaladas = leidas.escaladas
     validarDatos(conRegistroCorregido(datos, leido))
   } catch (e) {
     return { error: mensajeDe(e) }
   }
   try {
-    await corregirRegistroBd(sql, leido)
+    await corregirRegistroBd(sql, leido, escaladas)
   } catch (e) {
     return { error: `No se ha podido corregir el registro: ${mensajeDe(e)}` }
   }
@@ -230,6 +250,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
   const { sql, datos } = await requerirDatos()
   let libre: FilaSesion
   let leido: FilaRegistro
+  let escaladas: FilaEscalada[]
   try {
     const dia = leerFecha(fd, 'fecha', 'El día')
     if (!corregible(dia, hoy)) return { error: 'Solo puedes apuntar entrenamientos de hoy o de los 7 días anteriores.' }
@@ -244,7 +265,9 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
       duracionMin: entero(fd, 'minutos', 'Los minutos', 1, 1440),
       ...(TIPOS_CON_REGLETA.includes(tipo) ? { detalle: detalleRegleta(fd) } : {}),
     })
-    leido = leerRegistro(fd, libre)
+    const leidas = leerEscaladas(fd, libre, datos, hoy, leerRegistro(fd, libre))
+    leido = leidas.registro
+    escaladas = leidas.escaladas
     validarDatos(conRegistro(conSesion(datos, libre), leido), libre.id)
     const avisos = validarSesion(libre.sesion, historialMotor(datos.sesiones), perfilMotor(datos.perfil)).map((v) => v.mensaje)
     if (avisos.length > 0 && fd.get('confirmar') !== 'on') {
@@ -254,7 +277,7 @@ export async function apuntarEntrenamiento(_previo: EstadoAccion, fd: FormData):
     return { error: mensajeDe(e) }
   }
   try {
-    await insertarSesionRegistrada(sql, libre, leido)
+    await insertarSesionRegistrada(sql, libre, leido, escaladas)
   } catch (e) {
     return { error: `No se ha podido guardar el entrenamiento: ${mensajeDe(e)}` }
   }

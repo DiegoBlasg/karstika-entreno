@@ -84,7 +84,7 @@ export default async function PaginaHoy() {
         </div>
       ) : (
         <>
-          {v.hoy.map((t, i) => <TarjetaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} />)}
+          {v.hoy.map((t, i) => <TarjetaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} escaladas={datos.escaladas} />)}
           {enTemporada && libresHoy.length > 0 && (
             <GenerarEntreno fecha={hoy} titulo="hoy" inicial={inicialGenerar(datos, hoy)} libres={libresHoy} compacto
               pedirChequeo={!chequeoDelDia(datos.chequeos, hoy)} />
@@ -100,7 +100,7 @@ export default async function PaginaHoy() {
           </summary>
           <div className="space-y-3 p-3 pt-0">
             <p className="text-sm text-texto-2">Las sesiones sin registro no cuentan para progresar: apunta cómo fueron.</p>
-            {v.pendientes.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} />)}
+            {v.pendientes.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} escaladas={datos.escaladas} />)}
           </div>
         </details>
       )}
@@ -121,7 +121,7 @@ export default async function PaginaHoy() {
         </details>
       )}
 
-      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} />
+      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} escaladas={datos.escaladas ?? []} />
     </div>
   )
 }

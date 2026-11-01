@@ -36,6 +36,7 @@ export function Perfil({ v }: { v: VistaPerfil }) {
         )}
       </div>
       {v.pista && <p className="text-sm text-texto-2">{v.pista}</p>}
+      {v.lectura && <p className="border-t border-borde pt-3 text-sm"><span className="font-medium">Pista:</span> {v.lectura}</p>}
       <PorQue explicaciones={v.explicaciones} />
     </Tarjeta>
   )

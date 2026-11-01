@@ -359,16 +359,57 @@ test('al límite: «¿Qué te frenó hoy?», encadené, último freno y «Tu per
   await page.getByLabel('Miedo, no me atreví').check()
   await page.getByLabel('Hoy encadené algo al límite').check()
   await expect(page.getByText('✓ Hoy encadené algo al límite')).toBeVisible()
+  // Qué se encadenó: en una sesión de bloque, bloque ya elegido; grado y cómo.
+  await expect(page.getByLabel('Bloque', { exact: true })).toBeChecked()
+  await page.getByLabel('Grado').selectOption('6B+')
+  await page.getByLabel('Flash').check()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('8')
   await page.getByRole('button', { name: 'Registrar' }).click()
   await expect(page).toHaveURL(/\/chapa\//)
   const [fila] = await sql`select freno, encadene from registros where sesion_id = ${id}`
   expect(fila).toEqual({ freno: 'cabeza', encadene: true })
+  const escaladas = await sql`select tipo, lugar, grado, estilo from escaladas where sesion_id = ${id}`
+  expect(escaladas).toEqual([{ tipo: 'bloque', lugar: 'rocodromo', grado: '6B+', estilo: 'flash' }])
   await page.goto('/progreso')
+  await expect(page.getByRole('region', { name: 'Tu nivel' }).getByText(/Bloque, últimos 90 días: 6B\+/)).toBeVisible()
   await expect(page.getByText('Lo último que te frenó: Miedo, no me atreví')).toBeVisible()
   const perfil = page.getByRole('region', { name: 'Tu perfil' })
   // Con una sola respuesta aún no decide: se muestra el orden general y cuánto falta.
   await expect(perfil.getByText('Lo que suele limitar más')).toBeVisible()
   await expect(perfil.getByText('Tus respuestas aún no deciden: llevas 1 de 6 en las últimas 8 semanas.')).toBeVisible()
   await expect(perfil.getByText('Lo que mejor llevas', { exact: true })).toBeVisible()
+})
+
+test('Escaladas: una vía suelta en «Tu nivel» y un proyecto con un día de pegues y luego encadenado', async ({ page }) => {
+  const sql = await sqlPruebas()
+  await sql`delete from escaladas where sesion_id is null`
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.goto('/progreso')
+  const nivel = page.getByRole('region', { name: 'Tu nivel' })
+  const apuntar = async (campos: { grado?: string; estilo: string; nombre?: string; pegues?: string }) => {
+    await page.getByText('+ Apuntar escalada').click()
+    const form = page.locator('#apuntar-escalada')
+    await form.getByLabel(campos.estilo).check()
+    if (campos.grado) await form.getByLabel(/^Grado/).selectOption(campos.grado)
+    if (campos.nombre) await form.getByLabel(/^Nombre/).fill(campos.nombre)
+    if (campos.pegues) await form.getByLabel('Pegues ese día').fill(campos.pegues)
+    await form.getByRole('button', { name: 'Apuntar escalada' }).click()
+    await expect(form.getByText('Escalada apuntada.')).toBeVisible()
+    await page.reload()
+  }
+  // Una vía a vista en roca (la opción por defecto).
+  await apuntar({ grado: '6b', estilo: 'A vista' })
+  await expect(nivel.getByText('Tu mejor vía encadenada en roca.', { exact: false })).toBeVisible()
+  await expect(nivel.getByText(/Hasta tu objetivo te faltan 6b\+, 6c, 6c\+ y 7a/)).toBeVisible()
+  // Un proyecto: un día de pegues y luego encadenado.
+  await apuntar({ estilo: 'Pegues a un proyecto, sin encadenar', nombre: 'Ojo de pez', pegues: '3' })
+  await expect(nivel.getByText(/Ojo de pez · vía en roca · 3 pegues/)).toBeVisible()
+  await apuntar({ grado: '6c', estilo: 'Trabajada', nombre: 'ojo de pez', pegues: '2' })
+  await expect(nivel.getByText(/Ojo de pez · 6c · encadenado el .* en 5 pegues/)).toBeVisible()
+  await expect(nivel.getByText(/Hasta tu objetivo te faltan 6c\+ y 7a/)).toBeVisible()
+  // Las últimas escaladas, con su botón de borrar.
+  await expect(page.getByRole('button', { name: 'Borrar Ojo de pez · vía 6c' })).toBeVisible()
 })

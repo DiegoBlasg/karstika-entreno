@@ -17,6 +17,14 @@ describe('vistaPerfil', () => {
     expect(v.pista?.startsWith('Responde «¿Qué te frenó hoy?»')).toBe(true)
     expect(v.plan).toMatch(/^Si no cambia, en el ciclo 2 \(desde el .+\): 10 semanas de fuerza y 4 de resistencia\.$/)
   })
+  it('P-75: con un trabajado 2 grados por encima del a vista, la pista de lectura y su «¿Por qué?»', () => {
+    const esc = (n: number, grado: string, estilo: 'a-vista' | 'encadenada') =>
+      ({ id: uuid(700 + n), fecha: '2026-11-05', sesion_id: null, tipo: 'via' as const, lugar: 'roca' as const, grado, estilo, pegues: 1, nombre: null, proyecto: false })
+    const v = vistaPerfil(datosVacios({ escaladas: [esc(1, '6a', 'a-vista'), esc(2, '6c', 'encadenada')] }), '2026-11-10')!
+    expect(v.lectura).toBe('En roca tu mejor vía trabajada es 6c y a vista o flash, 6a: trabajar la lectura y la táctica puede darte grado.')
+    expect(v.explicaciones.at(-1)?.parametros).toEqual(['P-75'])
+    expect(vistaPerfil(datosVacios(), '2026-11-10')!.lectura).toBeNull()
+  })
   it('con 4 respuestas: dice cuántas lleva, no que no haya datos', () => {
     expect(vistaPerfil(conFrenos(4, 'cabeza'), '2026-11-10')!.pista).toBe('Tus respuestas aún no deciden: llevas 4 de 6 en las últimas 8 semanas.')
   })

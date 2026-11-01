@@ -10,7 +10,9 @@ import { validarDatos } from '@/lib/datos/validar'
 import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
 import { entero, fecha, mensajeDe, numero, numeroOpcional, texto, textoOpcional } from '@/lib/formulario'
-import { borrarEvaluacionBd, borrarPruebaCasaBd, insertarEvaluacion, insertarPruebaCasa, requerirDatos } from '@/lib/servidor/consultas'
+import { escaladaSuelta } from '@/lib/escaladas/formulario'
+import { proyectos } from '@/lib/escaladas/nivel'
+import { borrarEscaladaBd, borrarEvaluacionBd, borrarPruebaCasaBd, insertarEscalada, insertarEvaluacion, insertarPruebaCasa, requerirDatos } from '@/lib/servidor/consultas'
 
 export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
   const { sql, datos } = await requerirDatos()
@@ -94,4 +96,38 @@ export async function borrarPruebaCasa(_previo: EstadoAccion, fd: FormData): Pro
   }
   revalidatePath('/progreso')
   return { ok: 'Test en casa borrado.' }
+}
+
+// Una escalada suelta (encadene o día de pegues a un proyecto), de hoy o de los 30 días anteriores.
+export async function guardarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const { sql, datos } = await requerirDatos()
+  const hoy = ahoraMadrid(new Date()).fecha
+  let fila
+  try {
+    fila = escaladaSuelta(fd, hoy, proyectos(datos.escaladas ?? [], hoy).filter((p) => p.encadenado === null))
+  } catch (e) {
+    return { error: mensajeDe(e) }
+  }
+  try {
+    await insertarEscalada(sql, fila)
+  } catch (e) {
+    return { error: `No se ha podido guardar la escalada: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/progreso')
+  revalidatePath('/')
+  return { ok: 'Escalada apuntada.' }
+}
+
+export async function borrarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const { sql } = await requerirDatos()
+  const id = fd.get('id')
+  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) return { error: 'Esa escalada ya no existe.' }
+  try {
+    if (!(await borrarEscaladaBd(sql, id))) return { error: 'Esa escalada ya no existe.' }
+  } catch (e) {
+    return { error: `No se ha podido borrar la escalada: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/progreso')
+  revalidatePath('/')
+  return { ok: 'Escalada borrada.' }
 }
