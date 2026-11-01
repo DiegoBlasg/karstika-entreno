@@ -48,7 +48,7 @@ describe('basesDe', () => {
   it('un parámetro de diseño no tiene estudios', () => {
     const [b] = basesDe([expl(['P-04'])])
     expect(b!.estudios).toEqual([])
-    expect(b!.nivelTexto).toBe('decisión de diseño, sin estudio directo')
+    expect(b!.nivelTexto).toBe('sin ensayo que lo fije: el porqué está en la explicación')
   })
 })
 

@@ -193,7 +193,7 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
     tests: () =>
       `Tus respuestas aún no deciden (${respuestasNoDeciden}), pero en tus tests ${lecturaTests}: el limitante principal es ${NOMBRE[principal!]} (P-70).`,
     evidencia: () =>
-      `Tus datos aún no deciden (${respuestasNoDeciden} y sin un veredicto claro de los tests), así que el orden es el general de la evidencia: fuerza de dedos y resistencia intermitente (P-23); después técnica y cabeza (la táctica de P-23), cuyo orden entre sí es decisión de diseño.`,
+      `Tus datos aún no deciden (${respuestasNoDeciden} y sin un veredicto claro de los tests), así que el orden es el general de la evidencia: fuerza de dedos y resistencia intermitente (P-23); después técnica y cabeza (la táctica de P-23). Ningún estudio ordena técnica y cabeza entre sí; la técnica va antes porque con menos de 2 años es lo que más margen tiene.`,
   }[fuente]()
   const parametrosLimitante: Record<FuenteDiagnostico, ParametroId[]> = {
     respuestas: ['P-23', 'P-69'],
@@ -205,7 +205,7 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
     explicar(
       'diagnostico.progreso',
       ['P-19', 'P-24', 'P-27'],
-      `Progreso frente a tu propia línea base: fuerza de dedos ${estado(fuerza)}${cambio(fuerza)}, resistencia ${estado(resistencia)}${cambio(resistencia)}, técnica ${estado(tecnica)}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_CAMBIO_PCT} % (1 punto en la técnica); los umbrales son decisión de diseño. Los segundos de resistencia se miden al 60 % del máximo de ese día: si tu fuerza sube, pueden quedarse igual aunque hayas mejorado.`,
+      `Progreso frente a tu propia línea base: fuerza de dedos ${estado(fuerza)}${cambio(fuerza)}, resistencia ${estado(resistencia)}${cambio(resistencia)}, técnica ${estado(tecnica)}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_CAMBIO_PCT} % (1 punto en la técnica). No se conoce el cambio mínimo que detectan estos tests y sin dinamómetro su error ronda el 5-30 %, así que se pide confirmación para no tomar el ruido por progreso. Los segundos de resistencia se miden al 60 % del máximo de ese día: si tu fuerza sube, pueden quedarse igual aunque hayas mejorado.`,
     ),
     explicar('diagnostico.limitantes', parametrosLimitante[fuente], motivoLimitante),
   ]
@@ -249,7 +249,7 @@ export function ajusteCiclo2(d: Diagnostico): AjusteCiclo2 {
     explicacion: explicar(
       'diagnostico.ajuste-ciclo2',
       principal === 'cabeza' ? ['P-31', 'P-23', 'P-62'] : ['P-31', 'P-23'],
-      `${motivo} Los rangos (fuerza 4-10, resistencia 4-8) son los de los ensayos (P-31); el reparto concreto es decisión de diseño.`,
+      `${motivo} Los rangos (fuerza 4-10, resistencia 4-8) son los de los ensayos (P-31); dentro de esos rangos, se dan más semanas a lo que más te limita.`,
     ),
   }
 }

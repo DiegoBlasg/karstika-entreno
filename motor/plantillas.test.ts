@@ -298,12 +298,12 @@ describe('hombro: rutina concreta A/B (P-41)', () => {
     const b = construirComplemento('hombro', peticion({ historial: [hombroPrevio(1, '2026-10-20')] }), 15)!
     expect(fichas(b)).toEqual(['face-pull-banda', 'plancha-toques-hombro', 'rotacion-externa-banda', 'extensores-dedos-banda'])
   })
-  it('la dosis es decisión de diseño, el tipo de ejercicio sigue a EV-LESION-007 y lo dice la explicación', () => {
+  it('el tipo de ejercicio sigue a EV-LESION-007 y la explicación dice qué no publica el ensayo', () => {
     for (const historial of [[], [hombroPrevio(1, '2026-10-20')]]) {
       const e = rutina(construirSesion('hombro', peticion({ contexto: casa(30), historial }))!).explicacion
       expect(e.parametros).toContain('P-41')
-      expect(e.motivo).toMatch(/decisión de diseño/)
-      expect(e.motivo).toMatch(/P-41 fija la frecuencia, no la dosis/)
+      expect(e.motivo).toMatch(/no publica los ejercicios exactos/)
+      expect(e.motivo).toMatch(/El ensayo fija la frecuencia/)
       expect(e.motivo).toMatch(/EV-LESION-007/)
       expect(e.motivo).toMatch(/cadena cerrada, excéntricos y de fuerza/)
     }
@@ -398,10 +398,10 @@ describe('bloque-limite', () => {
     expect(corto.bloques.map((b) => b.minutos)).toEqual([10, 10, 20])
     expect(construirSesion('bloque-limite', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 39 } }))).toBeNull()
   })
-  it('la dosis es decisión de diseño y lo dice', () => {
+  it('explica de dónde sale la dosis (entrenadores, sin ensayo)', () => {
     const e = construirSesion('bloque-limite', peticion())!.bloques[2]!.explicacion
     expect(e.origen).toBe('diseno')
-    expect(e.motivo).toMatch(/decisión de diseño/)
+    expect(e.motivo).toMatch(/como recomiendan los entrenadores para la potencia; no hay ensayo que fije cuántos/)
   })
 })
 
