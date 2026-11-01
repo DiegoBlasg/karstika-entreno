@@ -96,6 +96,21 @@ export interface FilaHueco {
   minutos: number
 }
 
+// Una escalada: un encadene o un día de pegues a un proyecto (migración 008).
+export type EstiloEscalada = 'a-vista' | 'flash' | 'encadenada' | 'pegues'
+export interface FilaEscalada {
+  id: string
+  fecha: string
+  sesion_id: string | null     // null = apuntada suelta en Progreso
+  tipo: 'via' | 'bloque'
+  lugar: 'rocodromo' | 'roca'
+  grado: string | null         // obligatorio salvo en `pegues`
+  estilo: EstiloEscalada
+  pegues: number
+  nombre: string | null
+  proyecto: boolean
+}
+
 export interface DatosAtleta {
   perfil: FilaPerfil
   evaluaciones: FilaEvaluacion[]
@@ -107,4 +122,5 @@ export interface DatosAtleta {
   intentos: FilaIntento[]
   huecos: FilaHueco[]
   pruebasCasa?: FilaPruebaCasa[]   // la base siempre las devuelve; opcional para los datos construidos a mano
+  escaladas?: FilaEscalada[]       // ídem
 }

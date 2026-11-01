@@ -14,7 +14,7 @@ export const PERFIL: FilaPerfil = {
 }
 
 export function datosVacios(extra: Partial<DatosAtleta> = {}): DatosAtleta {
-  return { perfil: PERFIL, evaluaciones: [], sesiones: [], registros: [], chequeos: [], altas: [], consejos: [], intentos: [], huecos: [], pruebasCasa: [], ...extra }
+  return { perfil: PERFIL, evaluaciones: [], sesiones: [], registros: [], chequeos: [], altas: [], consejos: [], intentos: [], huecos: [], pruebasCasa: [], escaladas: [], ...extra }
 }
 
 export const uuid = (n: number): string => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
