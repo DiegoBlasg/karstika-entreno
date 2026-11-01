@@ -13,6 +13,8 @@ export function evaluacionMotor(f: FilaEvaluacion): EvaluacionDedos {
     lastreKg: f.lastre_kg,
     ...(f.resistencia_s !== null ? { resistenciaS: f.resistencia_s } : {}),
     ...(f.tecnica !== null ? { tecnica: f.tecnica } : {}),
+    ...(f.colgado_30_s != null ? { colgado30S: f.colgado_30_s, ...(f.colgado_con_descarga ? { colgadoConDescarga: true } : {}) } : {}),
+    ...(f.power_slap_cm != null ? { powerSlapCm: f.power_slap_cm } : {}),
   }
 }
 
@@ -23,6 +25,17 @@ export function evaluacionesMotor(filas: readonly FilaEvaluacion[]): EvaluacionD
 // La evaluación que se pasa al motor para una fecha: la última que no sea posterior (`evaluaciones` en orden).
 export function evaluacionParaFecha(evaluaciones: readonly EvaluacionDedos[], fecha: string): EvaluacionDedos | undefined {
   return evaluaciones.filter((e) => e.fecha <= fecha).at(-1)
+}
+
+// Los tests hechos de verdad, para el test en casa: de dedos, los que tienen resultado o su sesión registrada; en casa,
+// los apuntados o con la sesión registrada. Las sesiones solo planificadas no cuentan.
+export function testsHechosMotor(d: DatosAtleta): { dedos: string[]; casa: string[] } {
+  const registradas = new Set(d.registros.map((r) => r.sesion_id))
+  const sesiones = (tipo: string): string[] => d.sesiones.filter((s) => s.sesion.tipo === tipo && registradas.has(s.id)).map((s) => s.fecha)
+  return {
+    dedos: [...new Set([...d.evaluaciones.map((e) => e.fecha), ...sesiones('evaluacion-dedos')])].sort(),
+    casa: [...new Set([...(d.pruebasCasa ?? []).map((c) => c.fecha), ...sesiones('test-casa')])].sort(),
+  }
 }
 
 // El id y la fecha de la fila mandan (un CHECK de la base de datos ya exige que coincidan con el JSON).

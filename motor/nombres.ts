@@ -19,5 +19,6 @@ export const NOMBRE_TIPO: Record<TipoSesion, string> = {
   dominadas: 'Dominadas',
   hombro: 'Hombro',
   'core-movilidad': 'Core y movilidad',
+  'test-casa': 'Test en casa',
   descanso: 'Descanso',
 }

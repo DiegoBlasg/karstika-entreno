@@ -44,13 +44,15 @@ for (const s of semanas) {
       fecha, horaInicio: x.hora, contexto: x.ctx, perfil, historial: [...historial], fase: faseEnFecha(temporada, fecha, { descargasAdelantadas }),
       seguimiento,
       consejosMostrados: [...mostrados],
-      ...(evaluacion ? { evaluacion } : {}),
+      ...(evaluacion ? { evaluacion, testsHechos: { dedos: [evaluacion.fecha], casa: [] } } : {}),
     }
     const r = proponerSesion(peticion)
     for (const c of elegirConsejos(peticion, r)) mostrados.push({ id: c.id, fecha })
     pasos.push({ fecha, r, historial: [...historial], ctx: x.ctx })
-    if (!r.principal) continue
-    const sesion: Sesion = { ...r.principal.sesion, id: `h${historial.length}` }
+    // El test en casa se salta: el guion mide la progresión de la multipresa, que va de alternativa ese día.
+    const hecha = r.principal?.sesion.tipo === 'test-casa' ? r.alternativas[0] : r.principal
+    if (!hecha) continue
+    const sesion: Sesion = { ...hecha.sesion, id: `h${historial.length}` }
     historial.push(sesion)
     const objetivo = objetivoRpe(sesion)
     registros.push({
@@ -88,11 +90,19 @@ describe('simulación con seguimiento: base y 8 semanas de fuerza', () => {
   it('la multipresa progresa y, tras el ámbar, vuelve un escalón atrás antes de volver a subir', () => {
     // Antes: 4 sesiones válidas de 1 bloque y la quinta (la del jueves con molestia) con 2 bloques. Después, la
     // primera multipresa fuera de descarga vuelve a 1 bloque por P-46: sin la molestia habría 6 válidas (2 bloques).
-    const multipresas = pasos.filter((p) => p.r.principal?.sesion.tipo === 'multipresa-resistencia')
+    const multipresas = pasos
+      .map((p) => ({ ...p, r: p.r.principal?.sesion.tipo === 'test-casa' ? { ...p.r, principal: p.r.alternativas[0] ?? null } : p.r }))
+      .filter((p) => p.r.principal?.sesion.tipo === 'multipresa-resistencia')
     expect(repeaters(multipresas.find((p) => p.fecha === JUEVES_MOLESTIA)!.r.principal!)).toBe('2x70')
     const tras = multipresas.find((p) => p.fecha > SABADO_MOLESTIA && !p.r.principal!.explicaciones[0]!.motivo.includes('(descarga)'))!
     expect(repeaters(tras.r.principal!)).toBe('1x70')
     expect(tras.r.principal!.bloques.find((b) => b.nombre.startsWith('Bloque de repeaters'))!.explicacion.parametros).toContain('P-46')
+  })
+  it('el sábado en casa tras el test de dedos propone el test en casa como principal', () => {
+    const test = pasos.find((p) => p.r.principal?.sesion.tipo === 'evaluacion-dedos')!
+    const casa = pasos.find((p) => p.fecha > test.fecha && p.ctx.lugar === 'casa')!
+    expect(casa.r.principal?.sesion.tipo).toBe('test-casa')
+    expect(casa.r.principal?.explicaciones[0]?.regla).toBe('generador.test-casa')
   })
   it('los tres chequeos bajos adelantan 7 días de descarga, sin nada al límite', () => {
     const tercero = [...BAJOS].sort().at(-1)!

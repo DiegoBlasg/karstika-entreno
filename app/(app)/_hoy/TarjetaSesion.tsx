@@ -171,7 +171,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
       ) : (
         <h3 className="font-semibold">{NOMBRE_TIPO[s.tipo]} · {s.duracionMin} min (lo que hiciste)</h3>
       )}
-      {s.tipo === 'evaluacion-dedos' && !(fila.propuesta && registro) && (
+      {(s.tipo === 'evaluacion-dedos' || s.tipo === 'test-casa') && !(fila.propuesta && registro) && (
         <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/progreso" className="underline">Progreso</Link>.</p>
       )}
       {registro ? (
@@ -186,7 +186,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada }: { tarjeta: 
               <div className="space-y-3 pt-2">
                 {posicion && <ContextoTemporada posicion={posicion} />}
                 <PlanSesion plan={fila.propuesta} />
-                {s.tipo === 'evaluacion-dedos' && (
+                {(s.tipo === 'evaluacion-dedos' || s.tipo === 'test-casa') && (
                   <p className="text-sm">Al terminar el test, apunta el resultado en <Link href="/progreso" className="underline">Progreso</Link>.</p>
                 )}
               </div>

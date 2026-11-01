@@ -20,7 +20,7 @@ export const VALORES = {
   'P-37': { bloques: 4, vueltas: 4, descansoVueltaMin: 4 },
   'P-61': { maxIntentos: 4 },
   'P-23': { orden: ['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'] },
-  'P-24': { trabajoS: 7, descansoS: 3, fraccion: 0.6 },
+  'P-24': { regletaMm: 30, minimoS: 10 },
   'P-27': { minimo: 1, maximo: 7 },
   'P-31': { fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 },
   'P-02': { trabajoS: 7, descansoS: 3 },
@@ -32,6 +32,9 @@ export const VALORES = {
   'P-08': { semanasMaximasSinReevaluar: 10 },
   'P-18': { duracionS: 10, intentos: 3, descansoS: 180 },
   'P-11': { sesionesValidasParaSubir: 2, kgMaxSemana: 1.25 },
+  // Cambio real por prueba: en fuerza, unas 2 veces el CV del pico de fuerza; el resto, los umbrales prudentes del informe
+  // 2026-10-31 (sin cambio mínimo publicado). El power slap cuenta con 10 cm o con un 15 %.
+  'P-19': { fuerzaPct: 10, colgadoPct: 25, powerSlapCm: 10, powerSlapPct: 15, dominadas: 2, caderaCm: 3, tecnicaPuntos: 1 },
   'P-35': { series: 2, seriesMax: 3, minutosSerie: 15, minutosSerieCorta: 10, descansoMin: 10, onOffs: 10, onOffsDescarga: 5 },
   'P-41': { minutos: 15 },
   'P-49': { minutos: 10 },

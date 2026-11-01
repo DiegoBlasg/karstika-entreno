@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BASE_OCTUBRE, perfilExperto, peticion, ses } from './_fabrica'
 import { validarContexto } from './contexto'
-import { FASE_BASE, FASE_FUERZA } from './fases'
+import { descargar, FASE_BASE, FASE_FUERZA } from './fases'
 import { proponerSesion } from './propuesta'
 import type { EvaluacionDedos, Propuesta } from './propuesta-tipos'
 import { esCargaAlta, esIntensaDedos, validarSesion } from './seguridad'
@@ -303,5 +303,50 @@ describe('proponerSesion: hallazgos de la segunda revisión', () => {
     if (hombro) expect(hombro.sesion.incluye).toBeUndefined()
     const soloHombro = proponerSesion(peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 25 } }))
     expect(soloHombro.principal!.sesion.incluye).toBeUndefined()
+  })
+})
+
+describe('test en casa tras el test de dedos', () => {
+  const test = ses('t', '2026-10-24', 18, { tipo: 'evaluacion-dedos', intensidad: 'alta', duracionMin: 50 })
+  const hechos = { dedos: ['2026-10-24'], casa: [] as string[] }
+  const casa = (extra: Parameters<typeof peticion>[0] = {}) =>
+    peticion({
+      fecha: '2026-10-27', horaInicio: 10, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 60 },
+      historial: [...BASE_OCTUBRE, test], fase: FASE_FUERZA, evaluacion: { fecha: '2026-10-24', pesoCorporalKg: 70, lastreKg: 20 },
+      testsHechos: hechos, ...extra,
+    })
+  it('en casa, a los 3 días del test, el test en casa es la principal y lo de siempre pasa a alternativas (como mucho 2)', () => {
+    const sin = proponerSesion(casa({ testsHechos: { dedos: [], casa: [] } }))
+    const r = proponerSesion(casa())
+    expect(r.principal?.sesion.tipo).toBe('test-casa')
+    expect(r.principal?.explicaciones[0]?.regla).toBe('generador.test-casa')
+    expect(r.principal?.explicaciones[0]?.motivo).toMatch(/15 min/)
+    expect(tipos(sin)).not.toContain('test-casa')
+    expect(r.alternativas.length).toBeGreaterThan(0)
+    expect(r.alternativas.length).toBeLessThanOrEqual(2)
+    expect(r.alternativas[0]?.sesion.tipo).toBe(sin.principal?.sesion.tipo)
+    expect(r.alternativas[0]?.explicaciones[0]?.regla).toBe('generador.test-casa-alternativa')
+    for (const o of [r.principal!, ...r.alternativas]) expect(validarContexto(o.sesion, casa().contexto)).toEqual([])
+  })
+  it('no fuera de casa, ni el mismo día del test, ni a los 11 días, ni si ya se hizo o se apuntó, ni sin datos', () => {
+    expect(tipos(proponerSesion(casa({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 } })))).not.toContain('test-casa')
+    expect(tipos(proponerSesion(casa({ fecha: '2026-10-24', horaInicio: 20 })))).not.toContain('test-casa')
+    expect(tipos(proponerSesion(casa({ fecha: '2026-11-04' })))).not.toContain('test-casa')
+    expect(tipos(proponerSesion(casa({ testsHechos: { dedos: ['2026-10-24'], casa: ['2026-10-25'] } })))).not.toContain('test-casa')
+    const { testsHechos: _t, ...sinDatos } = casa()
+    expect(tipos(proponerSesion(sinDatos))).not.toContain('test-casa')
+  })
+  it('una sesión de test de dedos solo planificada no cuenta: manda lo hecho', () => {
+    expect(tipos(proponerSesion(casa({ testsHechos: { dedos: [], casa: [] } })))).not.toContain('test-casa')
+  })
+  it('a los 10 días todavía toca', () => {
+    expect(proponerSesion(casa({ fecha: '2026-11-03' })).principal?.sesion.tipo).toBe('test-casa')
+  })
+  it('en semana de descarga no se propone (nada al límite)', () => {
+    expect(tipos(proponerSesion(casa({ fase: descargar(FASE_FUERZA) })))).not.toContain('test-casa')
+  })
+  it('con el chequeo bajo no se propone (hoy no tocan dominadas)', () => {
+    const seguimiento = { registros: [], chequeos: [{ fecha: '2026-10-27', sueno: 2, fatiga: 2, ganas: 2, molestias: [] }], altas: [] }
+    expect(tipos(proponerSesion(casa({ seguimiento })))).not.toContain('test-casa')
   })
 })

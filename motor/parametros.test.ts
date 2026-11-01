@@ -111,12 +111,16 @@ describe('VALORES del diagnóstico', () => {
     // P-23 ordena fuerza de dedos, resistencia y después técnica y táctica; «cabeza» es la táctica del registro de caídas.
     expect(columnas('P-23')[2]).toMatch(/^1\.º fuerza máxima de dedos; 2\.º resistencia intermitente de dedos; después técnica, táctica/)
     expect(VALORES['P-23'].orden).toEqual(['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'])
-    expect(columnas('P-24')[2]).toMatch(/^Intermitente 7 s : 3 s al 60 % de la fuerza máxima, hasta el fallo; resultado en segundos/)
-    expect(VALORES['P-24']).toEqual({ trabajoS: 7, descansoS: 3, fraccion: 0.6 })
+    expect(columnas('P-24')[2]).toMatch(/^Colgado continuo a dos manos en canto de 30 mm a peso corporal, hasta soltar; resultado en segundos\. Si no llega a 10 s/)
+    expect(VALORES['P-24']).toEqual({ regletaMm: 30, minimoS: 10 })
     expect(columnas('P-27')[2]).toMatch(/^Puntuación de 1 a 7 por técnica/)
     expect(VALORES['P-27']).toEqual({ minimo: 1, maximo: 7 })
     expect(columnas('P-31')[2]).toMatch(/^Fuerza de dedos: 4-10 semanas\. Resistencia de fuerza: 4-8 semanas/)
     expect(VALORES['P-31']).toEqual({ fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 })
+  })
+  it('P-19 da los umbrales de cambio real por prueba', () => {
+    expect(columnas('P-19')[2]).toMatch(/Cambio real por prueba: fuerza de dedos 10 %, colgado en 30 mm 25 %, power slap 10 cm o 15 %, dominadas 2, apertura de cadera 3 cm, técnica 1 punto/)
+    expect(VALORES['P-19']).toEqual({ fuerzaPct: 10, colgadoPct: 25, powerSlapCm: 10, powerSlapPct: 15, dominadas: 2, caderaCm: 3, tecnicaPuntos: 1 })
   })
   it('P-11 coincide con el documento', () => {
     expect(columnas('P-11')[2]).toMatch(/solo tras 2 sesiones de multipresa seguidas/)

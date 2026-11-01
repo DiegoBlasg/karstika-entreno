@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { datosVacios, sesionFila, uuid } from './_fabrica'
 import { conAlta } from './cambios'
 import type { FilaSesion } from './filas'
-import { corregible, testsSinResultado, vistaHoy } from './hoy'
+import { corregible, testsCasaSinResultado, testsSinResultado, vistaHoy } from './hoy'
 
 describe('vistaHoy', () => {
   it('separa las de hoy, las pasadas sin registrar y las próximas', () => {
@@ -68,6 +68,16 @@ describe('vistaHoy', () => {
     expect(testsSinResultado(d, '2026-12-10')).toEqual(['2026-12-01']) // la del 15-dic es futura
     expect(testsSinResultado(d, '2026-12-15')).toEqual(['2026-12-01', '2026-12-15'])
     expect(testsSinResultado(datosVacios(), '2026-12-15')).toEqual([])
+  })
+  it('tests en casa registrados sin resultado apuntado', () => {
+    const test = (n: number, fecha: string) => sesionFila(uuid(n), fecha, { tipo: 'test-casa', intensidad: 'suave', duracionMin: 15 })
+    const reg = (n: number) => ({ sesion_id: uuid(n), rpe: 5, duracion_min: 15, molestias: [], registrado_en: 'x' })
+    const d = datosVacios({
+      sesiones: [test(1, '2026-11-03'), test(2, '2026-11-10'), test(3, '2026-11-12')],
+      registros: [reg(1), reg(2)],
+      pruebasCasa: [{ id: uuid(9), fecha: '2026-11-03', dominadas: 8, cadera_cm: null }],
+    })
+    expect(testsCasaSinResultado(d, '2026-11-15')).toEqual(['2026-11-10'])
   })
   it('noEncaja solo en las de hoy aceptadas sin registrar; pedirChequeo si hay una sin registrar y no hay chequeo', () => {
     const aceptada = (n: number, fecha: string): FilaSesion => {

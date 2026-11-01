@@ -126,7 +126,7 @@ test('cronómetro: abrir una sesión aceptada de hoy, terminarla y registrarla',
   expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}`)).toBeNull()
 })
 
-test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resultado', async ({ page }) => {
+test('test guiado: apuntar el intento, colgado continuo en 30 mm y guardar el resultado con el power slap', async ({ page }) => {
   const sql = await sqlPruebas()
   const hoy = ahoraMadrid(new Date()).fecha
   const id = '00000000-0000-4000-8000-00000000c002'
@@ -137,7 +137,8 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
     sesion,
     bloques: [
       { nombre: 'Test máx', minutos: 5, explicacion, ejercicios: [{ nombre: 'Suspensión máxima', series: 1, trabajoS: 10, descansoSeriesS: 180, cargaTexto: 'Máximo' }] },
-      { nombre: 'Resistencia', minutos: 5, explicacion, ejercicios: [{ nombre: '7:3', trabajoS: 7, descansoS: 3, cargaTexto: 'Al 60 %' }] },
+      { nombre: 'Resistencia', minutos: 5, explicacion, ejercicios: [{ nombre: 'Colgado en 30 mm', trabajoS: 600, hastaFallo: true, continuo: true, cargaTexto: 'Peso corporal, sin lastre' }] },
+      { nombre: 'Power slap', minutos: 5, explicacion, ejercicios: [{ nombre: 'Power slap', series: 1, cargaTexto: 'Vale el mejor', ficha: 'power-slap' }] },
     ],
     explicaciones: [explicacion],
   }
@@ -152,18 +153,25 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
   await page.getByRole('button', { name: 'Empezar', exact: true }).click()
   await page.getByRole('button', { name: 'Saltar' }).click() // prepárate
   await page.getByRole('button', { name: 'Saltar' }).click() // intento 1
-  // Ya en el Prepárate del 7:3 (10 s): en pausa, para no depender de lo que se tarde en rellenar.
+  // Ya en el Prepárate del colgado (10 s): en pausa, para no depender de lo que se tarde en rellenar.
   await page.getByRole('button', { name: 'Pausa' }).click()
   await expect(page.getByText('En pausa')).toBeVisible()
   await page.getByLabel('Kilos').fill('10')
   await page.getByRole('button', { name: 'Sí', exact: true }).click()
   await expect(page.getByText('Mejor hasta ahora: +10 kg de lastre')).toBeVisible()
-  // 60 % de (70 + 10) − 70 = −22 kg.
-  await expect(page.getByText('Lastre para el 7:3: descarga de 22 kg')).toBeVisible()
-  await page.getByRole('button', { name: 'Saltar' }).click() // prepárate del 7:3 (el 7:3 sigue en pausa)
+  // El colgado va a peso corporal: sin carga calculada.
+  await expect(page.getByText('Peso corporal, sin lastre')).toBeVisible()
+  await expect(page.getByText(/Lastre para/)).toHaveCount(0)
+  await page.getByRole('button', { name: 'Saltar' }).click() // prepárate del colgado (el colgado sigue en pausa)
   await page.getByRole('button', { name: 'Seguir' }).click()
+  await expect(page.getByText('hasta soltar')).toBeVisible()
+  await expect(page.getByText(/Cuelga:/)).toHaveCount(0)
   await page.getByRole('button', { name: 'No puedo más' }).click()
-  await expect(page.getByText('Resultado del test')).toBeVisible()
+  await page.getByRole('button', { name: 'Hecho' }).click() // power slap
+  await expect(page.getByText('Resultado del test', { exact: true })).toBeVisible()
+  await page.getByLabel(/segundos colgado en 30 mm/).fill('35')
+  await expect(page.getByLabel(/Con descarga/)).not.toBeChecked()
+  await page.getByLabel(/Power slap/).fill('45')
   await page.getByRole('button', { name: 'Guardar resultado' }).click()
   await expect(page.getByText('Evaluación guardada.')).toBeVisible()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('8')
@@ -175,6 +183,19 @@ test('test guiado: apuntar el intento, ver la carga del 7:3 y guardar el resulta
   await expect(page).toHaveURL(/\/$/)
   // Lo apuntado del test se borra al registrar.
   expect(await page.evaluate((k) => localStorage.getItem(k), `cronometro:${id}:test`)).toBeNull()
+  // Progreso: «Tus tests» con el colgado y el power slap.
+  await page.goto('/progreso')
+  const tarjeta = page.getByRole('region', { name: 'Tus tests' })
+  await expect(tarjeta.getByText('Colgado en 30 mm')).toBeVisible()
+  await expect(tarjeta.getByText('Power slap')).toBeVisible()
+  // El test en casa apuntado a mano entra en la misma tarjeta.
+  await page.getByText('¿Hiciste el test en casa por tu cuenta?').click()
+  await page.getByLabel('Dominadas estrictas seguidas').fill('8')
+  await page.getByLabel(/Apertura de cadera/).fill('60')
+  await page.getByRole('button', { name: 'Guardar test en casa' }).click()
+  await expect(page.getByText('Test en casa guardado.')).toBeVisible()
+  await expect(tarjeta.getByText('Dominadas máximas')).toBeVisible()
+  await expect(tarjeta.getByText('Apertura de cadera')).toBeVisible()
 })
 
 test('Hoy: chequeo bajo, la sesión aceptada ya no encaja y se cambia por otra', async ({ page }) => {

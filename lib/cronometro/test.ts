@@ -1,5 +1,4 @@
-// Test de dedos guiado: intentos de fuerza máxima, carga del 7:3 y lo guardado al recargar. Puro.
-import { lastreRepeaters, VALORES } from '../../motor'
+// Test de dedos guiado: intentos de fuerza máxima y lo guardado al recargar. Puro.
 import type { Paso } from './pasos'
 
 export interface Intento {
@@ -20,16 +19,6 @@ export function mejorLastre(intentos: readonly (Intento | null)[]): number | nul
   return completados.length > 0 ? Math.max(...completados) : null
 }
 
-// La carga del 7:3 al 60 % del mejor intento de hoy, con la misma fórmula del motor que los repeaters (P-24).
-export function lastre73(fecha: string, pesoKg: number, mejor: number): number | null {
-  try {
-    const kg = lastreRepeaters({ fecha, pesoCorporalKg: pesoKg, lastreKg: mejor }, VALORES['P-24'].fraccion)
-    return Number.isFinite(kg) ? kg : null
-  } catch {
-    return null
-  }
-}
-
 const fmt = (kg: number): string => String(kg).replace('.', ',')
 
 export function textoLastre(kg: number): string {
@@ -40,7 +29,7 @@ export function textoLastre(kg: number): string {
 
 // El intento cuyo formulario se muestra en el paso `indice`: el último intento ya hecho, hasta que empiece otro
 // colgado o el fallo. Con `indice === pasos.length` (sesión terminada) da el último intento si la sesión acaba en él
-// (test sin 7:3).
+// (test sin el colgado en 30 mm).
 export function intentoAbierto(pasos: readonly Paso[], indice: number): { n: number; de: number } | null {
   const actual = pasos[indice]
   if (actual?.tipo === 'colgado' || actual?.tipo === 'fallo') return null
