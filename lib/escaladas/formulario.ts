@@ -77,15 +77,17 @@ export function escaladasDelRegistro(fd: FormData, fila: FilaSesion, abiertos: r
   return out
 }
 
-// Una escalada suelta de Progreso: de hoy o de los 30 días anteriores. Los pegues son siempre de un proyecto.
-export function escaladaSuelta(fd: FormData, hoy: string): FilaEscalada {
+// Una escalada suelta de Progreso: de hoy o de los 30 días anteriores. Los pegues son siempre de un proyecto, y con el
+// nombre de un proyecto abierto también cuenta como de ese proyecto.
+export function escaladaSuelta(fd: FormData, hoy: string, abiertos: readonly Proyecto[] = []): FilaEscalada {
   const f = fecha(fd, 'fecha', 'La fecha')
   if (f > hoy) throw new ErrorFormulario('La fecha no puede ser futura.')
   if (f < sumarDias(hoy, -DIAS_ATRAS_SUELTA)) throw new ErrorFormulario(`La fecha: como mucho ${DIAS_ATRAS_SUELTA} días atrás.`)
   const tipo = opcion(fd, 'tipo', 'Vía o bloque', TIPOS)
   const estilo = opcion(fd, 'estilo', 'Cómo fue', ESTILOS)
-  const proyecto = estilo === 'pegues' || fd.get('proyecto') === 'on'
   const n = nombre(fd, 'nombre')
+  const deAbierto = n !== null && abiertos.some((p) => claveNombre(p.nombre) === claveNombre(n) && p.tipo === tipo)
+  const proyecto = estilo === 'pegues' || fd.get('proyecto') === 'on' || deAbierto
   if (proyecto && n === null) throw new ErrorFormulario('Un proyecto necesita un nombre.')
   return {
     id: crypto.randomUUID(), fecha: f, sesion_id: null, tipo,

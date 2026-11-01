@@ -5,6 +5,7 @@ import { cifra, fechaCorta, firmado, plural } from '@/components/progreso/format
 import { GraficaFuerza } from '@/components/progreso/GraficaFuerza'
 import { Logros } from '@/components/progreso/Logros'
 import { Perfil } from '@/components/progreso/Perfil'
+import { TuNivel } from '@/components/progreso/TuNivel'
 import { TusTests } from '@/components/progreso/TusTests'
 import { Aviso } from '@/components/ui/Aviso'
 import { CifraGrande } from '@/components/ui/CifraGrande'
@@ -16,17 +17,22 @@ import { evaluacionMotor } from '@/lib/datos/mapeo'
 import { vistaPerfil } from '@/lib/datos/perfil-limitantes'
 import { constancia, logros, resumenEscalada, UMBRAL_IGUAL } from '@/lib/datos/progreso'
 import { vistaTests } from '@/lib/datos/tests'
+import { DIAS_ATRAS_SUELTA } from '@/lib/escaladas/formulario'
+import { vistaNivel } from '@/lib/escaladas/nivel'
 import type { ResultadoTest } from '@/lib/datos/via'
 import { vistaVia } from '@/lib/datos/via'
-import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
+import { ahoraMadrid, fechaLarga, sumarDias } from '@/lib/fecha'
 import { NOMBRE_FRENO } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
+import { BotonBorrarEscalada } from './BotonBorrarEscalada'
 import { BotonBorrarEvaluacion } from './BotonBorrarEvaluacion'
 import { BotonBorrarPruebaCasa } from './BotonBorrarPruebaCasa'
+import { FormularioEscalada } from './FormularioEscalada'
 import { FormularioEvaluacion } from './FormularioEvaluacion'
 import { FormularioPruebaCasa } from './FormularioPruebaCasa'
 
 const TITULO_SECCION = 'font-titular text-2xl font-bold uppercase leading-none'
+const ESTILO_ESCALADA = { 'a-vista': 'a vista', flash: 'flash', encadenada: 'trabajada', pegues: 'pegues sin encadenar' } as const
 
 function Fuerza({ tests }: { tests: ResultadoTest[] }) {
   const ultimo = tests.at(-1)
@@ -79,6 +85,8 @@ export default async function PaginaProgreso() {
   const fechaInicial = sinResultado.at(-1) ?? hoy
   const tests = vistaVia(datos, hoy).tests.filter((t) => t.fecha <= hoy)
   const escalada = resumenEscalada(datos, hoy)
+  const nivel = vistaNivel(datos.escaladas ?? [], datos.perfil, hoy)
+  const ultimasEscaladas = [...(datos.escaladas ?? [])].filter((e) => e.fecha <= hoy).reverse().slice(0, 10)
   const perfil = vistaPerfil(datos, hoy)
   const casaSinResultado = testsCasaSinResultado(datos, hoy)
   // Historial: tests de dedos y tests en casa juntos, del más reciente al más antiguo.
@@ -116,19 +124,18 @@ export default async function PaginaProgreso() {
 
       <TusTests v={vistaTests(datos, hoy)} />
 
-      <Tarjeta aria-label="Grado">
-        <Etiqueta as="h2">Grado</Etiqueta>
-        <p className="flex items-baseline gap-3 font-titular text-4xl font-extrabold uppercase leading-none">
-          <span className="text-texto">{escalada.gradoActual}</span>
-          <span aria-hidden="true" className="text-2xl text-texto-2">→</span>
-          <span className="sr-only">hacia</span>
-          <span className="text-cima">{escalada.gradoObjetivo}</span>
-        </p>
-        <p className="text-sm text-texto-2">
-          <span className="font-medium text-texto">{plural(escalada.encadenes, 'encadene', 'encadenes')}</span> al límite
-          {escalada.ultimoFreno && <><br />Lo último que te frenó: {NOMBRE_FRENO[escalada.ultimoFreno]}</>}
-        </p>
-      </Tarjeta>
+      <TuNivel v={nivel} encadenes={escalada.encadenes} ultimoFreno={escalada.ultimoFreno} />
+
+      <details id="apuntar-escalada" className="group scroll-mt-4 rounded-2xl border border-borde bg-superficie">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 text-texto-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso [&::-webkit-details-marker]:hidden">
+          + Apuntar escalada
+          <span aria-hidden className="text-xl text-texto-2 transition-transform group-open:rotate-90">›</span>
+        </summary>
+        <div className="space-y-3 p-4 pt-1">
+          <p className="text-sm text-texto-2">Un encadene o un día de pegues a un proyecto que no apuntaste al registrar una sesión.</p>
+          <FormularioEscalada hoy={hoy} desde={sumarDias(hoy, -DIAS_ATRAS_SUELTA)} proyectos={nivel.abiertos.map((p) => p.nombre)} />
+        </div>
+      </details>
 
       <Constancia c={constancia(datos, hoy)} />
 
@@ -197,6 +204,28 @@ export default async function PaginaProgreso() {
           ))}
         </ul>
       </section>
+
+      {ultimasEscaladas.length > 0 && (
+        <section className="space-y-2">
+          <h2 className={TITULO_SECCION}>Últimas escaladas</h2>
+          <ul className="space-y-2">
+            {ultimasEscaladas.map((e) => {
+              const texto = `${e.nombre ? `${e.nombre} · ` : ''}${e.tipo === 'via' ? 'vía' : 'bloque'}${e.grado ? ` ${e.grado}` : ''}`
+              return (
+                <li key={e.id} className="flex items-start justify-between gap-3 rounded-2xl border border-borde bg-superficie p-3 text-sm">
+                  <div>
+                    <p className="font-medium">{texto}</p>
+                    <p className="text-texto-2">
+                      {fechaLarga(e.fecha)} · {e.lugar === 'roca' ? 'roca' : 'rocódromo'} · {ESTILO_ESCALADA[e.estilo]}{e.pegues > 1 || e.estilo === 'pegues' ? ` · ${plural(e.pegues, 'pegue', 'pegues')}` : ''}
+                    </p>
+                  </div>
+                  <BotonBorrarEscalada id={e.id} texto={texto} />
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

@@ -11,6 +11,7 @@ import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
 import { entero, fecha, mensajeDe, numero, numeroOpcional, texto, textoOpcional } from '@/lib/formulario'
 import { escaladaSuelta } from '@/lib/escaladas/formulario'
+import { proyectos } from '@/lib/escaladas/nivel'
 import { borrarEscaladaBd, borrarEvaluacionBd, borrarPruebaCasaBd, insertarEscalada, insertarEvaluacion, insertarPruebaCasa, requerirDatos } from '@/lib/servidor/consultas'
 
 export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
@@ -99,10 +100,11 @@ export async function borrarPruebaCasa(_previo: EstadoAccion, fd: FormData): Pro
 
 // Una escalada suelta (encadene o día de pegues a un proyecto), de hoy o de los 30 días anteriores.
 export async function guardarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
-  const { sql } = await requerirDatos()
+  const { sql, datos } = await requerirDatos()
+  const hoy = ahoraMadrid(new Date()).fecha
   let fila
   try {
-    fila = escaladaSuelta(fd, ahoraMadrid(new Date()).fecha)
+    fila = escaladaSuelta(fd, hoy, proyectos(datos.escaladas ?? [], hoy).filter((p) => p.encadenado === null))
   } catch (e) {
     return { error: mensajeDe(e) }
   }

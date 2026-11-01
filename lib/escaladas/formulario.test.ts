@@ -74,6 +74,11 @@ describe('escaladaSuelta', () => {
       .toMatchObject({ proyecto: true, grado: null, pegues: 3 })
     expect(() => escaladaSuelta(fd({ fecha: HOY, tipo: 'via', lugar: 'roca', estilo: 'pegues' }), HOY)).toThrow(/nombre/)
   })
+  it('con el nombre de un proyecto abierto, cuenta como de ese proyecto', () => {
+    const abierto: Proyecto = { nombre: 'Ojo de Pez', tipo: 'via', lugar: 'roca', grado: '7a', pegues: 3, ultimo: '2026-11-01', encadenado: null }
+    expect(escaladaSuelta(fd({ fecha: HOY, tipo: 'via', lugar: 'roca', grado: '7a', estilo: 'encadenada', nombre: 'ojo de pez' }), HOY, [abierto]).proyecto).toBe(true)
+    expect(escaladaSuelta(fd({ fecha: HOY, tipo: 'via', lugar: 'roca', grado: '7a', estilo: 'encadenada', nombre: 'Otra' }), HOY, [abierto]).proyecto).toBe(false)
+  })
   it('fechas: ni futuras ni de hace más de 30 días; encadene sin grado no vale', () => {
     expect(() => escaladaSuelta(fd({ fecha: '2026-11-11', tipo: 'via', lugar: 'roca', grado: '6a', estilo: 'flash' }), HOY)).toThrow(/futura/)
     expect(() => escaladaSuelta(fd({ fecha: '2026-10-10', tipo: 'via', lugar: 'roca', grado: '6a', estilo: 'flash' }), HOY)).toThrow(/30 días/)

@@ -1,5 +1,6 @@
 // «Tu perfil» en Progreso: lo que más te limita y lo que mejor llevas, con su origen (P-69, P-70, P-71). Puro.
-import { ajusteCiclo2, diagnosticar, VALORES, type Explicacion, type FuenteDiagnostico, type Limitante } from '../../motor'
+import { ajusteCiclo2, diagnosticar, explicar, VALORES, type Explicacion, type FuenteDiagnostico, type Limitante } from '../../motor'
+import { pistaLectura } from '../escaladas/nivel'
 import { fechaLarga } from '../fecha'
 import { NOMBRE_LIMITANTE } from '../nombres'
 import type { DatosAtleta } from './filas'
@@ -12,6 +13,7 @@ export interface VistaPerfil {
   fuerte: { cualidad: Limitante; origen: string } | null
   plan: string | null           // qué hace el ciclo 2 con ello; null si la temporada no tiene ciclo 2
   pista: string | null          // cómo llenarlo con tus datos, mientras no decidan
+  lectura: string | null        // P-75: encadenas trabajado bastante por encima de lo que haces a vista
   explicaciones: Explicacion[]  // para el «¿Por qué?»
 }
 
@@ -48,6 +50,13 @@ export function vistaPerfil(d: DatosAtleta, hoy: string): VistaPerfil | null {
         : n < minRespuestas
           ? `Tus respuestas aún no deciden: llevas ${n} de ${minRespuestas} en las últimas 8 semanas.`
           : `Tus respuestas aún no deciden: en ${n} ningún motivo destaca lo bastante.`
+    const p = pistaLectura(d.escaladas ?? [], hoy)
+    const lectura = p
+      ? `En ${p.lugar === 'roca' ? 'roca' : 'rocódromo'} encadenas trabajado ${p.trabajado} y a vista o flash ${p.aVista}: trabajar la lectura y la táctica puede darte grado.`
+      : null
+    const explicacionLectura = p
+      ? [explicar('escaladas.pista-lectura', ['P-75'], 'Una diferencia de 2 grados o más entre lo que encadenas trabajado y lo que haces a vista, en los últimos 90 días, apunta a la lectura y la táctica. Lo normal ronda 1 grado según los foros de escalada; el umbral de 2 no tiene estudio, así que es solo una pista: no cambia tus sesiones.')]
+      : []
     return {
       limita: {
         cualidad: diag.limitantes[0]!,
@@ -57,7 +66,8 @@ export function vistaPerfil(d: DatosAtleta, hoy: string): VistaPerfil | null {
       fuerte: diag.fortaleza ? { cualidad: diag.fortaleza.cualidad, origen: ORIGEN_FUERTE[diag.fortaleza.fuente] } : null,
       plan,
       pista,
-      explicaciones: diag.explicaciones.slice(1),
+      lectura,
+      explicaciones: [...diag.explicaciones.slice(1), ...explicacionLectura],
     }
   } catch {
     return null

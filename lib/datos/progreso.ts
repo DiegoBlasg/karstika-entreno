@@ -106,6 +106,7 @@ export function logros(d: DatosAtleta, hoy: string): Logro[] {
   const fechasEncadene = [
     ...d.intentos.filter((i) => i.encadenado && i.fecha <= hoy).map((i) => i.fecha),
     ...encadenesNuevos(d, registrosConFecha(d, hoy)).map((r) => r.fecha),
+    ...(d.escaladas ?? []).filter((e) => e.estilo !== 'pegues' && e.fecha <= hoy).map((e) => e.fecha),
   ].sort()
   let record: string | null = null
   let mejor = -Infinity
