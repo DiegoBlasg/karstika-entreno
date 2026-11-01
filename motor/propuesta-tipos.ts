@@ -32,6 +32,7 @@ export interface Ejercicio {
   descansoS?: number
   descansoSeriesS?: number
   hastaFallo?: boolean                            // con series y repeticiones: cada serie hasta el fallo, como mucho `repeticiones`
+  escalando?: boolean                             // con hastaFallo: intervalos escalando / descansando (on-offs), no colgado
   cargaKg?: number                                // lastre (negativo = descarga); ausente si va por sensación
   cargaTexto: string
   notas?: string

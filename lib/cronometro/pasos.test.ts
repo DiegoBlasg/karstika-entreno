@@ -100,6 +100,15 @@ describe('pasosDeSesion: series hasta el fallo con máximo', () => {
   })
 })
 
+describe('pasosDeSesion: on-offs y series con nombre', () => {
+  it('los on-offs son un paso de intervalos escalando de 10 vueltas de 60 s / 60 s', () => {
+    const p: Peticion = { ...peticion(ROCO, FASES.base), fecha: '2026-11-09', historial: [{ id: 'a', tipo: 'arc', intensidad: 'suave', fecha: '2026-11-02', horaInicio: 18, duracionMin: 50 }] }
+    const ps = pasosDeSesion(construirSesion('arc', p)!).filter((x) => x.bloque === 'On-offs')
+    expect(tipos(ps)).toEqual(['preparate', 'fallo'])
+    expect(ps[1]).toMatchObject({ trabajoS: 60, descansoS: 60, maxRepeticiones: 10, escalando: true })
+  })
+})
+
 describe('pasosDeSesion: fichas de «Cómo se hace»', () => {
   it('un bloque guiado como tiempo lleva las fichas de sus ejercicios, sin repetir', () => {
     const ps = pasosDeSesion(plan('hombro', { ...CASA, minutosDisponibles: 30 }))

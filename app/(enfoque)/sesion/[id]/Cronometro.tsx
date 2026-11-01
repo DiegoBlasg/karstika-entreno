@@ -392,11 +392,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           ) : (
             <p className="rounded bg-ambar/10 p-3 text-sm">Sin un intento completado no hay resultado: apúntalo en Progreso si quieres.</p>
           )
-        ) : estado.colgadoFalloS !== null && (
-          <p className="rounded bg-superficie-2 p-3 text-sm">
-            Resistencia: {estado.colgadoFalloS} s. Apúntalo en Progreso junto con el lastre de tu mejor intento.
-          </p>
-        )}
+        ) : null}
         <FormularioRegistro
           sesion={plan.sesion}
           iniciales={molestiasChequeo}
@@ -416,7 +412,12 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
   const fase = fallo ? fallo.fase : paso.tipo
   // La acción principal de cada estado (la única en lima): en pausa, seguir; en marcha, la que hace avanzar el paso
   // («Hecho», «No puedo más») o, en los pasos con reloj, la pausa.
-  const principal = !estado.enMarcha ? 'seguir' : paso.tipo === 'manual' ? 'hecho' : paso.tipo === 'fallo' ? 'no puedo' : 'pausa'
+  const escalando = paso.tipo === 'fallo' && paso.escalando === true
+  // Repetición (o vuelta) en curso de un `fallo` con máximo: «Rep 7 de 24», «Vuelta 3 de 10».
+  const rep = paso.tipo === 'fallo' && paso.maxRepeticiones
+    ? Math.min(paso.maxRepeticiones, Math.floor(ms / ((paso.trabajoS + paso.descansoS) * 1000)) + 1)
+    : null
+  const principal = !estado.enMarcha ? 'seguir' : paso.tipo === 'manual' ? 'hecho' : paso.tipo === 'fallo' && !escalando ? 'no puedo' : 'pausa'
   const claseDe = (accion: string): string => (accion === principal ? `${BOTON} h-16 w-full` : `${BOTON_SECUNDARIO} h-14`)
   const botonHecho = (
     <button type="button" className={claseDe('hecho')} onClick={() => pulsar((e, t) => siguiente(pasos, e, t))}>Hecho</button>
@@ -445,10 +446,19 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
       </div>
       <section className={`flex flex-1 flex-col items-center justify-center gap-3 rounded-3xl border-2 px-4 py-6 text-center ${FONDO[fase]}`}>
         <h1 className="font-titular text-3xl font-extrabold uppercase leading-none tracking-[0.08em]">
-          {NOMBRE_FASE[fase]}
-          {fallo?.fase === 'colgado' && <span className="block pt-1 text-lg tracking-wide">hasta el fallo</span>}
+          {escalando ? (fallo?.fase === 'colgado' ? 'Escalando' : 'Descanso') : NOMBRE_FASE[fase]}
+          {fallo?.fase === 'colgado' && !escalando && (
+            <span className="block pt-1 text-lg tracking-wide">
+              {rep !== null && paso.tipo === 'fallo' ? `Rep ${rep} de ${paso.maxRepeticiones}` : 'hasta el fallo'}
+            </span>
+          )}
         </h1>
-        {fallo ? (
+        {fallo && escalando ? (
+          <>
+            <p className={CIFRA}>{mmss(fallo.restanteS)}</p>
+            {rep !== null && paso.tipo === 'fallo' && <p className="font-titular text-3xl font-bold tabular-nums">Vuelta {rep} de {paso.maxRepeticiones}</p>}
+          </>
+        ) : fallo ? (
           <>
             <p className={CIFRA}>{mmss(fallo.colgadoS)}</p>
             <p className="text-sm font-medium">colgado en total</p>

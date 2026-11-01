@@ -7,7 +7,7 @@ export type Paso = (
   | { tipo: 'descanso'; segundos: number; titulo: string }
   | { tipo: 'manual'; titulo: string; carga?: string; notas?: string }
   | { tipo: 'bloque'; segundos: number; titulo: string; detalle: string[] }
-  | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string; maxRepeticiones?: number }
+  | { tipo: 'fallo'; trabajoS: number; descansoS: number; titulo: string; carga?: string; maxRepeticiones?: number; escalando?: boolean }
 ) & { bloque: string; fichas?: string[] }   // fichas: ids de la biblioteca («Cómo se hace»)
 
 export const SEGUNDOS_PREPARATE = 10
@@ -57,8 +57,9 @@ function pasosDeEjercicio(bloque: string, e: Ejercicio): Paso[] {
   }
   if (trabajoS === undefined) {
     // Series sin tiempo de trabajo (4×4): cada vuelta dura lo que se tarde; se pasa con «Hecho».
+    // Con repeticiones son vueltas de un circuito (4x4); sin ellas, series de un ejercicio (con su nombre).
     for (let s = 1; s <= series; s++) {
-      out.push(manual(`Vuelta ${s} de ${series}`))
+      out.push(manual(repeticiones !== undefined ? `Vuelta ${s} de ${series}` : `${e.nombre} · serie ${s} de ${series}`))
       entreSeries(s)
     }
     return out
@@ -67,7 +68,8 @@ function pasosDeEjercicio(bloque: string, e: Ejercicio): Paso[] {
   if (e.hastaFallo && repeticiones !== undefined && descansoS !== undefined) {
     // Cada serie hasta el fallo, como mucho `repeticiones` (avanza sola al llegar o con «No puedo más»).
     for (let s = 1; s <= series; s++) {
-      out.push({ tipo: 'fallo', bloque, trabajoS, descansoS, maxRepeticiones: repeticiones, titulo: `Serie ${s} de ${series} · hasta ${repeticiones} repeticiones`, carga })
+      const titulo = e.escalando ? e.nombre : `Serie ${s} de ${series} · hasta ${repeticiones} repeticiones`
+      out.push({ tipo: 'fallo', bloque, trabajoS, descansoS, maxRepeticiones: repeticiones, titulo, carga, ...(e.escalando ? { escalando: true } : {}) })
       entreSeries(s)
     }
     return out

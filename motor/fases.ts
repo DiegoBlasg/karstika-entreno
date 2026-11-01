@@ -35,7 +35,7 @@ export const FASE_FUERZA: Fase = {
   ],
 }
 
-// Resistencia de fuerza: multipresa 10:5 (P-36) y 4x4 de bloques fáciles (P-37), más la vía al límite. Intensas
+// Resistencia de fuerza: multipresa 10:6 al 60 % (P-36) y 4x4 de bloques fáciles (P-37), más la vía al límite. Intensas
 // de dedos: vía + multipresa = 2 por semana; el 4x4 es carga alta pero no carga los dedos al límite.
 export const FASE_RESISTENCIA: Fase = {
   id: 'resistencia',

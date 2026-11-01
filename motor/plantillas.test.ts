@@ -6,6 +6,8 @@ import type { EvaluacionDedos, SesionPlan } from './propuesta-tipos'
 import type { Sesion } from './tipos'
 
 const evaluacion: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 30 }
+// La rampa de P-11 cuenta desde el test: para las progresiones, un test anterior a las sesiones de septiembre.
+const evaluacionAgosto: EvaluacionDedos = { ...evaluacion, fecha: '2026-08-31' }
 const multipresasPrevias = (n: number) =>
   Array.from({ length: n }, (_, i) =>
     ses(`m${i}`, `2026-09-${String(1 + i * 3).padStart(2, '0')}`, 18, { tipo: 'multipresa-resistencia' }),
@@ -64,7 +66,7 @@ describe('multipresa-resistencia', () => {
     // Justo al llegar a 8 no salta al 80 %: empieza la rampa desde el 70 % (0 kg con este test).
     expect(construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(8) })!.bloques[1]!.ejercicios[0]!.cargaKg).toBe(0)
     // Con 2 sesiones más, válidas y en 2 semanas distintas: +1,25 kg por semana.
-    const despues = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(10) })!
+    const despues = construirSesion('multipresa-resistencia', { ...base(), evaluacion: evaluacionAgosto, historial: multipresasPrevias(10) })!
     const e2 = despues.bloques[1]!.ejercicios[0]!
     expect(e2.cargaKg).toBe(2.5)
     expect(e2.cargaTexto).toBe('+2,5 kg de lastre')
@@ -429,7 +431,7 @@ describe('construirComplemento', () => {
 describe('multipresa: una sola subida cada vez (P-11)', () => {
   const base = () => peticion({ evaluacion, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } })
   const bloquesYCarga = (n: number) => {
-    const plan = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(n) })!
+    const plan = construirSesion('multipresa-resistencia', { ...base(), evaluacion: evaluacionAgosto, historial: multipresasPrevias(n) })!
     return {
       bloques: plan.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters')).length,
       kg: plan.bloques[1]!.ejercicios[0]!.cargaKg,
@@ -441,15 +443,27 @@ describe('multipresa: una sola subida cada vez (P-11)', () => {
     expect(bloquesYCarga(7)).toEqual({ bloques: 2, kg: 0 })
     // A partir de 8 la carga sube por rampa (+1,25 kg por semana con 2 válidas seguidas), no de golpe (P-11).
     expect(bloquesYCarga(8)).toEqual({ bloques: 2, kg: 0 })
-    expect(bloquesYCarga(9)).toEqual({ bloques: 2, kg: 1.25 })
+    expect(bloquesYCarga(9)).toEqual({ bloques: 2, kg: 1 }) // 1,25 redondeado a 0,5
     expect(bloquesYCarga(10)).toEqual({ bloques: 2, kg: 2.5 })
+  })
+  it('con un test nuevo, la rampa vuelve a empezar desde su 70 % (sin saltos)', () => {
+    const conTestNuevo = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, fecha: '2026-09-27' }, historial: multipresasPrevias(10) })!
+    // Las sesiones 9 y 10 (25 y 28 de septiembre): solo la del 28 es posterior al test → +1,25 → 1 kg (redondeado a 0,5).
+    expect(conTestNuevo.bloques[1]!.ejercicios[0]!.cargaKg).toBe(1)
+  })
+  it('el freno de P-11 (esfuerzo por encima o ámbar) también para la rampa', () => {
+    const frenado = { zonas: { dedos: 'verde', muneca: 'verde', codo: 'verde', hombro: 'verde', otra: 'verde' }, chequeoBajoHoy: false, sinSubida: true } as unknown as EstadoAtleta
+    const plan = construirSesion('multipresa-resistencia', { ...base(), evaluacion: evaluacionAgosto, historial: multipresasPrevias(10), estado: frenado })!
+    // Sin freno serían +2,5 kg; con freno, la última sesión no suma su semana: +1,25 → 1 kg.
+    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(1)
+    expect(plan.bloques[1]!.explicacion.motivo).toMatch(/Hoy no sube/)
   })
   it('la rampa nunca pasa del 80 % y no sube en semanas sin 2 válidas seguidas', () => {
     // 8 sesiones y después 12 semanas con una por semana: 12 × 1,25 = 15 kg, pero el tope (80 %) son 10.
     const semana = (i: number): string => new Date(Date.UTC(2026, 9, 1 + i * 7)).toISOString().slice(0, 10)
     const semanales = Array.from({ length: 12 }, (_, i) => ses(`w${i}`, semana(i), 18, { tipo: 'multipresa-resistencia' }))
     const muchas = [...multipresasPrevias(8), ...semanales]
-    expect(construirSesion('multipresa-resistencia', { ...base(), fecha: '2026-12-20', evaluacion: { ...evaluacion, fecha: '2026-12-01' }, historial: muchas })!.bloques[1]!.ejercicios[0]!.cargaKg).toBe(10)
+    expect(construirSesion('multipresa-resistencia', { ...base(), fecha: '2026-12-05', evaluacion: { ...evaluacion, fecha: '2026-09-30' }, historial: muchas })!.bloques[1]!.ejercicios[0]!.cargaKg).toBe(10)
   })
   it('las multipresas futuras ya planificadas no cuentan para la progresión', () => {
     const futuras = Array.from({ length: 8 }, (_, i) =>
@@ -517,6 +531,8 @@ describe('plantillas en semana de descarga (P-48)', () => {
   it('resistencia: una sola serie; 4x4: la mitad de vueltas', () => {
     const rf = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, fase: descarga }))!
     expect(rf.bloques[1]!.ejercicios[0]!.series).toBe(1)
+    expect(rf.bloques[1]!.ejercicios[0]!.repeticiones).toBe(12)
+    expect(rf.bloques[1]!.ejercicios[0]!.notas).toMatch(/sin acercarte al fallo/)
     const cuatro = construirSesion('resistencia-4x4', peticion({ fase: descarga }))!
     expect(cuatro.bloques[2]!.ejercicios[0]!.series).toBe(2)
     expect(cuatro.sesion.duracionMin).toBe(35)

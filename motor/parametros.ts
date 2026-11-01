@@ -16,7 +16,7 @@ export const VALORES = {
   },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },
   'P-32': { diasBaseMinimos: 28, sesionesMinimasBase: 6 },
-  'P-36': { trabajoS: 10, descansoS: 6, repeticiones: 24, series: 2, descansoSeriesS: 360, fraccion: 0.6 },
+  'P-36': { trabajoS: 10, descansoS: 6, repeticiones: 24, series: 2, descansoSeriesS: 360, fraccion: 0.6, repeticionesDescarga: 12 },
   'P-37': { bloques: 4, vueltas: 4, descansoVueltaMin: 4 },
   'P-61': { maxIntentos: 4 },
   'P-23': { orden: ['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'] },

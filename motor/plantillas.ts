@@ -77,7 +77,8 @@ function cargaMultipresa(kg: number | undefined): string {
   return kg > 0 ? `+${fmt(kg)} kg de lastre` : `descarga de ${fmt(-kg)} kg`
 }
 
-const TIPOS_MULTIPRESA_PROGRESION: readonly TipoSesion[] = ['multipresa-resistencia', 'multipresa-resistencia-fuerza']
+// La resistencia 10:6 (P-36) va a carga fija del test: no cuenta para la progresión de los repeaters.
+const TIPOS_MULTIPRESA_PROGRESION: readonly TipoSesion[] = ['multipresa-resistencia']
 
 // Progresión común a las multipresas. Solo cuentan las anteriores al día de la petición (no las futuras ya
 // planificadas). Una sola subida cada vez (P-11): primero el volumen (1 → 2 bloques, P-04) y, otras tantas
@@ -110,29 +111,41 @@ function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_
     .filter((e) => e.dia < hoy)
     .sort((x, y) => x.dia - y.dia || x.orden - y.orden || Number(y.molestia) - Number(x.molestia))
   // P-11 (Mundry 2021): ya en la fracción máxima, la carga sube como mucho 1,25 kg por semana natural, y solo en las
-  // semanas con una sesión válida precedida de otra válida. Una molestia reinicia la rampa.
+  // semanas con una sesión válida precedida de otra válida. Cuenta desde el test vigente (con un test nuevo la rampa
+  // vuelve a empezar desde su 70 %, sin saltos) y una molestia la reinicia.
   const { kgMaxSemana, sesionesValidasParaSubir } = VALORES['P-11']
+  const desdeTest = p.evaluacion ? diaNumero(p.evaluacion.fecha) : -Infinity
   let previas = 0
   let antesDeLaUltima = 0
   let racha = 0
+  let semanaDeLaUltima: number | null = null // la semana que añadió la última sesión a la rampa, si la añadió
   const semanasConSubida = new Set<number>()
   for (const e of eventos) {
     if (e.molestia) {
       previas = Math.min(previas, Math.max(0, escalon(previas) - 1) * S)
       racha = 0
       semanasConSubida.clear()
+      semanaDeLaUltima = null
     } else {
       antesDeLaUltima = previas
       const enMaxima = previas >= 2 * S
       racha = e.valida ? racha + 1 : 0
       if (e.valida) previas++
-      if (enMaxima && racha >= sesionesValidasParaSubir) semanasConSubida.add(lunesDeDia(e.dia))
+      const semana = lunesDeDia(e.dia)
+      const suma = enMaxima && racha >= sesionesValidasParaSubir && e.dia > desdeTest && !semanasConSubida.has(semana)
+      if (suma) semanasConSubida.add(semana)
+      semanaDeLaUltima = suma ? semana : null
     }
   }
   const retornoP46 = escalon(previas) < escalon(lista.length)
   let frenado = false
   if (p.estado?.sinSubida && lista.length > 0 && escalon(previas) > escalon(antesDeLaUltima)) {
     previas = (escalon(antesDeLaUltima) + 1) * S - 1
+    frenado = true
+  }
+  // El freno de P-11 (esfuerzo por encima o una zona en ámbar) también para la rampa: la última sesión no sube.
+  if (p.estado?.sinSubida && semanaDeLaUltima !== null) {
+    semanasConSubida.delete(semanaDeLaUltima)
     frenado = true
   }
   const sesionesConUnBloque = S
@@ -144,7 +157,8 @@ function progresionMultipresa(p: Peticion, tipos: readonly TipoSesion[] = TIPOS_
   let enRampa = false
   if (vigente && kg !== undefined && !inicial) {
     // El salto de la fracción inicial a la máxima no es de golpe: desde la carga inicial, +1,25 kg por semana con subida.
-    const conRampa = lastreRepeaters(p.evaluacion!, FRACCION_INICIAL_REPEATERS) + kgMaxSemana * semanasConSubida.size
+    // Redondeada hacia abajo a 0,5 kg, como el resto de cargas (se puede ajustar en una polea).
+    const conRampa = Math.floor((lastreRepeaters(p.evaluacion!, FRACCION_INICIAL_REPEATERS) + kgMaxSemana * semanasConSubida.size) * 2 + 1e-9) / 2
     if (conRampa < kg) {
       kg = conRampa
       enRampa = true
@@ -223,7 +237,7 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
         `${p.fase.descarga ? 'Semana de descarga: la mitad de series en un solo bloque. ' : ''}Repeaters submáximos 7 s colgado : 3 s descanso, ${seriesPorBloque} series de 7 repeticiones, 2,5 min entre series, en regleta de 20 mm semiarqueado, ${
           kg === undefined
             ? 'por esfuerzo percibido porque no hay un test vigente'
-            : `al ${porcentaje} % de tu test (${inicial ? `durante las primeras ${2 * sesionesConUnBloque} sesiones, por prudencia` : 'el tope de P-06'})`
+            : `al ${porcentaje} % de tu test (${inicial ? `durante las primeras ${2 * sesionesConUnBloque} sesiones, por prudencia` : progresion.enRampa ? `subiendo hacia el ${Math.round(VALORES['P-06'].fraccionMaximaRepeaters * 100)} %, el tope de P-06` : 'el tope de P-06'})`
         }. Volumen y carga suben de uno en uno: primero de 1 a 2 bloques y después del 70 % al 80 %.${extrasProgresion(progresion)}`,
       ),
     })
@@ -236,15 +250,15 @@ function construirMultipresa(p: Peticion): SesionPlan | null {
   return plan(sesion, bloques)
 }
 
-// Resistencia de fuerza en multipresa (P-36, A): 10 s : 5 s, 5 repeticiones, 4 series, 60 s entre series. En
-// descarga, la mitad de series. Misma progresión de carga que los repeaters.
 // Resistencia en multipresa (P-36, Devise 2022): 10:6 hasta 24 repeticiones por serie, al 60 % fijo del test vigente.
 // El ensayo no reajustó la intensidad: la carga sube cuando sube el test, no por sesiones.
 function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
-  const { trabajoS, descansoS, repeticiones, descansoSeriesS, fraccion } = VALORES['P-36']
+  const { trabajoS, descansoS, descansoSeriesS, fraccion, repeticionesDescarga } = VALORES['P-36']
   const kg = evaluacionVigente(p.evaluacion, p.fecha) ? lastreRepeaters(p.evaluacion!, fraccion) : undefined
   const porcentaje = Math.round(fraccion * 100)
+  // Descarga (P-48: nada al límite): una sola serie y la mitad de repeticiones, lejos del fallo.
   const series = p.fase.descarga ? 1 : VALORES['P-36'].series
+  const repeticiones = p.fase.descarga ? repeticionesDescarga : VALORES['P-36'].repeticiones
   const segundos = series * (repeticiones * (trabajoS + descansoS) - descansoS) + (series - 1) * descansoSeriesS
   const bloqueMin = Math.max(5, Math.ceil(segundos / 60 / 5) * 5)
   const total = CALENTAMIENTO_MIN + bloqueMin
@@ -265,16 +279,18 @@ function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
           hastaFallo: true,
           ...(kg !== undefined ? { cargaKg: kg } : {}),
           cargaTexto: cargaMultipresa(kg),
-          notas: kg !== undefined
-            ? `El ${porcentaje} % de tu último test. Cada serie, hasta ${repeticiones} repeticiones o hasta que no sostengas los ${trabajoS} s.`
-            : `Sin test vigente: la carga con la que completas casi toda la primera serie (decisión de diseño). Cada serie, hasta ${repeticiones} repeticiones.`,
+          notas: `${kg !== undefined
+            ? `El ${porcentaje} % de tu último test.`
+            : 'Sin test vigente: empieza con una carga que sostengas con margen y ajústala en la segunda serie (decisión de diseño).'} ${p.fase.descarga
+            ? `Semana de descarga: ${repeticiones} repeticiones como mucho, sin acercarte al fallo.`
+            : `Cada serie, hasta ${repeticiones} repeticiones o hasta que la siguiente ya no saldría limpia: para una antes del fallo.`}`,
           ficha: 'resistencia-10-6',
         },
       ],
       explicacion: explicar(
         'plantilla.multipresa-resistencia-fuerza',
         p.fase.descarga ? ['P-36', 'P-09', 'P-10', 'P-48'] : ['P-36', 'P-09', 'P-10'],
-        `${p.fase.descarga ? 'Semana de descarga: una sola serie. ' : ''}Resistencia: ${trabajoS} s colgado : ${descansoS} s de descanso, hasta ${repeticiones} repeticiones por serie, ${series === 1 ? '1 serie' : `${series} series con ${descansoSeriesS / 60} min entre series`}, en regleta de 20 mm semiarqueado, al ${porcentaje} % fijo de tu fuerza máxima. Es el protocolo con ensayo que mejoró la resistencia (Devise 2022, en avanzados); las suspensiones al máximo no la mejoraron.`,
+        `${p.fase.descarga ? `Semana de descarga: una sola serie de ${repeticiones} como mucho, lejos del fallo. ` : ''}Resistencia: ${trabajoS} s colgado : ${descansoS} s de descanso, hasta ${repeticiones} repeticiones por serie, ${series === 1 ? '1 serie' : `${series} series con ${descansoSeriesS / 60} min entre series`}, en regleta de 20 mm semiarqueado, al ${porcentaje} % fijo de tu fuerza máxima. Es el protocolo con ensayo que mejoró la resistencia (Devise 2022, en avanzados); las suspensiones al máximo no la mejoraron.`,
       ),
     },
   ]
@@ -534,9 +550,8 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     [
       {
         nombre: `${modalidad}: tu vía de práctica, 2-3 pegues buscando que salga fluida`,
-        series: 3,
         cargaTexto: 'Esfuerzo percibido 4–5 de 10',
-        notas: 'Repite la misma vía de una sesión a otra hasta que fluya; si ya fluye o llevas unas 7 sesiones con ella, elige otra.',
+        notas: 'Repite la misma vía de una sesión a otra hasta que fluya; si ya fluye, llevas unas 7 sesiones con ella o la desmontan, elige otra.',
         ficha: 'via-de-practica',
       },
       { nombre: '1-2 vías nuevas parecidas, a vista, variando el tipo de presa', cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
@@ -577,8 +592,14 @@ function construirArc(p: Peticion): SesionPlan | null {
           minutos: bloqueMin,
           ejercicios: [
             {
-              // Sin series ni tiempos: el cronómetro lo guía como un bloque de minutos (no como intentos de colgarse).
+              // El cronómetro lo guía con pitidos: 1 min escalando y 1 min de descanso, `vueltas` veces.
               nombre: `${vueltas} × (1 min escalando / 1 min de descanso)`,
+              series: 1,
+              repeticiones: vueltas,
+              trabajoS: 60,
+              descansoS: 60,
+              hastaFallo: true,
+              escalando: true,
               cargaTexto: 'Unos 2 grados por debajo de tu nivel a vista',
               notas: 'Bombeo alto solo en las últimas; si llega antes, baja la dificultad.',
               ficha: 'on-offs',
@@ -812,7 +833,7 @@ function construirDominadasPotencia(p: Peticion): SesionPlan | null {
           series: v.explosivasSeries,
           descansoSeriesS: v.explosivasDescansoMin * 60,
           cargaTexto: `${v.repMin}-${v.repMax} repeticiones, lejos del fallo`,
-          notas: 'Sube lo más rápido que puedas y baja controlando. Para la serie si pierdes velocidad.',
+          notas: 'Sube lo más rápido que puedas y baja controlando. Para la serie si pierdes velocidad. Si aún no haces 5 dominadas seguidas, sáltate estas y haz solo las excéntricas.',
           ficha: 'dominadas-explosivas',
         },
         {
@@ -1032,10 +1053,10 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
         nombre: 'Complemento: práctica técnica',
         minutos: TECNICA_COMPLEMENTO_MIN,
         ejercicios: [
-          { nombre: `${modalidad}, variando vías y tipos de presa`, cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
+          { nombre: `${modalidad}: tu vía de práctica hasta que fluya y una vía nueva`, cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'via-de-practica' },
           { nombre: 'Graba al menos una vía en vídeo y revísala', cargaTexto: 'Sin esfuerzo', ficha: 'video-autoevaluacion' },
         ],
-        explicacion: explicar('plantilla.tecnica', ['P-54', 'P-55'], 'Volumen técnico variado y con vídeo, a nivel cómodo.'),
+        explicacion: explicar('plantilla.tecnica', ['P-54', 'P-55'], 'Volumen técnico a nivel cómodo: tu vía de práctica hasta que fluya y una vía nueva (P-54), con vídeo.'),
       }
     }
   }

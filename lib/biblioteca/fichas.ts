@@ -110,9 +110,9 @@ export const FICHAS: Record<FichaId, Ficha> = {
     material: `Multipresa, regleta de ${REGLETA}`,
     pasos: [
       ...PASOS_COLGARSE,
-      `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso, hasta ${RF.repeticiones} repeticiones o hasta que no puedas sostener los ${RF.trabajoS} s con buena forma.`,
+      `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso, hasta ${RF.repeticiones} repeticiones o hasta que la siguiente ya no saldría limpia: para una antes del fallo (en semana de descarga, ${RF.repeticionesDescarga} como mucho).`,
       `Haz ${RF.series} series con ${fmt(RF.descansoSeriesS / 60)} min entre series.`,
-      `Carga: el ${pct(RF.fraccion)} de tu fuerza máxima del último test, fija. Sin test: la carga con la que completas casi toda la primera serie (decisión de diseño).`,
+      `Carga: el ${pct(RF.fraccion)} de tu fuerza máxima del último test, fija. Sin test: empieza con una carga que sostengas con margen y ajústala en la segunda serie (decisión de diseño).`,
       NOVEL,
     ],
     errores: [
