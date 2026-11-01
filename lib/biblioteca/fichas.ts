@@ -54,6 +54,9 @@ const ARC = VALORES['P-35']
 const X4 = VALORES['P-37']
 const LECTURA = `${VALORES['P-53'].minutosPrevisualizacion} min`
 
+// Las suspensiones de consulta no se suman al plan: P-07 y P-12 limitan las sesiones de multipresa e intensas de dedos.
+const SUSTITUYE = 'Si lo haces, que sustituya a una sesión de multipresa del plan, no que se sume (P-07, P-12).'
+
 const PASOS_COLGARSE = [
   'Coloca las yemas en la regleta con agarre semiarqueado: falanges medias más o menos a 90° y el pulgar suelto.',
   'Hombros activos: escápulas abajo y codos casi estirados, sin bloquearlos.',
@@ -773,7 +776,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'pies-silenciosos': {
     id: 'pies-silenciosos',
     titulo: 'Pies silenciosos',
-    paraQue: 'Poner el pie con precisión: mirarlo hasta cargarlo y que no suene al apoyar. Es un ejercicio clásico de entrenadores (Anderson, Gresham); no hay estudio que mida su efecto, así que va como ejercicio de la semana de la sesión técnica.',
+    paraQue: 'Poner el pie con precisión: mirarlo hasta cargarlo y que no suene al apoyar. Es un ejercicio clásico de entrenadores (Anderson, Gresham); no hay estudio que mida su efecto. Va como ejercicio de la semana en la sesión técnica.',
     material: 'Vías o bloques fáciles (rocódromo o roca)',
     pasos: [
       'Elige vías o bloques 2-3 grados por debajo de tu nivel.',
@@ -819,12 +822,12 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'placa-sin-manos': {
     id: 'placa-sin-manos',
     titulo: 'Placa sin manos y destrepe',
-    paraQue: 'Confiar en los pies: subir una placa fácil solo con las palmas y destrepar el calentamiento. Ejercicio de entrenadores, sin estudio que lo mida.',
+    paraQue: 'Confiar en los pies: subir una placa fácil solo con las palmas y destrepar el calentamiento. Lo propone un rocódromo (Philadelphia Rock Gym, nivel C), sin estudio que lo mida. Solo en rocódromo.',
     material: 'Placa tumbada o vía fácil del rocódromo',
     pasos: [
       'En una placa muy tumbada, sube usando solo las palmas abiertas para equilibrarte.',
       'Carga el peso en los pies y sube con las piernas.',
-      'Destrepa la vía de calentamiento en lugar de bajar con la cuerda.',
+      'Destrepa la vía de calentamiento solo en top-rope (o un bloque bajo); nunca de primero.',
       '2-3 vías.',
     ],
     errores: ['Elegir una placa demasiado vertical.', 'Agarrarte en cuanto dudas: prueba antes a mover el pie.'],
@@ -834,23 +837,27 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'caidas-progresivas': {
     id: 'caidas-progresivas',
     titulo: 'Caídas progresivas',
-    paraQue: `Perder el miedo a caer de primero poco a poco. Es la propuesta de Arno Ilgner (entrenador, nivel C); sus pasos exactos no están publicados en abierto y hay quien duda de que se transfiera a roca. ${VALORES['P-76'].caidasMin}-${VALORES['P-76'].caidasMax} caídas al inicio de una sesión por semana.`,
+    paraQue: `Perder el miedo a caer de primero poco a poco. Es la propuesta de Arno Ilgner (entrenador, nivel C); sus pasos exactos no están publicados en abierto y hay quien duda de que se transfiera a roca. ${VALORES['P-76'].caidasMin}-${VALORES['P-76'].caidasMax} caídas en una sesión por semana, durante 4-6 semanas.`,
     material: 'Vía desplomada y limpia del rocódromo, compañero que asegure avisado',
     pasos: [
-      'Avisa a quien te asegura: vas a caer a propósito y quieres un aseguramiento dinámico.',
-      'Empieza en top-rope o con la chapa a la altura de la cintura y suéltate.',
-      'Si caes sin ansiedad, sube un escalón: chapa a los pies, después por encima.',
-      'Mira hacia la pared, piernas un poco abiertas y brazos sin agarrar la cuerda.',
+      'Avisa a quien te asegura: vas a caer a propósito. Tiene que saber dar un aseguramiento dinámico; si no, quédate en top-rope.',
+      'Cuerda siempre por delante de la pierna, nunca entre las piernas ni detrás.',
+      'Empieza en top-rope o con la chapa a la altura de la cintura y suéltate: rodillas flexionadas, pies por delante para amortiguar contra la pared y manos lejos de la cuerda.',
+      'Sube un escalón (chapa a los pies, después por encima) solo si caes sin ansiedad y el aseguramiento fue suave.',
       `Entre ${VALORES['P-76'].caidasMin} y ${VALORES['P-76'].caidasMax} caídas; no subas de escalón el mismo día si dudas.`,
     ],
     errores: ['Caer en una vía tumbada o con salientes.', 'Agarrar la cuerda o la cinta al caer.', 'Saltarte escalones por prisa.'],
-    paraSi: ['Golpe con la pared en el pie o el tobillo: para y revisa la vía y el aseguramiento.', ...PARA_SI],
+    paraSi: [
+      'Golpe con la pared en el pie o el tobillo: para y revisa la vía y el aseguramiento.',
+      'Si la cuerda se te mete detrás de la pierna: para y repasa la posición antes de la siguiente.',
+      ...PARA_SI,
+    ],
     parametros: ['P-76', 'P-62', ...SEGURIDAD],
   },
   'respiracion-voy': {
     id: 'respiracion-voy',
     titulo: 'Respirar y decidir «voy»',
-    paraQue: 'Antes del paso clave, en el último reposo: respirar y decidir ir a por ello, no quedarse a medias. Con ansiedad se escala más lento y agarrando más (Pijpers 2003, B); la rutina concreta no tiene fuente específica (C).',
+    paraQue: 'Antes del paso clave, en el último reposo: respirar y decidir ir a por ello, no quedarse a medias. De primero la ansiedad sube (P-62); esta rutina concreta es de entrenadores, sin fuente específica (C).',
     material: 'Ninguno',
     pasos: [
       'En el reposo antes del paso clave, sacude el brazo colgando.',
@@ -881,7 +888,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'continuidad-5x3': {
     id: 'continuidad-5x3',
     titulo: 'Continuidad 5×3',
-    paraQue: 'Regeneración y capacidad suave: 3 bloques de 5 min escalando sin parar, bien por debajo de tu nivel (Lattice, nivel C). De consulta: el entrenador ya programa el ARC y los on-offs.',
+    paraQue: 'Regeneración y capacidad suave: 3 bloques de 5 min escalando sin parar, bien por debajo de tu nivel (Lattice, nivel C). El entrenador ya programa el ARC y los on-offs para esto.',
     material: 'Vías fáciles o travesía del rocódromo',
     pasos: [
       'Escoge terreno al menos 4 grados por debajo de tu a vista.',
@@ -896,12 +903,12 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'up-down-up': {
     id: 'up-down-up',
     titulo: 'Up-down-up',
-    paraQue: 'Resistencia en vía: subir, destrepar y volver a subir la misma vía. Propuesta de foro (Mountain Project, nivel C). De consulta.',
-    material: 'Vía con cuerda (rocódromo o roca), compañero',
+    paraQue: 'Resistencia en vía: subir, destrepar y volver a subir la misma vía. Propuesta de foro (Mountain Project, nivel C).',
+    material: 'Vía en top-rope (rocódromo o roca), compañero',
     pasos: [
-      'Escoge una vía de 2-3 grados por debajo de tu nivel.',
-      'Súbela, destrépala y vuelve a subirla sin descansar en el suelo.',
-      'Descansa lo mismo que has tardado.',
+      'Escoge una vía fácil, bastante por debajo de tu nivel, para destrepar con seguridad.',
+      'Siempre en top-rope: súbela, destrépala y vuelve a subirla sin descansar en el suelo. Nunca de primero.',
+      'Descansa lo que necesites antes de la siguiente serie.',
       '3-4 series; la última, si quieres, en una vía algo más dura.',
     ],
     errores: ['Elegir una vía demasiado dura para destrepar con seguridad.'],
@@ -911,12 +918,12 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'repetir-vias': {
     id: 'repetir-vias',
     titulo: 'Repetir vías con descanso fijo',
-    paraQue: 'Resistencia en vía: 3-4 vías seguidas con un descanso fijo entre ellas (Hörst, nivel C). De consulta.',
+    paraQue: 'Resistencia en vía: 3-4 vías seguidas con un descanso fijo entre ellas, 1-3 series (Hörst, nivel C).',
     material: 'Vías con cuerda (rocódromo o roca), compañero',
     pasos: [
-      'Escoge 3-4 vías un grado por debajo de tu límite.',
+      'Escoge 3-4 vías algo por debajo de tu límite.',
       'Escálalas una detrás de otra con el mismo descanso (por ejemplo, el tiempo que tarda tu compañero).',
-      'Descansa 10-15 min.',
+      'Descansa hasta recuperarte antes de la siguiente serie.',
       '1-3 series.',
     ],
     errores: ['Alargar los descansos cuando cuesta: el ejercicio es el descanso fijo.'],
@@ -926,7 +933,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   inthangs: {
     id: 'inthangs',
     titulo: 'IntHangs (Eva López)',
-    paraQue: 'Resistencia de dedos con suspensiones intermitentes: 3-5 series de 4-5 repeticiones de 7-10 s con 3-30 s de descanso, en la regleta más pequeña que te deje completarlas (Eva López, nivel C). De consulta: el entrenador programa las 10:6 de Devise 2022.',
+    paraQue: `Resistencia de dedos con suspensiones intermitentes: 3-5 series de 4-5 repeticiones de 7-10 s con 3-30 s de descanso (Eva López, nivel C). En regleta de ${REGLETA} o mayor: para progresar, añade carga en lugar de bajar de regleta (Mundry 2021, A). ${SUSTITUYE}`,
     material: `Multipresa, regleta de ${REGLETA} o mayor`,
     pasos: [
       'Calienta como para cualquier suspensión.',
@@ -937,47 +944,47 @@ export const FICHAS: Record<FichaId, Ficha> = {
     ],
     errores: ['Bajar de regleta por debajo de lo seguro para tu experiencia.'],
     paraSi: ['Pierdes el semiarqueado: termina la serie.', ...PARA_SI],
-    parametros: ['P-36', 'P-10', 'P-12', ...SEGURIDAD],
+    parametros: ['P-36', 'P-07', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
   'suspensiones-largas': {
     id: 'suspensiones-largas',
     titulo: 'Suspensiones largas suaves',
-    paraQue: 'Para iniciarse en la multipresa: suspensiones de 30-60 s a baja intensidad, quitando peso con polea o pies (Lattice, nivel C). De consulta: el entrenador programa los repeaters.',
+    paraQue: `Para iniciarse en la multipresa: suspensiones de 30-60 s a baja intensidad, quitando peso con polea o pies (Lattice, nivel C). ${SUSTITUYE}`,
     material: `Multipresa, regleta de ${REGLETA}, polea o un taburete para los pies`,
     pasos: [
       ...PASOS_COLGARSE,
       'Quita peso hasta que el esfuerzo sea 5-7 de 10.',
       'Cuelga 30-60 s.',
-      '4-8 series con 1-2 min de descanso.',
+      '4-8 series, descansando lo que necesites entre ellas.',
       NOVEL,
     ],
     errores: ['Colgar con todo el peso desde el primer día.'],
     paraSi: ['Pierdes el semiarqueado: termina la serie.', ...PARA_SI],
-    parametros: ['P-01', 'P-10', 'P-12', ...SEGURIDAD],
+    parametros: ['P-01', 'P-07', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
   abrahangs: {
     id: 'abrahangs',
     titulo: '«Abrahangs»',
-    paraQue: 'Suspensiones de muy baja intensidad, unos 10 min, en días sin carga intensa. En usuarios de Crimpd mejoraron la fuerza casi como las máximas, pero no es un ensayo (Gilmore 2024, B). De consulta.',
+    paraQue: `Suspensiones de baja intensidad, unos 10 min en total. En usuarios de Crimpd mejoraron la fuerza casi como las máximas, pero no es un ensayo y no se publica la estructura exacta (Gilmore 2024, B). ${SUSTITUYE}`,
     material: `Multipresa, regleta de ${REGLETA}, polea o taburete para quitar peso`,
     pasos: [
       ...PASOS_COLGARSE,
-      'Quita mucho peso: el esfuerzo debe ser bajo (3-4 de 10).',
-      'Cuelga unos 10 s y descansa otros tantos, unos 10 min en total.',
-      'Solo en días sin sesión intensa de dedos.',
+      'Quita peso con la polea o los pies: la intensidad tiene que ser baja.',
+      'Cuelga a baja intensidad durante unos 10 min en total, descansando cuando lo necesites.',
+      'Cuenta como una sesión de multipresa: no la sumes a las del plan.',
       NOVEL,
     ],
     errores: ['Convertirlo en una sesión dura subiendo la carga.'],
     paraSi: PARA_SI,
-    parametros: ['P-01', 'P-12', 'P-15', ...SEGURIDAD],
+    parametros: ['P-01', 'P-07', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
   'intermitentes-80': {
     id: 'intermitentes-80',
     titulo: 'Intermitentes 10:6 al 80 %',
-    paraQue: 'La otra rama del ensayo de Devise 2022 (A): 10 s colgado y 6 s de descanso al 80 % del máximo, hasta 12 repeticiones, 3 series con 8 min. Mejoró resistencia y fuerza en avanzados. De consulta: para menos de 2 años el entrenador usa la del 60 %.',
+    paraQue: `La otra rama del ensayo de Devise 2022 (A): 10 s colgado y 6 s de descanso al 80 % del máximo, hasta 12 repeticiones, 3 series con 8 min, 2 por semana durante 4 semanas. Mejoró resistencia y fuerza en escaladores con más experiencia que tú; para menos de 2 años el entrenador usa la del 60 %. ${SUSTITUYE}`,
     material: `Multipresa, regleta de ${REGLETA}, lastre o polea`,
     pasos: [
       ...PASOS_COLGARSE,
@@ -988,14 +995,14 @@ export const FICHAS: Record<FichaId, Ficha> = {
     ],
     errores: ['Hacerla sin un test de dedos reciente.'],
     paraSi: ['Pierdes el semiarqueado: termina la serie.', ...PARA_SI],
-    parametros: ['P-36', 'P-12', ...SEGURIDAD],
+    parametros: ['P-36', 'P-07', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
   'finger-curls': {
     id: 'finger-curls',
     titulo: 'Finger curls',
-    paraQue: 'Fuerza dinámica de dedos con una barra o mancuerna. En un ensayo no aportó frente a la suspensión isométrica (Saeterbakken 2024, A): prioridad baja, de consulta.',
-    material: 'Barra de pesas o mancuerna',
+    paraQue: 'Fuerza dinámica de dedos con una barra o mancuerna. En un ensayo no aportó frente a la suspensión isométrica (Saeterbakken 2024, A): prioridad baja.',
+    material: 'Barra de pesas o mancuerna (en casa hace falta tenerla)',
     pasos: [
       'Sentado, antebrazo apoyado en el muslo y la palma hacia arriba.',
       'Deja que la barra ruede hasta la punta de los dedos.',
@@ -1028,7 +1035,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
     pasos: [
       'Para potencia, usa el bloque al límite con descanso completo.',
       'En casa, dominadas explosivas o excéntricas.',
-      'Pregunta por el campus cuando lleves más de 2 años escalando.',
+      'Vuelve a mirarlo cuando lleves más de 2 años escalando y un nivel de bloque estable.',
     ],
     errores: ['Probarlo «solo un poco» antes de tiempo.'],
     paraSi: PARA_SI,
@@ -1125,22 +1132,23 @@ const R: LugarFicha[] = ['rocodromo']
 const RR: LugarFicha[] = ['rocodromo', 'roca']
 const RC: LugarFicha[] = ['rocodromo', 'casa']
 const C: LugarFicha[] = ['casa']
+// Lo que necesita regleta es de rocódromo: en casa se cuenta solo con la barra (la multipresa en casa es opcional).
 const TODOS: LugarFicha[] = ['rocodromo', 'roca', 'casa']
 
 // Dónde se puede hacer cada ejercicio.
 export const LUGARES_FICHA: Record<FichaId, LugarFicha[]> = {
-  'agarre-semiarqueado': RC, 'repeaters-7-3': RC, 'resistencia-10-6': RC, 'suspension-maxima-10s': RC, 'colgado-30mm': RC, 'power-slap': RC,
+  'agarre-semiarqueado': R, 'repeaters-7-3': R, 'resistencia-10-6': R, 'suspension-maxima-10s': R, 'colgado-30mm': R, 'power-slap': RC,
   'calentamiento-progresivo': RR, 'calentamiento-barra': RC,
   'bloques-limite': R, 'via-limite-cuerda': RR, 'cuatro-por-cuatro': R, arc: RR, 'on-offs': RR, 'via-de-practica': RR, 'practica-tecnica': RR,
   'video-autoevaluacion': RR,
-  'dominadas-lastradas': RC, 'dominadas-explosivas': RC, 'dominadas-excentricas': RC, 'colgarse-barra': RC, 'dominadas-maximas': C,
+  'dominadas-lastradas': RC, 'dominadas-explosivas': RC, 'dominadas-excentricas': RC, 'colgarse-barra': RC, 'dominadas-maximas': RC,
   'retracciones-escapulares': RC, flexiones: TODOS, 'rotacion-externa-banda': RC, 'ytw-banda': RC, 'face-pull-banda': RC,
   'extensores-dedos-banda': RC, 'plancha-toques-hombro': TODOS,
   movilidad: TODOS, 'plancha-frontal': TODOS, hollow: TODOS, 'elevaciones-colgado': RC, 'elevaciones-tumbado': TODOS, 'plancha-lateral': TODOS,
-  rana: TODOS, 'cadera-90-90': TODOS, 'dislocaciones-hombro': TODOS, 'apertura-cadera': C,
+  rana: TODOS, 'cadera-90-90': TODOS, 'dislocaciones-hombro': TODOS, 'apertura-cadera': TODOS,
   'pies-silenciosos': RR, 'manos-pegadas': R, 'mismo-lado': R, 'placa-sin-manos': R, 'caidas-progresivas': RR, 'respiracion-voy': RR,
-  'tactica-encadene': ['roca'], 'continuidad-5x3': R, 'up-down-up': RR, 'repetir-vias': RR, inthangs: RC, 'suspensiones-largas': RC,
-  abrahangs: RC, 'intermitentes-80': RC, 'finger-curls': RC, 'dedos-en-barra': C, campus: R, 'paso-alto': C, tobillo: C,
+  'tactica-encadene': ['roca'], 'continuidad-5x3': R, 'up-down-up': RR, 'repetir-vias': RR, inthangs: R, 'suspensiones-largas': R,
+  abrahangs: R, 'intermitentes-80': R, 'finger-curls': RC, 'dedos-en-barra': C, campus: R, 'paso-alto': TODOS, tobillo: TODOS,
 }
 
 // Si el entrenador lo programa. Por defecto, sí; las de consulta las puedes hacer por tu cuenta; las «no» explican por
@@ -1152,9 +1160,9 @@ const USO: Partial<Record<FichaId, UsoFicha>> = {
 }
 export const usoFicha = (id: FichaId): UsoFicha => USO[id] ?? 'plan'
 export const TEXTO_USO: Record<UsoFicha, string> = {
-  plan: 'Te lo propone el entrenador.',
+  plan: 'Te lo propone el entrenador cuando toca.',
   consulta: 'De consulta: el entrenador no lo programa, pero puedes hacerlo por tu cuenta.',
-  no: 'No se propone: abajo tienes el motivo.',
+  no: 'No se propone: el motivo está arriba.',
 }
 
 // La ficha de un id que viene de fuera (una propuesta guardada, la URL): undefined si no existe.

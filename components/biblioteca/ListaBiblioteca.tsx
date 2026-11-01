@@ -56,7 +56,8 @@ export function ListaBiblioteca() {
         autoComplete="off" enterKeyHint="search"
         className="min-h-11 w-full rounded-xl border border-borde bg-superficie-2 px-3 text-base text-texto placeholder:text-texto-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-progreso"
       />
-      <div role="group" aria-label="Filtrar por grupo" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+      <div role="group" aria-label="Filtrar por cualidad" className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-1">
+        <span aria-hidden className="w-14 shrink-0 text-xs font-medium uppercase text-texto-2">Qué</span>
         {[{ id: 'todos' as const, titulo: 'Todos' }, ...GRUPOS].map((g) => (
           <button
             key={g.id} type="button" aria-pressed={grupo === g.id} onClick={() => setGrupo(g.id)}
@@ -66,20 +67,29 @@ export function ListaBiblioteca() {
           </button>
         ))}
       </div>
-      <div role="group" aria-label="Filtrar por lugar" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+      <div role="group" aria-label="Filtrar por lugar" className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-1">
+        <span aria-hidden className="w-14 shrink-0 text-xs font-medium uppercase text-texto-2">Dónde</span>
         {(['todos', 'rocodromo', 'roca', 'casa'] as const).map((l) => (
           <button
             key={l} type="button" aria-pressed={lugar === l} onClick={() => setLugar(l)}
             className={`${CHIP} ${lugar === l ? 'bg-texto font-semibold text-fondo' : 'border border-borde text-texto'}`}
           >
-            {l === 'todos' ? 'En cualquier sitio' : NOMBRE_LUGAR_FICHA[l]}
+            {l === 'todos' ? 'Todos' : NOMBRE_LUGAR_FICHA[l]}
           </button>
         ))}
       </div>
       {secciones.length === 0 ? (
-        <p role="status" className="py-6 text-center text-texto-2">
-          {texto.trim() === '' ? 'Ningún ejercicio con ese filtro' : `Ningún ejercicio con «${texto.trim()}»`}
-        </p>
+        <div role="status" className="space-y-2 py-6 text-center text-texto-2">
+          <p>
+            Ningún ejercicio
+            {texto.trim() !== '' && ` con «${texto.trim()}»`}
+            {grupo !== 'todos' && ` de ${GRUPOS.find((g) => g.id === grupo)!.titulo.toLowerCase()}`}
+            {lugar !== 'todos' && ` en ${NOMBRE_LUGAR_FICHA[lugar].toLowerCase()}`}
+          </p>
+          <button type="button" onClick={() => { setTexto(''); setGrupo('todos'); setLugar('todos') }} className="inline-flex min-h-11 items-center text-progreso underline">
+            Quitar filtros
+          </button>
+        </div>
       ) : (
         secciones.map(({ g, ids }) => (
           <section key={g.id} className="space-y-1.5">
@@ -103,7 +113,7 @@ export function ListaBiblioteca() {
                       <span className="min-w-0 flex-1">
                         <span className="block font-titular text-base font-bold uppercase leading-tight">{f.titulo}</span>
                         <span className="block truncate text-xs text-texto-2">
-                          {usoFicha(id) === 'consulta' ? 'De consulta · ' : usoFicha(id) === 'no' ? 'No se propone · ' : ''}{resumenMaterial(f.material)}
+                          {usoFicha(id) === 'consulta' ? 'De consulta · ' : ''}{resumenMaterial(f.material)}
                         </span>
                       </span>
                       <span aria-hidden className="text-xl text-texto-2">›</span>

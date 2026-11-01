@@ -46,7 +46,8 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
         <h1 className="font-titular text-3xl font-extrabold uppercase leading-none">{f.titulo}</h1>
         <p className="text-texto-2">{f.paraQue}</p>
         <p className={usoFicha(f.id) === 'no' ? 'font-medium text-ambar' : 'text-xs text-texto-2'}>
-          {TEXTO_USO[usoFicha(f.id)]} Dónde: {LUGARES_FICHA[f.id].map((l) => NOMBRE_LUGAR_FICHA[l].toLowerCase()).join(', ')}.
+          {TEXTO_USO[usoFicha(f.id)]}
+          {usoFicha(f.id) !== 'no' && ` Dónde: ${LUGARES_FICHA[f.id].map((l) => NOMBRE_LUGAR_FICHA[l].toLowerCase()).join(', ')}.`}
         </p>
         <ul aria-label="Material" className="flex flex-wrap gap-1.5">
           {material.map((m) => <li key={m} className="rounded-full bg-superficie-2 px-3 py-1 text-xs">{m}</li>)}
