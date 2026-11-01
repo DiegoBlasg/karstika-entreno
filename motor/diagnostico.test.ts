@@ -69,7 +69,7 @@ describe('diagnosticar: limitante principal (P-69, P-70, P-23)', () => {
     expect(d.fuente).toBe('evidencia')
     expect(d.limitantes).toEqual(['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'])
     expect(d.explicaciones[1]!.parametros).toEqual(['P-23', 'P-69'])
-    expect(d.explicaciones[1]!.motivo).toMatch(/decisión de diseño/)
+    expect(d.explicaciones[1]!.motivo).toMatch(/Ningún estudio ordena técnica y cabeza entre sí/)
   })
   it('con 6 respuestas y mayoría ≥ 40 % manda la respuesta', () => {
     const d = diagnosticar([], [...frenos('bombeo', 3), ...frenos('tecnica-lectura', 2, 10), ...frenos('cabeza', 1, 20)], HOY)
@@ -208,7 +208,7 @@ describe('ajusteCiclo2', () => {
   })
   it('las explicaciones citan P-31 y P-23, la de cabeza también P-62, y el refuerzo de técnica no promete de más', () => {
     expect(con('bombeo').explicacion.parametros).toEqual(['P-23', 'P-31'])
-    expect(con('bombeo').explicacion.motivo).toMatch(/decisión de diseño/)
+    expect(con('bombeo').explicacion.motivo).toMatch(/se dan más semanas a lo que más te limita/)
     expect(con('cabeza').explicacion.parametros).toEqual(['P-23', 'P-31', 'P-62'])
     expect(con('tecnica-lectura').explicacion.motivo).toMatch(/cuando hay hueco/)
   })

@@ -5,7 +5,7 @@ export const NIVEL_TEXTO: Record<NivelMinimo, string> = {
   A: 'evidencia sólida',
   B: 'evidencia moderada',
   C: 'evidencia limitada',
-  sinEvidencia: 'decisión de diseño, sin estudio directo',
+  sinEvidencia: 'sin ensayo que lo fije: el porqué está en la explicación',
 }
 
 export interface Estudio {

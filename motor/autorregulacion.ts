@@ -295,7 +295,7 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
           hayRojo
             ? 'Con un rojo se bloquea la carga de la zona hasta que un fisioterapeuta te dé el alta; consulta con uno.'
             : 'En ámbar no sube la carga y se quita la intensidad que carga la zona; si se repite en 2 sesiones o dura más de 7 días, pasa a rojo.'
-        } Los umbrales y lo que bloquea cada zona son decisión de diseño, en la dirección segura. El motor no diagnostica.`,
+        } Ningún estudio fija estos umbrales, así que están puestos del lado prudente: ante la duda, se para antes. El motor no diagnostica.`,
       ),
     )
   }
@@ -327,7 +327,7 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
           descargaAdelantada.motivo === 'rpe'
             ? `${sesionesPorEncimaSeguidas} sesiones seguidas por encima del esfuerzo previsto`
             : `${chequeosBajos} chequeos seguidos con bienestar bajo en ${ventanaDias} días`
-        }: se adelanta una descarga del ${descargaAdelantada.desde} al ${descargaAdelantada.hasta} (mitad de volumen, nada al límite). Los umbrales son decisión de diseño.`,
+        }: se adelanta una descarga del ${descargaAdelantada.desde} al ${descargaAdelantada.hasta} (mitad de volumen, nada al límite). Ningún estudio fija cuántas señales hacen falta: se adelanta pronto porque una semana suave de más cuesta menos que una sobrecarga.`,
       ),
     )
   }
@@ -336,7 +336,7 @@ export function estadoAtleta(historial: readonly Sesion[], s: Seguimiento, fecha
       explicar(
         'autorregulacion.chequeo-bajo',
         ['P-65'],
-        'Tu chequeo de hoy es bajo (sueño, fatiga y ganas con media de 2 o menos): hoy no hay sesiones de intensidad alta, solo técnica o volumen suave. El umbral es decisión de diseño.',
+        'Tu chequeo de hoy es bajo (sueño, fatiga y ganas con media de 2 o menos): hoy no hay sesiones de intensidad alta, solo técnica o volumen suave. Ningún estudio fija el umbral: se corta del lado prudente, porque entrenar fuerte mal descansado es cuando más fácil es lesionarse.',
       ),
     )
   }

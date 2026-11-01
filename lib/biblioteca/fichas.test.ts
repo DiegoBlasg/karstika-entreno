@@ -102,11 +102,11 @@ describe('fichas de suspensiones: los números son los del motor', () => {
   })
 })
 
-describe('fichas de hombro: lo que es diseño lo dice', () => {
-  it('las del programa de hombro citan P-41 y avisan de que la dosis es decisión de diseño', () => {
+describe('fichas de hombro: la dosis la marca la sesión', () => {
+  it('las del programa de hombro citan P-41 y remiten a la sesión para la dosis (su explicación dice de dónde sale)', () => {
     for (const id of GRUPOS.find((g) => g.id === 'hombro')!.fichas) {
       expect(FICHAS[id].parametros, id).toContain('P-41')
-      expect(texto(id), id).toMatch(/decisión de diseño/)
+      expect(texto(id), id).toMatch(/marca la sesión/)
     }
   })
 })

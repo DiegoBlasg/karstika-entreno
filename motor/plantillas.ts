@@ -281,7 +281,7 @@ function construirMultipresaResistenciaFuerza(p: Peticion): SesionPlan | null {
           cargaTexto: cargaMultipresa(kg),
           notas: `${kg !== undefined
             ? `El ${porcentaje} % de tu último test.`
-            : 'Sin test vigente: empieza con una carga que sostengas con margen y ajústala en la segunda serie (decisión de diseño).'} ${p.fase.descarga
+            : 'Sin test vigente no hay un 60 % que calcular: empieza con una carga que sostengas con margen y ajústala en la segunda serie, así te acercas sin pasarte.'} ${p.fase.descarga
             ? `Semana de descarga: ${repeticiones} repeticiones como mucho, sin acercarte al fallo.`
             : `Cada serie, hasta ${repeticiones} repeticiones o hasta que la siguiente ya no saldría limpia: para una antes del fallo.`}`,
           ficha: 'resistencia-10-6',
@@ -335,7 +335,7 @@ function construir4x4(p: Peticion): SesionPlan | null {
       explicacion: explicar(
         'plantilla.4x4',
         p.fase.descarga ? ['P-37', 'P-48'] : ['P-37'],
-        `${p.fase.descarga ? 'Semana de descarga: la mitad de vueltas. ' : ''}4x4: ${nBloques} bloques fáciles, ${vueltas} vueltas y 4 min de descanso entre vueltas (decisión de diseño, sin estudio directo).`,
+        `${p.fase.descarga ? 'Semana de descarga: la mitad de vueltas. ' : ''}4x4: ${nBloques} bloques fáciles, ${vueltas} vueltas y 4 min de descanso entre vueltas. Es la pauta clásica de entrenadores para la resistencia de fuerza en bloque; no hay ensayo que la mida, así que los bloques son fáciles para tu nivel para que el cansancio venga de encadenar, no de un paso duro.`,
       ),
     },
   ]
@@ -608,7 +608,7 @@ function construirArc(p: Peticion): SesionPlan | null {
           explicacion: explicar(
             'plantilla.arc-on-offs',
             ['P-35'],
-            `${p.fase.descarga ? 'Semana de descarga: la mitad de vueltas. ' : ''}Capacidad, alternando con el ARC continuo: on-offs de 1 min escalando y 1 min de descanso. Es un protocolo de entrenadores (Lattice), sin ensayo; la alternancia es decisión de diseño.`,
+            `${p.fase.descarga ? 'Semana de descarga: la mitad de vueltas. ' : ''}Capacidad, alternando con el ARC continuo: on-offs de 1 min escalando y 1 min de descanso. Es el protocolo de capacidad que usa Lattice; no hay ensayo que lo compare con el ARC continuo, así que se alternan semana a semana para trabajar la capacidad de las dos formas que proponen los entrenadores.`,
           ),
         },
       ])
@@ -646,7 +646,7 @@ function construirArc(p: Peticion): SesionPlan | null {
       explicacion: explicar(
         'plantilla.arc',
         ['P-35'],
-        `Capacidad: ${series} series de ${serieMin} minutos de escalada continua sin bombeo marcado, con 10 minutos de descanso (se alterna con los on-offs). Los entrenadores proponen 20-45 min continuos; las series son decisión de diseño.`,
+        `Capacidad: ${series} series de ${serieMin} minutos de escalada continua sin bombeo marcado, con 10 minutos de descanso (se alterna con los on-offs). No hay ensayo de ARC, pero la capacidad aeróbica del antebrazo se asocia al grado en estudios que comparan escaladores, y los entrenadores proponen 20-45 min continuos (Lattice) o 30 min o más (Anderson): las series de 15 min llegan a ese volumen dejando respirar entre medias.`,
       ),
     })
   }
@@ -720,7 +720,7 @@ const explicacionRutinaHombro = (r: RutinaHombro): Explicacion =>
   explicar(
     'plantilla.hombro',
     ['P-41'],
-    `Rutina ${r} de hombro y antagonistas (se alterna con la ${r === 'A' ? 'B' : 'A'}), 15 minutos. El tipo de ejercicio sigue el programa del ensayo EV-LESION-007: cadena cerrada, excéntricos y de fuerza. Los ejercicios concretos, las series y las repeticiones son decisión de diseño: P-41 fija la frecuencia, no la dosis.`,
+    `Rutina ${r} de hombro y antagonistas (se alterna con la ${r === 'A' ? 'B' : 'A'}), 15 minutos. El tipo de ejercicio sigue el programa del ensayo EV-LESION-007: cadena cerrada, excéntricos y de fuerza. El ensayo fija la frecuencia (unos 15 min, 2 veces por semana, P-41) pero no publica los ejercicios exactos; se usan los habituales de ese tipo de programa (retracciones, flexiones, rotación externa, Y-T-W, face pull) con un esfuerzo moderado que no canse antes de escalar.`,
   )
 
 // Sin carga (hombro o codo en ámbar, o rojo en dedos, muñeca o codo): solo movilidad y activación, sin peso, sin bandas
@@ -781,7 +781,7 @@ function construirHombro(p: Peticion): SesionPlan | null {
             explicacion: explicar(
               'plantilla.antagonistas',
               ['P-41'],
-              'Antagonistas: empujes y extensores de dedos (opcionales, P-41). La movilidad y los 20 minutos son decisión de diseño para completar el día en casa sin cargar los dedos.',
+              'Antagonistas: empujes y extensores de dedos (opcionales, P-41). La movilidad completa la mañana en casa sin cargar los dedos; no hay estudio que fije sus minutos, y los entrenadores proponen bloques cortos de movilidad de 10-15 min varios días por semana.',
             ),
           },
         ]
@@ -815,7 +815,7 @@ function construirDominadasPotencia(p: Peticion): SesionPlan | null {
   const explicacion = explicar(
     'plantilla.dominadas-potencia',
     ['P-73', 'P-39'],
-    `Sesión opcional, alternando con las lastradas: potencia de tirón sin campus. En escaladores avanzados, las dominadas excéntricas y pliométricas 2 veces por semana durante 5 semanas subieron la fuerza y la velocidad de tirón (Vigouroux y Devise 2024); las series y repeticiones son decisión de diseño. Mismas reglas que las lastradas: como mucho 1 por semana y nunca el día de dedos intensos.`,
+    `Sesión opcional, alternando con las lastradas: potencia de tirón sin campus. En escaladores avanzados, las dominadas excéntricas y pliométricas 2 veces por semana durante 5 semanas subieron la fuerza y la velocidad de tirón (Vigouroux y Devise 2024). El estudio no publica las series exactas: se hacen pocas repeticiones lejos del fallo para que cada una sea rápida y para no cargar los codos. Mismas reglas que las lastradas: como mucho 1 por semana y nunca el día de dedos intensos.`,
   )
   return plan(sesionDe('dominadas', p, total, 'suave'), [
     {
@@ -851,7 +851,7 @@ function construirDominadasPotencia(p: Peticion): SesionPlan | null {
       nombre: 'Vuelta a la calma',
       minutos: VUELTA_CALMA_DOMINADAS_MIN,
       ejercicios: [{ nombre: 'Movilidad suave de hombro, espalda y muñecas', cargaTexto: 'Sin esfuerzo', ficha: 'movilidad' }],
-      explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar (decisión de diseño).'),
+      explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar, como al final de cualquier sesión de fuerza.'),
     },
   ])
 }
@@ -894,14 +894,14 @@ function construirDominadasLastradas(p: Peticion): SesionPlan | null {
       explicacion: explicar(
         'plantilla.dominadas',
         ['P-39'],
-        `Sesión opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado; la dosis es decisión de diseño, como mucho 1 vez por semana y nunca el día de dedos intensos.`,
+        `Sesión opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado, así que van como opción y con una pauta de fuerza general sin llegar al fallo (dejar 2 en reserva), como mucho 1 vez por semana y nunca el día de dedos intensos.`,
       ),
     },
     {
       nombre: 'Vuelta a la calma',
       minutos: VUELTA_CALMA_DOMINADAS_MIN,
       ejercicios: [{ nombre: 'Movilidad suave de hombro, espalda y muñecas', cargaTexto: 'Sin esfuerzo', ficha: 'movilidad' }],
-      explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar (decisión de diseño).'),
+      explicacion: explicar('plantilla.dominadas-vuelta-calma', ['P-39'], 'Unos minutos de movilidad suave para terminar, como al final de cualquier sesión de fuerza.'),
     },
   ]
   return plan(sesionDe('dominadas', p, total, 'suave'), bloques)
@@ -980,7 +980,7 @@ function construirBloqueLimite(p: Peticion): SesionPlan | null {
       explicacion: explicar(
         'plantilla.bloque-limite',
         ['P-15', 'P-53'],
-        'Bloque cerca del límite: cuenta como sesión intensa de dedos y se lee el problema antes de cada intento. La dosis es decisión de diseño.',
+        'Bloque cerca del límite: cuenta como sesión intensa de dedos y se lee el problema antes de cada intento. Pocos intentos de calidad con descanso completo, como recomiendan los entrenadores para la potencia; no hay ensayo que fije cuántos.',
       ),
     },
   ]
@@ -1031,7 +1031,7 @@ export function construirComplemento(tipo: TipoComplemento, p: Peticion, minutos
         explicacion: explicar(
           'plantilla.dominadas',
           ['P-39'],
-          `Complemento opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado; la dosis es decisión de diseño y nunca van el día de dedos intensos.`,
+          `Complemento opcional: ${series} series de ${repeticiones} dominadas lastradas, ${descansoMin} min de descanso. No hay ensayo que las ligue al grado, así que van como opción y con una pauta de fuerza general sin llegar al fallo, y nunca el día de dedos intensos.`,
         ),
       }
     }
@@ -1092,7 +1092,7 @@ function construirCoreMovilidad(p: Peticion): SesionPlan | null {
   const explicacion = explicar(
     'plantilla.core-movilidad',
     ['P-72'],
-    'Hoy toca descansar de escalar: si quieres moverte, core y movilidad suaves no cargan los dedos. Los ejercicios y las dosis son decisión de diseño: no hay estudios de core en escaladores.',
+    'Hoy toca descansar de escalar: si quieres moverte, core y movilidad suaves no cargan los dedos. No hay estudios de core en escaladores: son los ejercicios habituales de tensión corporal, en dosis cortas y suaves para que no te cansen para la próxima sesión.',
   )
   return plan(sesionDe('core-movilidad', p, total, 'suave'), [
     { nombre: 'Core', minutos: core, ejercicios: ejerciciosCore(colgado), explicacion },

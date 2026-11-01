@@ -1,6 +1,6 @@
 // Biblioteca de ejercicios: una ficha por cada ejercicio que puede proponer el motor. Puro: solo texto y constantes.
 // Los números de las suspensiones salen de VALORES (motor), para que la ficha no se separe nunca de lo que se prescribe.
-// Lo que no viene de un estudio lo dice: «(decisión de diseño)».
+// Lo que no viene de un estudio lo dice y explica de dónde sale (entrenadores, prudencia o el propio protocolo).
 import { FRACCION_INICIAL_REPEATERS, VALORES, type ParametroId } from '../../motor'
 import type { DibujoId } from './dibujos'
 
@@ -112,7 +112,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       ...PASOS_COLGARSE,
       `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso, hasta ${RF.repeticiones} repeticiones o hasta que la siguiente ya no saldría limpia: para una antes del fallo (en semana de descarga, ${RF.repeticionesDescarga} como mucho).`,
       `Haz ${RF.series} series con ${fmt(RF.descansoSeriesS / 60)} min entre series.`,
-      `Carga: el ${pct(RF.fraccion)} de tu fuerza máxima del último test, fija. Sin test: empieza con una carga que sostengas con margen y ajústala en la segunda serie (decisión de diseño).`,
+      `Carga: el ${pct(RF.fraccion)} de tu fuerza máxima del último test, fija. Sin test: empieza con una carga que sostengas con margen y ajústala en la segunda serie.`,
       NOVEL,
     ],
     errores: [
@@ -219,7 +219,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Calienta y haz unos bloques progresivos por debajo de tu nivel.',
       'Elige bloques cerca de tu límite, que no encadenas a la primera.',
       'Lee el bloque antes de cada intento (P-53).',
-      'Hasta 4 intentos por bloque con 3-4 min de descanso entre intentos (decisión de diseño).',
+      'Hasta 4 intentos por bloque con 3-4 min de descanso entre intentos: pocos intentos de calidad y descanso completo, como recomiendan los entrenadores para la potencia.',
       'Cambia de bloque cuando no progreses.',
     ],
     errores: [
@@ -257,7 +257,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
     pasos: [
       `Elige ${X4.bloques} bloques fáciles para tu nivel.`,
       `Escálalos seguidos, uno tras otro: eso es una vuelta.`,
-      `Descansa ${X4.descansoVueltaMin} min y repite hasta ${X4.vueltas} vueltas (decisión de diseño, sin estudio directo).`,
+      `Descansa ${X4.descansoVueltaMin} min y repite hasta ${X4.vueltas} vueltas: la pauta clásica de entrenadores, sin ensayo que la mida.`,
       'Si fallas en un bloque, cámbialo por uno más fácil.',
     ],
     errores: [
@@ -364,7 +364,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Calienta en barra (mira «Calentamiento en barra»).',
       'Agarre en la barra con las palmas hacia delante, un poco más abierto que los hombros.',
       'Desde colgado con escápulas activas, sube hasta la barbilla por encima de la barra y baja controlando.',
-      `${DOM.series} series de ${DOM.repeticiones} con un lastre que te deje ${DOM.repeticionesEnReserva} repeticiones en reserva y ${DOM.descansoMin} min de descanso (decisión de diseño).`,
+      `${DOM.series} series de ${DOM.repeticiones} con un lastre que te deje ${DOM.repeticionesEnReserva} repeticiones en reserva y ${DOM.descansoMin} min de descanso: pauta de fuerza general sin llegar al fallo.`,
       'En barra, nunca en la multipresa.',
     ],
     errores: [
@@ -382,7 +382,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'dominadas-explosivas': {
     id: 'dominadas-explosivas',
     titulo: 'Dominadas explosivas',
-    paraQue: 'Potencia de tirón sin campus: subir lo más rápido posible (Vigouroux y Devise 2024, en avanzados). Las series son decisión de diseño.',
+    paraQue: 'Potencia de tirón sin campus: subir lo más rápido posible (Vigouroux y Devise 2024, en avanzados). El estudio no publica las series: pocas repeticiones y lejos del fallo para que cada una sea rápida.',
     material: 'Barra',
     pasos: [
       'Calienta en barra (mira «Calentamiento en barra»).',
@@ -399,7 +399,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'dominadas-excentricas': {
     id: 'dominadas-excentricas',
     titulo: 'Dominadas excéntricas',
-    paraQue: 'Fuerza y potencia de tirón con la bajada lenta (Vigouroux y Devise 2024, en avanzados). Las series son decisión de diseño.',
+    paraQue: 'Fuerza y potencia de tirón con la bajada lenta (Vigouroux y Devise 2024, en avanzados). El estudio no publica las series: pocas y controladas para no cargar los codos.',
     material: 'Barra (una silla o un salto para subir)',
     pasos: [
       'Ponte arriba con la barbilla sobre la barra, con un salto o apoyando en una silla.',
@@ -440,7 +440,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Cuélgate de la barra con toda la mano y los brazos estirados.',
       'Sin doblar los codos, baja y junta las escápulas: el cuerpo sube un poco.',
       'Aguanta 1-2 s arriba y vuelve despacio a colgado.',
-      'Series y repeticiones las marca la sesión (decisión de diseño).',
+      'Series y repeticiones las marca la sesión.',
     ],
     errores: [
       'Doblar los codos: entonces es una dominada.',
@@ -463,7 +463,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Baja hasta que el pecho quede cerca del suelo, con los codos a unos 45° del cuerpo.',
       'Sube empujando el suelo sin hundir la cadera.',
       'Si no salen las repeticiones con buena forma, apoya las rodillas o las manos en un banco.',
-      'Series y repeticiones las marca la sesión (decisión de diseño).',
+      'Series y repeticiones las marca la sesión.',
     ],
     errores: [
       'Hundir la cadera o subirla.',
@@ -486,7 +486,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Codo pegado al costado y doblado a 90°; puedes poner una toalla entre el codo y el cuerpo.',
       'Gira el antebrazo hacia fuera sin separar el codo.',
       'Vuelve en 3 s, despacio: esa bajada es la fase excéntrica.',
-      'Cambia de brazo. Series y repeticiones las marca la sesión (decisión de diseño).',
+      'Cambia de brazo. Series y repeticiones las marca la sesión.',
     ],
     errores: [
       'Separar el codo del cuerpo.',
@@ -506,7 +506,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Y: sube los brazos en diagonal por encima de la cabeza, separando la banda.',
       'T: abre los brazos en cruz a la altura de los hombros.',
       'W: con los codos doblados, llévalos atrás juntando las escápulas.',
-      'Las repeticiones de cada letra las marca la sesión (decisión de diseño).',
+      'Las repeticiones de cada letra las marca la sesión.',
     ],
     errores: [
       'Subir los hombros hacia las orejas.',
@@ -525,7 +525,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Ata la banda a la altura de la cara y agárrala con las palmas hacia abajo.',
       'Tira hacia la cara con los codos altos, por encima de las manos.',
       'Al final, gira las manos hacia atrás y junta las escápulas.',
-      'Vuelve despacio. Series y repeticiones las marca la sesión (decisión de diseño).',
+      'Vuelve despacio. Series y repeticiones las marca la sesión.',
     ],
     errores: [
       'Bajar los codos: se convierte en un remo.',
@@ -544,7 +544,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Pasa la goma por fuera de los cinco dedos, juntos y algo doblados.',
       'Abre los dedos contra la goma todo lo que puedas.',
       'Vuelve despacio.',
-      'Cambia de mano. Series y repeticiones las marca la sesión (decisión de diseño).',
+      'Cambia de mano. Series y repeticiones las marca la sesión.',
     ],
     errores: [
       'Una goma tan dura que no deja abrir del todo.',
@@ -562,7 +562,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
       'Separa un poco los pies para no girar la cadera.',
       'Lleva una mano al hombro contrario y vuelve; alterna las manos.',
       'Empuja el suelo con la mano de apoyo para que la escápula no se hunda.',
-      'El tiempo de cada serie lo marca la sesión (decisión de diseño).',
+      'El tiempo de cada serie lo marca la sesión.',
     ],
     errores: [
       'Balancear la cadera a cada toque.',
@@ -578,7 +578,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   movilidad: {
     id: 'movilidad',
     titulo: 'Movilidad de cadera, hombro y muñecas sin carga',
-    paraQue: 'Moverse en rangos cómodos sin cargar, para empezar, terminar o en días con molestias. La movilidad y sus minutos son decisión de diseño.',
+    paraQue: 'Moverse en rangos cómodos sin cargar, para empezar, terminar o en días con molestias. Ningún estudio fija sus minutos; los entrenadores proponen bloques cortos, de 10-15 min.',
     material: 'Ninguno',
     pasos: [
       'Hombro: círculos de brazos y llevar los brazos arriba y atrás, sin peso ni bandas.',
@@ -594,11 +594,11 @@ export const FICHAS: Record<FichaId, Ficha> = {
     paraSi: PARA_SI,
     parametros: ['P-41', 'P-64', ...SEGURIDAD],
   },
-  // Core y movilidad (P-72): ejercicios y dosis = decisión de diseño; no hay estudios de core en escaladores.
+  // Core y movilidad (P-72): no hay estudios de core en escaladores; ejercicios habituales de tensión corporal, en dosis cortas.
   'plancha-frontal': {
     id: 'plancha-frontal',
     titulo: 'Plancha frontal',
-    paraQue: 'Tensión del tronco: mantener el cuerpo recto como en un desplome con los pies apoyados. La dosis es decisión de diseño.',
+    paraQue: 'Tensión del tronco: mantener el cuerpo recto como en un desplome con los pies apoyados. No hay estudios de core en escaladores: dosis corta y suave.',
     material: 'Ninguno (una esterilla si la hay)',
     pasos: [
       'Antebrazos en el suelo, codos bajo los hombros.',
@@ -614,7 +614,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   hollow: {
     id: 'hollow',
     titulo: 'Hollow',
-    paraQue: 'Tensión de la parte delantera del tronco, la que se pierde cuando los pies se despegan en un desplome. La dosis es decisión de diseño.',
+    paraQue: 'Tensión de la parte delantera del tronco, la que se pierde cuando los pies se despegan en un desplome. No hay estudios de core en escaladores: dosis corta y suave.',
     material: 'Ninguno (una esterilla si la hay)',
     pasos: [
       'Tumbado boca arriba, pega la zona lumbar al suelo.',
@@ -629,7 +629,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'elevaciones-colgado': {
     id: 'elevaciones-colgado',
     titulo: 'Elevaciones de piernas colgado',
-    paraQue: 'Subir los pies con el tronco firme, como al poner un pie alto en un desplome. La dosis es decisión de diseño.',
+    paraQue: 'Subir los pies con el tronco firme, como al poner un pie alto en un desplome. No hay estudios de core en escaladores: dosis corta y suave.',
     material: 'Barra de dominadas',
     pasos: [
       'Cuélgate de la barra con agarre cómodo y los hombros activos (no colgado de los ligamentos).',
@@ -644,7 +644,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'elevaciones-tumbado': {
     id: 'elevaciones-tumbado',
     titulo: 'Elevaciones de piernas tumbado',
-    paraQue: 'La versión sin colgarse de las elevaciones de piernas: sin barra o sin poder cargar dedos y hombros. La dosis es decisión de diseño.',
+    paraQue: 'La versión sin colgarse de las elevaciones de piernas: sin barra o sin poder cargar dedos y hombros. Dosis corta y suave.',
     material: 'Ninguno (una esterilla si la hay)',
     pasos: [
       'Tumbado boca arriba, manos junto a la cadera o bajo los glúteos.',
@@ -659,7 +659,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'plancha-lateral': {
     id: 'plancha-lateral',
     titulo: 'Plancha lateral',
-    paraQue: 'Tensión lateral del tronco, la que sujeta la cadera pegada a la pared en los movimientos de lado. La dosis es decisión de diseño.',
+    paraQue: 'Tensión lateral del tronco, la que sujeta la cadera pegada a la pared en los movimientos de lado. No hay estudios de core en escaladores: dosis corta y suave.',
     material: 'Ninguno (una esterilla si la hay)',
     pasos: [
       'De lado, apoyado en un antebrazo con el codo bajo el hombro.',
@@ -675,7 +675,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   rana: {
     id: 'rana',
     titulo: 'Rana',
-    paraQue: 'Apertura de cadera para pegar la cadera a la pared con los pies abiertos. La dosis es decisión de diseño.',
+    paraQue: 'Apertura de cadera para pegar la cadera a la pared con los pies abiertos. La apertura de cadera se asocia (poco) al nivel; la dosis sigue los bloques cortos que proponen los entrenadores.',
     material: 'Esterilla o algo blando para las rodillas',
     pasos: [
       'A cuatro patas, separa las rodillas todo lo que sea cómodo, con los pies hacia fuera.',
@@ -690,7 +690,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'cadera-90-90': {
     id: 'cadera-90-90',
     titulo: '90/90 de cadera',
-    paraQue: 'Rotación de cadera, útil para los talones, los drop knee y pegar la cadera a la pared. La dosis es decisión de diseño.',
+    paraQue: 'Rotación de cadera, útil para los talones, los drop knee y pegar la cadera a la pared. La dosis sigue los bloques cortos de movilidad que proponen los entrenadores.',
     material: 'Ninguno (una esterilla si la hay)',
     pasos: [
       'Sentado, una pierna delante y otra al lado, las dos con la rodilla a 90 grados.',
@@ -705,7 +705,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
   'dislocaciones-hombro': {
     id: 'dislocaciones-hombro',
     titulo: 'Dislocaciones de hombro con cinta o palo',
-    paraQue: 'Movilidad del hombro por encima de la cabeza, sin carga. La dosis es decisión de diseño.',
+    paraQue: 'Movilidad del hombro por encima de la cabeza, sin carga. La dosis sigue los bloques cortos de movilidad que proponen los entrenadores.',
     material: 'Una cinta, una toalla larga o un palo',
     pasos: [
       'De pie, agarra la cinta con las manos muy separadas.',
