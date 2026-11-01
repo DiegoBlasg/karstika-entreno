@@ -16,7 +16,7 @@ export const NOMBRE_TIPO: Record<TipoSesion, string> = {
   'resistencia-4x4': 'Resistencia 4×4',
   arc: 'ARC',
   tecnica: 'Técnica',
-  dominadas: 'Dominadas lastradas',
+  dominadas: 'Dominadas',
   hombro: 'Hombro',
   'core-movilidad': 'Core y movilidad',
   descanso: 'Descanso',

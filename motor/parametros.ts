@@ -16,7 +16,7 @@ export const VALORES = {
   },
   'P-16': { maxDiasSeguidosCargaAlta: 2 },
   'P-32': { diasBaseMinimos: 28, sesionesMinimasBase: 6 },
-  'P-36': { trabajoS: 10, descansoS: 5, repeticiones: 5, series: 4, descansoSeriesS: 60 },
+  'P-36': { trabajoS: 10, descansoS: 6, repeticiones: 24, series: 2, descansoSeriesS: 360, fraccion: 0.6, repeticionesDescarga: 12 },
   'P-37': { bloques: 4, vueltas: 4, descansoVueltaMin: 4 },
   'P-61': { maxIntentos: 4 },
   'P-23': { orden: ['fuerza-dedos', 'resistencia', 'tecnica', 'cabeza'] },
@@ -31,7 +31,8 @@ export const VALORES = {
   'P-07': { sesionesPorSemana: 2 },
   'P-08': { semanasMaximasSinReevaluar: 10 },
   'P-18': { duracionS: 10, intentos: 3, descansoS: 180 },
-  'P-35': { series: 2, minutosSerie: 15, minutosSerieCorta: 10, descansoMin: 10 },
+  'P-11': { sesionesValidasParaSubir: 2, kgMaxSemana: 1.25 },
+  'P-35': { series: 2, seriesMax: 3, minutosSerie: 15, minutosSerieCorta: 10, descansoMin: 10, onOffs: 10, onOffsDescarga: 5 },
   'P-41': { minutos: 15 },
   'P-49': { minutos: 10 },
   'P-53': { minutosPrevisualizacion: 3 },
@@ -49,5 +50,10 @@ export const VALORES = {
   'P-69': { ventanaDias: 56, minRespuestas: 6, mayoriaPct: 40 },
   // Core y movilidad cuando toca descansar (decisión de diseño, sinEvidencia).
   'P-72': { minutosMin: 20, minutosMax: 30 },
+  // Dominadas de potencia (alternan con las lastradas de P-39); series y repeticiones, decisión de diseño.
+  'P-73': {
+    minutos: 20, explosivasSeries: 4, explosivasDescansoMin: 3, excentricasSeries: 3, excentricasDescansoMin: 2,
+    repMin: 3, repMax: 5, bajadaSMin: 3, bajadaSMax: 5,
+  },
   'P-57': { gramosPorKg: 1.6 },
 } as const satisfies Partial<Record<ParametroId, object>>

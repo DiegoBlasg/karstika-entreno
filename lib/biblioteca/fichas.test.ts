@@ -48,7 +48,7 @@ describe('FICHAS', () => {
 
 describe('fichas de suspensiones: los números son los del motor', () => {
   const regleta = `${VALORES['P-12'].regletaMinimaMm} mm`
-  const suspensiones = ['repeaters-7-3', 'resistencia-fuerza-10-5', 'suspension-maxima-10s', 'test-7-3-fallo', 'agarre-semiarqueado'] as const
+  const suspensiones = ['repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo', 'agarre-semiarqueado'] as const
   it('todas usan regleta de 20 mm, agarre semiarqueado, regleta mínima para noveles y P-10', () => {
     for (const id of suspensiones) {
       expect(texto(id), id).toContain(regleta)
@@ -68,13 +68,13 @@ describe('fichas de suspensiones: los números son los del motor', () => {
     expect(t).toContain(`${Math.round(FRACCION_INICIAL_REPEATERS * 100)} %`)
     expect(t).toContain(`${Math.round(VALORES['P-06'].fraccionMaximaRepeaters * 100)} %`)
   })
-  it('resistencia de fuerza: 10:5, 5 repeticiones, 4 series y 1 min entre series', () => {
-    const t = texto('resistencia-fuerza-10-5')
+  it('resistencia: 10:6 al 60 %, hasta 24 repeticiones, 2 series y 6 min entre series', () => {
+    const t = texto('resistencia-10-6')
     const v = VALORES['P-36']
-    expect(t).toContain(`${v.trabajoS} s colgado y ${v.descansoS} s de descanso`)
-    expect(t).toContain(`${v.repeticiones} repeticiones`)
+    expect(t).toContain(`${v.trabajoS} s colgado y ${v.descansoS} s de descanso, hasta ${v.repeticiones} repeticiones`)
     expect(t).toContain(`${v.series} series`)
-    expect(t).toContain('1 min entre series')
+    expect(t).toContain('6 min entre series')
+    expect(t).toContain('60 %')
   })
   it('máxima del test: 10 s, hasta 3 intentos y 3 min de descanso', () => {
     const t = texto('suspension-maxima-10s')

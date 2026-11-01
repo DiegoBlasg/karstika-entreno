@@ -6,6 +6,8 @@ import type { EvaluacionDedos, SesionPlan } from './propuesta-tipos'
 import type { Sesion } from './tipos'
 
 const evaluacion: EvaluacionDedos = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 30 }
+// La rampa de P-11 cuenta desde el test: para las progresiones, un test anterior a las sesiones de septiembre.
+const evaluacionAgosto: EvaluacionDedos = { ...evaluacion, fecha: '2026-08-31' }
 const multipresasPrevias = (n: number) =>
   Array.from({ length: n }, (_, i) =>
     ses(`m${i}`, `2026-09-${String(1 + i * 3).padStart(2, '0')}`, 18, { tipo: 'multipresa-resistencia' }),
@@ -54,27 +56,31 @@ describe('multipresa-resistencia', () => {
     expect(e.nombre).toMatch(/20 mm/)
     expect(e.nombre).toMatch(/semiarqueado/)
   })
-  it('la carga es el 70 % del test durante 8 sesiones y después el tope del 80 %', () => {
+  it('la carga es el 70 % del test durante 8 sesiones y después sube por rampa hacia el tope del 80 % (P-11)', () => {
     const inicial = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, lastreKg: 40 } })!
     const e1 = inicial.bloques[1]!.ejercicios[0]!
     expect(e1.cargaKg).toBe(7) // 0,7 × 110 − 70
     expect(e1.cargaTexto).toBe('+7 kg de lastre')
     expect(e1.notas).toMatch(/70 %/)
     expect(inicial.bloques[1]!.explicacion.parametros).toContain('P-04')
-    const despues = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(8) })!
+    // Justo al llegar a 8 no salta al 80 %: empieza la rampa desde el 70 % (0 kg con este test).
+    expect(construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(8) })!.bloques[1]!.ejercicios[0]!.cargaKg).toBe(0)
+    // Con 2 sesiones más, válidas y en 2 semanas distintas: +1,25 kg por semana.
+    const despues = construirSesion('multipresa-resistencia', { ...base(), evaluacion: evaluacionAgosto, historial: multipresasPrevias(10) })!
     const e2 = despues.bloques[1]!.ejercicios[0]!
-    expect(e2.cargaKg).toBe(10) // 0,8 × 100 − 70
-    expect(e2.cargaTexto).toBe('+10 kg de lastre')
-    expect(e2.notas).toMatch(/80 %/)
+    expect(e2.cargaKg).toBe(2.5)
+    expect(e2.cargaTexto).toBe('+2,5 kg de lastre')
+    expect(e2.notas).toMatch(/73 %/)
+    expect(despues.bloques[1]!.explicacion.motivo).toMatch(/1,25 kg por semana/)
     expect(despues.sesion.detalle?.conCarga).toBe(true)
   })
   it('un lastre fraccionario se escribe con coma y uno negativo es descarga', () => {
     const cuatro = { ...base(), historial: multipresasPrevias(8) }
     const fraccion = { ...cuatro, evaluacion: { ...evaluacion, lastreKg: 31 } }
-    expect(construirSesion('multipresa-resistencia', fraccion)!.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('+10,5 kg de lastre')
+    expect(construirSesion('multipresa-resistencia', fraccion)!.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('+0,5 kg de lastre') // 0,7 × 101 − 70
     const descarga = { ...cuatro, evaluacion: { ...evaluacion, lastreKg: -5 } }
     const plan = construirSesion('multipresa-resistencia', descarga)!
-    expect(plan.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('descarga de 18 kg')
+    expect(plan.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('descarga de 24,5 kg')
     expect(plan.sesion.detalle?.conCarga).toBe(false)
     const descargaInicial = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, lastreKg: -5 } })!
     expect(descargaInicial.bloques[1]!.ejercicios[0]!.cargaTexto).toBe('descarga de 24,5 kg') // 0,7 × 65 − 70
@@ -187,11 +193,17 @@ describe('tecnica', () => {
     expect(textos).toMatch(/vídeo|graba/i)
     expect(plan.bloques[1]!.explicacion.parametros).toEqual(expect.arrayContaining(['P-53', 'P-54', 'P-55']))
   })
+  it('una vía de práctica hasta que fluya y 1-2 vías nuevas (P-54, Hacques 2022)', () => {
+    const ej = construirSesion('tecnica', peticion())!.bloques[1]!.ejercicios
+    expect(ej[0]).toMatchObject({ ficha: 'via-de-practica' })
+    expect(ej[0]!.nombre).toMatch(/tu vía de práctica/)
+    expect(ej[1]!.nombre).toMatch(/^1-2 vías nuevas/)
+  })
 })
 
 describe('arc', () => {
-  it('con tiempo: 10 + 15 + 10 + 15 = 50 min', () => {
-    const plan = construirSesion('arc', peticion())!
+  it('con 50-74 min: 10 + 15 + 10 + 15 = 50 min', () => {
+    const plan = construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 60 } }))!
     expect(plan.sesion).toMatchObject({ tipo: 'arc', intensidad: 'suave', duracionMin: 50 })
     expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 10, 15])
   })
@@ -202,6 +214,19 @@ describe('arc', () => {
   })
   it('devuelve null si no caben 40 min', () => {
     expect(construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 39 } }))).toBeNull()
+  })
+  it('con 75 min o más: 3 series de 15', () => {
+    const plan = construirSesion('arc', peticion({ contexto: { compania: 'solo', lugar: 'rocodromo', minutosDisponibles: 90 } }))!
+    expect(plan.bloques.map((b) => b.minutos)).toEqual([10, 15, 10, 15, 10, 15])
+  })
+  it('alterna: con un ARC antes, on-offs 10 × 1:1 (30 min); en descarga, 5', () => {
+    const previo = { id: 'a1', tipo: 'arc' as const, intensidad: 'suave' as const, fecha: '2026-11-02', horaInicio: 18, duracionMin: 50 }
+    const b = construirSesion('arc', peticion({ fecha: '2026-11-09', historial: [previo] }))!
+    expect(b.sesion.duracionMin).toBe(30)
+    expect(b.bloques[1]!.ejercicios[0]).toMatchObject({ nombre: '10 × (1 min escalando / 1 min de descanso)', ficha: 'on-offs' })
+    const d = construirSesion('arc', peticion({ fecha: '2026-11-09', historial: [previo], fase: { ...peticion().fase, descarga: true } }))!
+    expect(d.bloques[1]!.ejercicios[0]!.nombre).toMatch(/^5 × /)
+    expect(d.sesion.duracionMin).toBe(20)
   })
   it('cita P-35', () => {
     expect(construirSesion('arc', peticion())!.bloques[1]!.explicacion.parametros).toContain('P-35')
@@ -406,7 +431,7 @@ describe('construirComplemento', () => {
 describe('multipresa: una sola subida cada vez (P-11)', () => {
   const base = () => peticion({ evaluacion, contexto: { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } })
   const bloquesYCarga = (n: number) => {
-    const plan = construirSesion('multipresa-resistencia', { ...base(), historial: multipresasPrevias(n) })!
+    const plan = construirSesion('multipresa-resistencia', { ...base(), evaluacion: evaluacionAgosto, historial: multipresasPrevias(n) })!
     return {
       bloques: plan.bloques.filter((b) => b.nombre.startsWith('Bloque de repeaters')).length,
       kg: plan.bloques[1]!.ejercicios[0]!.cargaKg,
@@ -416,7 +441,29 @@ describe('multipresa: una sola subida cada vez (P-11)', () => {
     expect(bloquesYCarga(3)).toEqual({ bloques: 1, kg: 0 })
     expect(bloquesYCarga(4)).toEqual({ bloques: 2, kg: 0 })
     expect(bloquesYCarga(7)).toEqual({ bloques: 2, kg: 0 })
-    expect(bloquesYCarga(8)).toEqual({ bloques: 2, kg: 10 })
+    // A partir de 8 la carga sube por rampa (+1,25 kg por semana con 2 válidas seguidas), no de golpe (P-11).
+    expect(bloquesYCarga(8)).toEqual({ bloques: 2, kg: 0 })
+    expect(bloquesYCarga(9)).toEqual({ bloques: 2, kg: 1 }) // 1,25 redondeado a 0,5
+    expect(bloquesYCarga(10)).toEqual({ bloques: 2, kg: 2.5 })
+  })
+  it('con un test nuevo, la rampa vuelve a empezar desde su 70 % (sin saltos)', () => {
+    const conTestNuevo = construirSesion('multipresa-resistencia', { ...base(), evaluacion: { ...evaluacion, fecha: '2026-09-27' }, historial: multipresasPrevias(10) })!
+    // Las sesiones 9 y 10 (25 y 28 de septiembre): solo la del 28 es posterior al test → +1,25 → 1 kg (redondeado a 0,5).
+    expect(conTestNuevo.bloques[1]!.ejercicios[0]!.cargaKg).toBe(1)
+  })
+  it('el freno de P-11 (esfuerzo por encima o ámbar) también para la rampa', () => {
+    const frenado = { zonas: { dedos: 'verde', muneca: 'verde', codo: 'verde', hombro: 'verde', otra: 'verde' }, chequeoBajoHoy: false, sinSubida: true } as unknown as EstadoAtleta
+    const plan = construirSesion('multipresa-resistencia', { ...base(), evaluacion: evaluacionAgosto, historial: multipresasPrevias(10), estado: frenado })!
+    // Sin freno serían +2,5 kg; con freno, la última sesión no suma su semana: +1,25 → 1 kg.
+    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(1)
+    expect(plan.bloques[1]!.explicacion.motivo).toMatch(/Hoy no sube/)
+  })
+  it('la rampa nunca pasa del 80 % y no sube en semanas sin 2 válidas seguidas', () => {
+    // 8 sesiones y después 12 semanas con una por semana: 12 × 1,25 = 15 kg, pero el tope (80 %) son 10.
+    const semana = (i: number): string => new Date(Date.UTC(2026, 9, 1 + i * 7)).toISOString().slice(0, 10)
+    const semanales = Array.from({ length: 12 }, (_, i) => ses(`w${i}`, semana(i), 18, { tipo: 'multipresa-resistencia' }))
+    const muchas = [...multipresasPrevias(8), ...semanales]
+    expect(construirSesion('multipresa-resistencia', { ...base(), fecha: '2026-12-05', evaluacion: { ...evaluacion, fecha: '2026-09-30' }, historial: muchas })!.bloques[1]!.ejercicios[0]!.cargaKg).toBe(10)
   })
   it('las multipresas futuras ya planificadas no cuentan para la progresión', () => {
     const futuras = Array.from({ length: 8 }, (_, i) =>
@@ -438,13 +485,15 @@ describe('plantillas del tramo 2c', () => {
   const casa = { compania: 'solo', lugar: 'casa', minutosDisponibles: 120 } as const
   const roca = { compania: 'con-gente', lugar: 'roca', minutosDisponibles: 180 } as const
 
-  it('multipresa de resistencia de fuerza: P-36 (10 s : 5 s, 5 repeticiones, 4 series, 60 s), 10 + 10 = 20 min, a 20 mm', () => {
+  it('multipresa de resistencia: P-36 (10 s : 6 s hasta 24, 2 series, 6 min, 60 % fijo), 10 + 20 = 30 min, a 20 mm', () => {
     const plan = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, evaluacion }))!
-    expect(plan.sesion).toMatchObject({ tipo: 'multipresa-resistencia-fuerza', intensidad: 'alta', duracionMin: 20 })
+    expect(plan.sesion).toMatchObject({ tipo: 'multipresa-resistencia-fuerza', intensidad: 'alta', duracionMin: 30 })
     expect(plan.sesion.detalle).toMatchObject({ regletaMm: 20, agarre: 'semiarqueado' })
-    expect(plan.bloques[1]!.ejercicios[0]).toMatchObject({ trabajoS: 10, descansoS: 5, repeticiones: 5, series: 4, descansoSeriesS: 60 })
-    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(0) // 70 % de 70 + 30 kg
+    expect(plan.bloques[1]!.ejercicios[0]).toMatchObject({ trabajoS: 10, descansoS: 6, repeticiones: 24, series: 2, descansoSeriesS: 360, hastaFallo: true })
+    // 60 % de (70 + 30) − 70 = −10 kg: descarga de 10 kg.
+    expect(plan.bloques[1]!.ejercicios[0]!.cargaKg).toBe(-10)
     expect(plan.bloques[1]!.explicacion.parametros).toContain('P-36')
+    expect(plan.bloques[1]!.explicacion.motivo).toMatch(/Devise 2022/)
   })
   it('4x4: P-37 (4 bloques, 4 vueltas, 4 min), 10 + 10 + 30 = 50 min, carga alta', () => {
     const plan = construirSesion('resistencia-4x4', peticion())!
@@ -477,11 +526,13 @@ describe('plantillas en semana de descarga (P-48)', () => {
     expect(repeaters).toHaveLength(1)
     expect(repeaters[0]!.ejercicios[0]!.series).toBe(3)
     expect(repeaters[0]!.explicacion.parametros).toContain('P-48')
-    expect(repeaters[0]!.ejercicios[0]!.cargaKg).toBe(10) // la carga se mantiene; baja el volumen
+    expect(repeaters[0]!.ejercicios[0]!.cargaKg).toBe(0) // la carga se mantiene (aún al 70 %, empieza la rampa); baja el volumen
   })
-  it('resistencia de fuerza: la mitad de series; 4x4: la mitad de vueltas', () => {
+  it('resistencia: una sola serie; 4x4: la mitad de vueltas', () => {
     const rf = construirSesion('multipresa-resistencia-fuerza', peticion({ contexto: casa, fase: descarga }))!
-    expect(rf.bloques[1]!.ejercicios[0]!.series).toBe(2)
+    expect(rf.bloques[1]!.ejercicios[0]!.series).toBe(1)
+    expect(rf.bloques[1]!.ejercicios[0]!.repeticiones).toBe(12)
+    expect(rf.bloques[1]!.ejercicios[0]!.notas).toMatch(/sin acercarte al fallo/)
     const cuatro = construirSesion('resistencia-4x4', peticion({ fase: descarga }))!
     expect(cuatro.bloques[2]!.ejercicios[0]!.series).toBe(2)
     expect(cuatro.sesion.duracionMin).toBe(35)
@@ -523,5 +574,15 @@ describe('dominadas como sesión (P-39)', () => {
     expect(construirSesion('dominadas', casa(45))!.sesion.duracionMin).toBeLessThanOrEqual(45)
     expect(construirSesion('dominadas', casa(30))).not.toBeNull()
     expect(construirSesion('dominadas', casa(29))).toBeNull()
+  })
+  it('alterna: tras unas lastradas, potencia (explosivas y excéntricas, P-73) en 10 + 20 + 5 = 35 min', () => {
+    const previa = ses('d1', '2026-11-02', 9, { tipo: 'dominadas' })
+    const b = construirSesion('dominadas', { ...casa(60), fecha: '2026-11-09', historial: [previa] })!
+    expect(b.sesion.duracionMin).toBe(35)
+    expect(b.bloques[1]!.ejercicios.map((e) => e.ficha)).toEqual(['dominadas-explosivas', 'dominadas-excentricas'])
+    expect(b.bloques[1]!.ejercicios[0]).toMatchObject({ series: 4, descansoSeriesS: 180 })
+    expect(b.bloques[1]!.explicacion.parametros).toEqual(expect.arrayContaining(['P-73', 'P-39']))
+    // Sin 35 min, las lastradas de siempre.
+    expect(construirSesion('dominadas', { ...casa(30), fecha: '2026-11-09', historial: [previa] })!.bloques[1]!.nombre).toBe('Dominadas lastradas')
   })
 })

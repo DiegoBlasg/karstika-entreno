@@ -65,7 +65,7 @@ describe('fichas usadas por las plantillas', () => {
     ])
   })
   it('todas las suspensiones en regleta enlazan a una ficha de suspensiones', () => {
-    const suspensiones = new Set(['repeaters-7-3', 'resistencia-fuerza-10-5', 'suspension-maxima-10s', 'test-7-3-fallo'])
+    const suspensiones = new Set(['repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo'])
     for (const e of ejercicios.filter((x) => /regleta|Suspensi/.test(x.nombre))) expect(suspensiones, e.nombre).toContain(e.ficha)
   })
   it('la sesión y el complemento de hombro enlazan solo a fichas de hombro y antagonistas o de movilidad', () => {

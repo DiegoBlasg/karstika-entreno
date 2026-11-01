@@ -66,10 +66,10 @@ describe('escenario real: fase de fuerza con el test hecho (jueves solo: día de
     expect(repeaters(r)).toHaveLength(2)
     expect(repeaters(r)[0]!.ejercicios[0]!.cargaKg).toBe(-2)
   })
-  it('tras 8 sesiones sube la carga al tope del 80 %: 8 kg de lastre', () => {
+  it('tras 8 sesiones empieza la rampa: aún al 70 % (−2 kg), sin saltar al 80 %', () => {
     const r = proponerSesion(base({ fase: FASE_FUERZA, contexto: juevesContexto, historial: [primera, ...multipresas, tecnica], evaluacion }))
     expect(r.principal!.sesion.tipo).toBe('multipresa-resistencia')
     expect(repeaters(r)).toHaveLength(2)
-    expect(repeaters(r)[0]!.ejercicios[0]!.cargaKg).toBe(8) // 0,8 × 100 − 72
+    expect(repeaters(r)[0]!.ejercicios[0]!.cargaKg).toBe(-2) // 0,7 × 100 − 72; la rampa sube 1,25 kg por semana
   })
 })

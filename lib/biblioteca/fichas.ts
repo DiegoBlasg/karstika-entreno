@@ -5,10 +5,10 @@ import { FRACCION_INICIAL_REPEATERS, VALORES, type ParametroId } from '../../mot
 import type { DibujoId } from './dibujos'
 
 export const FICHA_IDS = [
-  'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-fuerza-10-5', 'suspension-maxima-10s', 'test-7-3-fallo',
+  'agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo',
   'calentamiento-progresivo', 'calentamiento-barra',
-  'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'practica-tecnica', 'video-autoevaluacion',
-  'dominadas-lastradas', 'colgarse-barra',
+  'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'via-de-practica', 'practica-tecnica', 'video-autoevaluacion',
+  'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas', 'colgarse-barra',
   'retracciones-escapulares', 'flexiones', 'rotacion-externa-banda', 'ytw-banda', 'face-pull-banda', 'extensores-dedos-banda',
   'plancha-toques-hombro',
   'movilidad',
@@ -103,27 +103,27 @@ export const FICHAS: Record<FichaId, Ficha> = {
     parametros: ['P-01', 'P-02', 'P-03', 'P-05', 'P-06', 'P-09', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
-  'resistencia-fuerza-10-5': {
-    id: 'resistencia-fuerza-10-5',
-    titulo: `Resistencia de fuerza ${RF.trabajoS}:${RF.descansoS}`,
-    paraQue: 'Suspensiones más largas, con menos descanso, para la resistencia de fuerza de dedos.',
+  'resistencia-10-6': {
+    id: 'resistencia-10-6',
+    titulo: `Resistencia ${RF.trabajoS}:${RF.descansoS} al ${pct(RF.fraccion)}`,
+    paraQue: 'Suspensiones intermitentes submáximas para la resistencia de dedos: el protocolo con ensayo (Devise 2022) que mejoró la resistencia sin necesidad de ir al máximo.',
     material: `Multipresa, regleta de ${REGLETA}`,
     pasos: [
       ...PASOS_COLGARSE,
-      `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso; ${RF.repeticiones} repeticiones por serie.`,
+      `Cada repetición: ${RF.trabajoS} s colgado y ${RF.descansoS} s de descanso, hasta ${RF.repeticiones} repeticiones o hasta que la siguiente ya no saldría limpia: para una antes del fallo (en semana de descarga, ${RF.repeticionesDescarga} como mucho).`,
       `Haz ${RF.series} series con ${fmt(RF.descansoSeriesS / 60)} min entre series.`,
-      `Carga: la misma regla que los repeaters (el ${pct(FRACCION_INICIAL_REPEATERS)} del test y después hasta el ${pct(VALORES['P-06'].fraccionMaximaRepeaters)}).`,
+      `Carga: el ${pct(RF.fraccion)} de tu fuerza máxima del último test, fija. Sin test: empieza con una carga que sostengas con margen y ajústala en la segunda serie (decisión de diseño).`,
       NOVEL,
     ],
     errores: [
-      'Llegar al fallo en las primeras series.',
+      'Subir la carga para llegar antes al fallo: el estímulo está en acumular repeticiones a carga moderada.',
       'Cerrar el agarre hacia el arqueado al final de cada suspensión.',
     ],
     paraSi: [
-      'No sostienes los 10 s con buena forma: termina la serie.',
+      'No sostienes los 10 s con buena forma: la serie ha terminado.',
       ...PARA_SI,
     ],
-    parametros: ['P-36', 'P-06', 'P-09', 'P-10', 'P-12', ...SEGURIDAD],
+    parametros: ['P-36', 'P-09', 'P-10', 'P-12', ...SEGURIDAD],
     dibujo: 'colgado-multipresa',
   },
   'suspension-maxima-10s': {
@@ -274,7 +274,7 @@ export const FICHAS: Record<FichaId, Ficha> = {
     material: 'Rocódromo (travesía o vías fáciles)',
     pasos: [
       'Elige una travesía o vías muy por debajo de tu nivel.',
-      `Escala sin parar ${ARC.minutosSerie} min (o ${ARC.minutosSerieCorta} si va corta la sesión).`,
+      `Escala sin parar ${ARC.minutosSerie} min (o ${ARC.minutosSerieCorta} si va corta la sesión); ${ARC.series}-${ARC.seriesMax} series según el tiempo.`,
       'Esfuerzo 3-4 de 10: puedes hablar mientras escalas.',
       `Descansa ${ARC.descansoMin} min entre series.`,
     ],
@@ -287,6 +287,36 @@ export const FICHAS: Record<FichaId, Ficha> = {
       ...PARA_SI,
     ],
     parametros: ['P-35', ...SEGURIDAD],
+  },
+  'on-offs': {
+    id: 'on-offs',
+    titulo: 'On-offs (1 min escalando / 1 min de descanso)',
+    paraQue: 'Capacidad del antebrazo con intervalos: se alterna con el ARC continuo. Protocolo de entrenadores (Lattice), sin ensayo.',
+    material: 'Rocódromo (bloques o vías fáciles, autoasegurador) o roca',
+    pasos: [
+      'Elige un recorrido unos 2 grados por debajo de tu nivel a vista.',
+      `Escala 1 min y descansa 1 min; repite ${ARC.onOffs} veces (${ARC.onOffsDescarga} en semana de descarga).`,
+      'El bombeo debe llegar solo en las últimas vueltas.',
+      'En el descanso, sacude los brazos colgando (P-52).',
+    ],
+    errores: ['Empezar demasiado duro y bombearse en la tercera vuelta.', 'Alargar los descansos.'],
+    paraSi: ['Te bombeas pronto: baja la dificultad.', ...PARA_SI],
+    parametros: ['P-35', ...SEGURIDAD],
+  },
+  'via-de-practica': {
+    id: 'via-de-practica',
+    titulo: 'Tu vía de práctica',
+    paraQue: 'Repetir la misma vía de una sesión a otra hasta que salga fluida: en novatos, repetir mejoró más la fluidez en esa vía que cambiar cada vez (Hacques 2022).',
+    material: 'Rocódromo (o una vía fácil en roca)',
+    pasos: [
+      'Elige una vía cómoda para tu nivel con algún paso que no te salga limpio.',
+      'Hazle 2-3 pegues buscando que salga sin paradas ni reajustes.',
+      'Repítela en las siguientes sesiones de técnica.',
+      'Cuando ya fluya, o tras unas 7 sesiones con ella, elige otra (P-54).',
+    ],
+    errores: ['Subir de dificultad: aquí manda la fluidez, no el grado.', 'Cambiar de vía cada sesión.'],
+    paraSi: ['Te bombeas: es demasiado dura para practicar técnica.', ...PARA_SI],
+    parametros: ['P-54', ...SEGURIDAD],
   },
   'practica-tecnica': {
     id: 'practica-tecnica',
@@ -347,6 +377,39 @@ export const FICHAS: Record<FichaId, Ficha> = {
       ...PARA_SI,
     ],
     parametros: ['P-39', ...SEGURIDAD],
+    dibujo: 'dominada',
+  },
+  'dominadas-explosivas': {
+    id: 'dominadas-explosivas',
+    titulo: 'Dominadas explosivas',
+    paraQue: 'Potencia de tirón sin campus: subir lo más rápido posible (Vigouroux y Devise 2024, en avanzados). Las series son decisión de diseño.',
+    material: 'Barra',
+    pasos: [
+      'Calienta en barra (mira «Calentamiento en barra»).',
+      'Desde colgado con escápulas activas, sube lo más rápido que puedas.',
+      'Baja controlando, sin dejarte caer.',
+      `${VALORES['P-73'].explosivasSeries} series de ${VALORES['P-73'].repMin}-${VALORES['P-73'].repMax}, lejos del fallo, con ${VALORES['P-73'].explosivasDescansoMin} min de descanso.`,
+      'Para la serie en cuanto pierdas velocidad.',
+    ],
+    errores: ['Dar tirones o balancearte.', 'Llegar al fallo.', 'Hacerlas el día de una sesión intensa de dedos.'],
+    paraSi: ['Notas el codo o el hombro: para.', ...PARA_SI],
+    parametros: ['P-73', 'P-39', ...SEGURIDAD],
+    dibujo: 'dominada',
+  },
+  'dominadas-excentricas': {
+    id: 'dominadas-excentricas',
+    titulo: 'Dominadas excéntricas',
+    paraQue: 'Fuerza y potencia de tirón con la bajada lenta (Vigouroux y Devise 2024, en avanzados). Las series son decisión de diseño.',
+    material: 'Barra (una silla o un salto para subir)',
+    pasos: [
+      'Ponte arriba con la barbilla sobre la barra, con un salto o apoyando en una silla.',
+      `Baja despacio, en ${VALORES['P-73'].bajadaSMin}-${VALORES['P-73'].bajadaSMax} s, hasta los brazos estirados.`,
+      `${VALORES['P-73'].excentricasSeries} series de ${VALORES['P-73'].repMin}-${VALORES['P-73'].repMax} bajadas con ${VALORES['P-73'].excentricasDescansoMin} min de descanso.`,
+      'Vuelve a subir sin tirar de los brazos.',
+    ],
+    errores: ['Dejarse caer al final de la bajada.', 'Encoger los hombros.'],
+    paraSi: ['Notas el codo o el hombro: para.', ...PARA_SI],
+    parametros: ['P-73', 'P-39', ...SEGURIDAD],
     dibujo: 'dominada',
   },
   'colgarse-barra': {
@@ -663,13 +726,13 @@ export interface Grupo {
 }
 
 export const GRUPOS: Grupo[] = [
-  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-fuerza-10-5', 'suspension-maxima-10s', 'test-7-3-fallo'] },
+  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'test-7-3-fallo'] },
   {
     id: 'escalada',
     titulo: 'Escalada',
-    fichas: ['calentamiento-progresivo', 'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'practica-tecnica', 'video-autoevaluacion'],
+    fichas: ['calentamiento-progresivo', 'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'via-de-practica', 'practica-tecnica', 'video-autoevaluacion'],
   },
-  { id: 'barra', titulo: 'Barra', fichas: ['calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas'] },
+  { id: 'barra', titulo: 'Barra', fichas: ['calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas'] },
   {
     id: 'hombro',
     titulo: 'Hombro y antagonistas',
