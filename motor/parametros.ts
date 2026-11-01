@@ -32,6 +32,8 @@ export const VALORES = {
   'P-08': { semanasMaximasSinReevaluar: 10 },
   'P-18': { duracionS: 10, intentos: 3, descansoS: 180 },
   'P-11': { sesionesValidasParaSubir: 2, kgMaxSemana: 1.25 },
+  // Cambio real por prueba (informe 2026-10-31: unas 2 veces el CV de cada test sin dinamómetro).
+  'P-19': { fuerzaPct: 10, colgadoPct: 25, powerSlapCm: 10, dominadas: 2, caderaCm: 3, tecnicaPuntos: 1 },
   'P-35': { series: 2, seriesMax: 3, minutosSerie: 15, minutosSerieCorta: 10, descansoMin: 10, onOffs: 10, onOffsDescarga: 5 },
   'P-41': { minutos: 15 },
   'P-49': { minutos: 10 },

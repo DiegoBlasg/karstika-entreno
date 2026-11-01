@@ -51,8 +51,7 @@ export interface AjusteCiclo2 {
 // Decisiones de diseño (no están en parametros.md). Se desconoce el cambio mínimo detectable y una sola medición
 // no basta (P-19): hacen falta al menos 3 tests y que los 2 últimos confirmen el cambio frente al primero, de al
 // menos un 5 % (o 1 punto en la técnica, escala 1-7).
-const UMBRAL_CAMBIO_PCT = 5
-const UMBRAL_PUNTOS = 1
+const { fuerzaPct: UMBRAL_FUERZA_PCT, colgadoPct: UMBRAL_COLGADO_PCT, tecnicaPuntos: UMBRAL_PUNTOS } = VALORES['P-19']
 const MIN_MEDICIONES = 3
 const { ventanaDias: VENTANA_DIAS, minRespuestas: MIN_RESPUESTAS, mayoriaPct: MAYORIA_PCT } = VALORES['P-69']
 
@@ -71,7 +70,7 @@ const NOMBRE: Record<Limitante, string> = {
 }
 const FISICOS: readonly Limitante[] = ['fuerza-dedos', 'resistencia']
 
-function progreso(valores: readonly number[], unidad: '%' | 'puntos'): Progreso {
+function progreso(valores: readonly number[], unidad: '%' | 'puntos', umbral: number): Progreso {
   const mediciones = valores.length
   if (mediciones === 0) return { unidad, mediciones, tendencia: 'sin-datos' }
   const inicial = valores[0]!
@@ -80,7 +79,6 @@ function progreso(valores: readonly number[], unidad: '%' | 'puntos'): Progreso 
   const cambio = mediciones >= 2 ? delta(actual) : undefined
   const base = { inicial, actual, ...(cambio !== undefined ? { cambio } : {}), unidad, mediciones }
   if (mediciones < MIN_MEDICIONES) return { ...base, tendencia: 'sin-datos' }
-  const umbral = unidad === '%' ? UMBRAL_CAMBIO_PCT : UMBRAL_PUNTOS
   const ultimas = valores.slice(-2).map(delta)
   const tendencia: Tendencia = ultimas.every((x) => x >= umbral)
     ? 'mejora'
@@ -136,9 +134,10 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
 
   // Solo cuenta lo que ya ha pasado; las evaluaciones, en orden de fecha.
   const pasadas = evaluaciones.filter((e) => diaNumero(e.fecha) <= hoy).sort((a, b) => diaNumero(a.fecha) - diaNumero(b.fecha))
-  const fuerza = progreso(pasadas.map(fuerzaRelativa), '%')
-  const resistencia = progreso(pasadas.flatMap((e) => (e.resistenciaS === undefined ? [] : [e.resistenciaS])), '%')
-  const tecnica = progreso(pasadas.flatMap((e) => (e.tecnica === undefined ? [] : [e.tecnica])), 'puntos')
+  const fuerza = progreso(pasadas.map(fuerzaRelativa), '%', UMBRAL_FUERZA_PCT)
+  // La resistencia es la serie del colgado en 30 mm; los 7:3 antiguos no se mezclan (miden otra cosa).
+  const resistencia = progreso(pasadas.flatMap((e) => (e.colgado30S === undefined ? [] : [e.colgado30S])), '%', UMBRAL_COLGADO_PCT)
+  const tecnica = progreso(pasadas.flatMap((e) => (e.tecnica === undefined ? [] : [e.tecnica])), 'puntos', UMBRAL_PUNTOS)
 
   const frenos: Record<Limitante, number> = { 'fuerza-dedos': 0, resistencia: 0, tecnica: 0, cabeza: 0 }
   let nada = 0
@@ -205,7 +204,7 @@ export function diagnosticar(evaluaciones: readonly EvaluacionDedos[], respuesta
     explicar(
       'diagnostico.progreso',
       ['P-19', 'P-24', 'P-27'],
-      `Progreso frente a tu propia línea base: fuerza de dedos ${estado(fuerza)}${cambio(fuerza)}, resistencia ${estado(resistencia)}${cambio(resistencia)}, técnica ${estado(tecnica)}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_CAMBIO_PCT} % (1 punto en la técnica). No se conoce el cambio mínimo que detectan estos tests y sin dinamómetro su error ronda el 5-30 %, así que se pide confirmación para no tomar el ruido por progreso. Los segundos de resistencia se miden al 60 % del máximo de ese día: si tu fuerza sube, pueden quedarse igual aunque hayas mejorado.`,
+      `Progreso frente a tu propia línea base: fuerza de dedos ${estado(fuerza)}${cambio(fuerza)}, resistencia ${estado(resistencia)}${cambio(resistencia)}, técnica ${estado(tecnica)}${cambio(tecnica)}. Una sola medición no basta (P-19): hacen falta ${MIN_MEDICIONES} tests y que los 2 últimos confirmen un cambio de al menos un ${UMBRAL_FUERZA_PCT} % en fuerza, un ${UMBRAL_COLGADO_PCT} % en el colgado y 1 punto en la técnica. Estos tests sin dinamómetro tienen un error del 5-30 %, así que esos márgenes (unas 2 veces su error) evitan tomar el ruido por progreso. La resistencia es el colgado en 30 mm a peso corporal: mide tu resistencia sin depender de tu fuerza del día (los 7:3 antiguos no se mezclan).`,
     ),
     explicar('diagnostico.limitantes', parametrosLimitante[fuente], motivoLimitante),
   ]

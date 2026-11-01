@@ -118,6 +118,10 @@ describe('VALORES del diagnóstico', () => {
     expect(columnas('P-31')[2]).toMatch(/^Fuerza de dedos: 4-10 semanas\. Resistencia de fuerza: 4-8 semanas/)
     expect(VALORES['P-31']).toEqual({ fuerzaMin: 4, fuerzaMax: 10, resistenciaMin: 4, resistenciaMax: 8 })
   })
+  it('P-19 da los umbrales de cambio real por prueba', () => {
+    expect(columnas('P-19')[2]).toMatch(/Cambio real por prueba: fuerza de dedos 10 %, colgado en 30 mm 25 %, power slap 10 cm, dominadas 2, apertura de cadera 3 cm, técnica 1 punto/)
+    expect(VALORES['P-19']).toEqual({ fuerzaPct: 10, colgadoPct: 25, powerSlapCm: 10, dominadas: 2, caderaCm: 3, tecnicaPuntos: 1 })
+  })
   it('P-11 coincide con el documento', () => {
     expect(columnas('P-11')[2]).toMatch(/solo tras 2 sesiones de multipresa seguidas/)
     expect(columnas('P-11')[2]).toMatch(/como mucho \+1,25 kg por semana/)

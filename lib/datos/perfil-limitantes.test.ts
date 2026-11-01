@@ -33,7 +33,7 @@ describe('vistaPerfil', () => {
   })
   it('un test apuntado después del lunes del ciclo 2 con fecha anterior no cambia el reparto fijado', () => {
     const ev = (n: number, fecha: string, lastre: number, resistencia: number, creada: string): FilaEvaluacion =>
-      ({ id: uuid(100 + n), fecha, peso_corporal_kg: 70, lastre_kg: lastre, resistencia_s: resistencia, tecnica: null, creada_en: creada })
+      ({ id: uuid(100 + n), fecha, peso_corporal_kg: 70, lastre_kg: lastre, resistencia_s: null, colgado_30_s: resistencia, tecnica: null, creada_en: creada })
     // Fuerza sube y resistencia no: con los tres tests, el reparto sería 6 + 8 (resistencia).
     const antes = '2027-01-01 10:00:00+00'
     const tres = [ev(1, '2026-12-28', 0, 80, antes), ev(2, '2027-02-22', 10, 81, antes), ev(3, '2027-04-12', 14, 80, '2027-05-02 10:00:00.123456+00')]

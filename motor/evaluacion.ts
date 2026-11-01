@@ -21,6 +21,12 @@ function comprobar(e: EvaluacionDedos): void {
   if (e.resistenciaS !== undefined && !(Number.isFinite(e.resistenciaS) && e.resistenciaS >= 1 && e.resistenciaS <= RESISTENCIA_MAX_S)) {
     throw new Error(`resistenciaS debe estar entre 1 y ${RESISTENCIA_MAX_S} s: ${e.resistenciaS}`)
   }
+  if (e.colgado30S !== undefined && !(Number.isFinite(e.colgado30S) && e.colgado30S > 0 && e.colgado30S <= RESISTENCIA_MAX_S)) {
+    throw new Error(`colgado30S debe estar entre 0 y ${RESISTENCIA_MAX_S} s: ${e.colgado30S}`)
+  }
+  if (e.powerSlapCm !== undefined && !(Number.isFinite(e.powerSlapCm) && e.powerSlapCm >= 0 && e.powerSlapCm <= 300)) {
+    throw new Error(`powerSlapCm debe estar entre 0 y 300 cm: ${e.powerSlapCm}`)
+  }
   const { minimo, maximo } = VALORES['P-27']
   if (e.tecnica !== undefined && !(Number.isInteger(e.tecnica) && e.tecnica >= minimo && e.tecnica <= maximo)) {
     throw new Error(`tecnica debe ser un entero de ${minimo} a ${maximo}: ${e.tecnica}`)

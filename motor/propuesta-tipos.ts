@@ -20,7 +20,9 @@ export interface EvaluacionDedos {
   fecha: string                                   // 'AAAA-MM-DD'
   pesoCorporalKg: number
   lastreKg: number                                // mejor intento de 10 s; negativo si fue con descarga
-  resistenciaS?: number                           // test intermitente 7 s : 3 s al 60 % hasta el fallo (P-24)
+  resistenciaS?: number                           // test intermitente 7 s : 3 s al 60 % hasta el fallo (antiguo, hasta 2026-11)
+  colgado30S?: number                             // colgado continuo en 30 mm a peso corporal hasta soltar (P-24)
+  powerSlapCm?: number                            // power slap: altura de la palmada sobre la mano, mejor de 3
   tecnica?: number                                // autoevaluación técnica de 1 a 7 sobre un vídeo (P-27)
 }
 
