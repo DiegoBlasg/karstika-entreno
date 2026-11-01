@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FRACCION_INICIAL_REPEATERS, METADATOS, VALORES } from '../../motor'
 import { DIBUJO_IDS } from './dibujos'
-import { FICHA_IDS, FICHAS, fichaDe, GRUPOS } from './fichas'
+import { FICHA_IDS, FICHAS, fichaDe, GRUPOS, LUGARES_FICHA, usoFicha } from './fichas'
 
 const todas = Object.values(FICHAS)
 const texto = (id: (typeof FICHA_IDS)[number]): string => {
@@ -122,8 +122,17 @@ describe('fichas de hombro: la dosis la marca la sesión', () => {
 })
 
 describe('GRUPOS', () => {
-  it('son los cinco del índice, en orden', () => {
-    expect(GRUPOS.map((g) => g.titulo)).toEqual(['Suspensiones', 'Escalada', 'Barra', 'Hombro y antagonistas', 'Movilidad y core'])
+  it('son las siete cualidades, en orden', () => {
+    expect(GRUPOS.map((g) => g.titulo)).toEqual([
+      'Fuerza de dedos', 'Resistencia', 'Potencia y tirón', 'Técnica', 'Cabeza y táctica', 'Hombro y antagonistas', 'Movilidad y core',
+    ])
+  })
+  it('cada ficha dice dónde se hace y si el entrenador la propone', () => {
+    for (const id of FICHA_IDS) expect(LUGARES_FICHA[id].length, id).toBeGreaterThan(0)
+    expect(usoFicha('pies-silenciosos')).toBe('plan')
+    expect(usoFicha('inthangs')).toBe('consulta')
+    expect(usoFicha('campus')).toBe('no')
+    expect(LUGARES_FICHA['tactica-encadene']).toEqual(['roca'])
   })
   it('cada ficha está en un solo grupo', () => {
     const vistas = GRUPOS.flatMap((g) => g.fichas)

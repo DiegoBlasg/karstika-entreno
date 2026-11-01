@@ -15,6 +15,9 @@ export const FICHA_IDS = [
   'plancha-frontal', 'hollow', 'elevaciones-colgado', 'elevaciones-tumbado', 'plancha-lateral', 'rana', 'cadera-90-90',
   'dislocaciones-hombro',
   'dominadas-maximas', 'apertura-cadera',
+  'pies-silenciosos', 'manos-pegadas', 'mismo-lado', 'placa-sin-manos', 'caidas-progresivas', 'respiracion-voy', 'tactica-encadene',
+  'continuidad-5x3', 'up-down-up', 'repetir-vias', 'inthangs', 'suspensiones-largas', 'abrahangs', 'intermitentes-80', 'finger-curls',
+  'dedos-en-barra', 'campus', 'paso-alto', 'tobillo',
 ] as const
 export type FichaId = (typeof FICHA_IDS)[number]
 
@@ -767,22 +770,340 @@ export const FICHAS: Record<FichaId, Ficha> = {
     paraSi: ['Pinchazo en el hombro: separa más las manos o reduce el recorrido.', ...PARA_SI],
     parametros: ['P-72', ...SEGURIDAD],
   },
+  'pies-silenciosos': {
+    id: 'pies-silenciosos',
+    titulo: 'Pies silenciosos',
+    paraQue: 'Poner el pie con precisión: mirarlo hasta cargarlo y que no suene al apoyar. Es un ejercicio clásico de entrenadores (Anderson, Gresham); no hay estudio que mida su efecto, así que va como ejercicio de la semana de la sesión técnica.',
+    material: 'Vías o bloques fáciles (rocódromo o roca)',
+    pasos: [
+      'Elige vías o bloques 2-3 grados por debajo de tu nivel.',
+      'Mira cada presa de pie hasta que el pie esté apoyado y cargado.',
+      'Apoya sin ruido: si suena, el pie llegó tarde o mal colocado.',
+      'No recolques el pie una vez apoyado.',
+      'Unos 10 min o 3-4 vías.',
+    ],
+    errores: ['Mirar ya a la siguiente mano antes de cargar el pie.', 'Subir de grado: con dureza se pierde la precisión.'],
+    paraSi: PARA_SI,
+    parametros: ['P-54', ...SEGURIDAD],
+  },
+  'manos-pegadas': {
+    id: 'manos-pegadas',
+    titulo: 'Manos pegadas',
+    paraQue: 'Coger cada presa a la primera, sin reajustar la mano. Obliga a leer antes de mover. Ejercicio de entrenadores (Gresham), sin estudio que lo mida.',
+    material: 'Vías o bloques fáciles del rocódromo',
+    pasos: [
+      'Elige vías 2-3 grados por debajo de tu nivel.',
+      'Antes de cada movimiento, mira cómo vas a coger la presa.',
+      'Coge la presa una vez y no la reajustes, aunque no sea el mejor agarre.',
+      'Unos 10 min o 3-4 vías.',
+    ],
+    errores: ['Corregir el agarre «solo un poco».', 'Ir rápido: el ejercicio es de precisión, no de velocidad.'],
+    paraSi: PARA_SI,
+    parametros: ['P-54', ...SEGURIDAD],
+  },
+  'mismo-lado': {
+    id: 'mismo-lado',
+    titulo: 'Brazos estirados y «mismo lado»',
+    paraQue: 'Moverte con los brazos estirados y girando la cadera: bandera, backstep y pie y mano del mismo lado. Ahorra fuerza en las presas. Ejercicio de entrenadores (Gresham), sin estudio que lo mida.',
+    material: 'Una travesía o vías fáciles del rocódromo',
+    pasos: [
+      'Escoge una travesía o una vía fácil y desplomada.',
+      'Mantén los brazos estirados en cada reposo y entre movimientos.',
+      'Para alcanzar, gira la cadera hacia la pared (backstep) o saca una pierna hacia el otro lado (bandera).',
+      'Haz 2-3 travesías de 2-3 min.',
+    ],
+    errores: ['Doblar los brazos para acercarte a la pared.', 'Quedarte siempre de frente.'],
+    paraSi: PARA_SI,
+    parametros: ['P-54', ...SEGURIDAD],
+  },
+  'placa-sin-manos': {
+    id: 'placa-sin-manos',
+    titulo: 'Placa sin manos y destrepe',
+    paraQue: 'Confiar en los pies: subir una placa fácil solo con las palmas y destrepar el calentamiento. Ejercicio de entrenadores, sin estudio que lo mida.',
+    material: 'Placa tumbada o vía fácil del rocódromo',
+    pasos: [
+      'En una placa muy tumbada, sube usando solo las palmas abiertas para equilibrarte.',
+      'Carga el peso en los pies y sube con las piernas.',
+      'Destrepa la vía de calentamiento en lugar de bajar con la cuerda.',
+      '2-3 vías.',
+    ],
+    errores: ['Elegir una placa demasiado vertical.', 'Agarrarte en cuanto dudas: prueba antes a mover el pie.'],
+    paraSi: PARA_SI,
+    parametros: ['P-54', ...SEGURIDAD],
+  },
+  'caidas-progresivas': {
+    id: 'caidas-progresivas',
+    titulo: 'Caídas progresivas',
+    paraQue: `Perder el miedo a caer de primero poco a poco. Es la propuesta de Arno Ilgner (entrenador, nivel C); sus pasos exactos no están publicados en abierto y hay quien duda de que se transfiera a roca. ${VALORES['P-76'].caidasMin}-${VALORES['P-76'].caidasMax} caídas al inicio de una sesión por semana.`,
+    material: 'Vía desplomada y limpia del rocódromo, compañero que asegure avisado',
+    pasos: [
+      'Avisa a quien te asegura: vas a caer a propósito y quieres un aseguramiento dinámico.',
+      'Empieza en top-rope o con la chapa a la altura de la cintura y suéltate.',
+      'Si caes sin ansiedad, sube un escalón: chapa a los pies, después por encima.',
+      'Mira hacia la pared, piernas un poco abiertas y brazos sin agarrar la cuerda.',
+      `Entre ${VALORES['P-76'].caidasMin} y ${VALORES['P-76'].caidasMax} caídas; no subas de escalón el mismo día si dudas.`,
+    ],
+    errores: ['Caer en una vía tumbada o con salientes.', 'Agarrar la cuerda o la cinta al caer.', 'Saltarte escalones por prisa.'],
+    paraSi: ['Golpe con la pared en el pie o el tobillo: para y revisa la vía y el aseguramiento.', ...PARA_SI],
+    parametros: ['P-76', 'P-62', ...SEGURIDAD],
+  },
+  'respiracion-voy': {
+    id: 'respiracion-voy',
+    titulo: 'Respirar y decidir «voy»',
+    paraQue: 'Antes del paso clave, en el último reposo: respirar y decidir ir a por ello, no quedarse a medias. Con ansiedad se escala más lento y agarrando más (Pijpers 2003, B); la rutina concreta no tiene fuente específica (C).',
+    material: 'Ninguno',
+    pasos: [
+      'En el reposo antes del paso clave, sacude el brazo colgando.',
+      'Respira lento dos o tres veces, soltando el aire largo.',
+      'Repasa el movimiento que vas a hacer.',
+      'Di «voy» y muévete con decisión, sin parar a mitad.',
+    ],
+    errores: ['Quedarse en el reposo hasta cansarse.', 'Ir «a ver qué pasa» sin decidir.'],
+    paraSi: PARA_SI,
+    parametros: ['P-62', 'P-52', ...SEGURIDAD],
+  },
+  'tactica-encadene': {
+    id: 'tactica-encadene',
+    titulo: 'Táctica de encadene',
+    paraQue: 'Trabajar un proyecto por partes: trocear, memorizar, planificar reposos y chapas y visualizarlo entero. Memorizar y visualizar ayuda a ejecutar (Whitaker 2020, B; entrenadores, C).',
+    material: 'Tu proyecto (roca)',
+    pasos: [
+      'Divide la vía en tramos entre reposos.',
+      'Resuelve los pasos de cada tramo y memorízalos.',
+      'Decide dónde reposar y desde dónde chapar cada cinta.',
+      'Antes de cada pegue, visualiza la vía entera con los ojos cerrados.',
+      'Enlaza tramos cada vez más largos hasta ir desde abajo.',
+    ],
+    errores: ['Ir desde abajo cada pegue sin haber resuelto los pasos.', 'No apuntar o recordar la secuencia de un día para otro.'],
+    paraSi: PARA_SI,
+    parametros: ['P-53', 'P-61', ...SEGURIDAD],
+  },
+  'continuidad-5x3': {
+    id: 'continuidad-5x3',
+    titulo: 'Continuidad 5×3',
+    paraQue: 'Regeneración y capacidad suave: 3 bloques de 5 min escalando sin parar, bien por debajo de tu nivel (Lattice, nivel C). De consulta: el entrenador ya programa el ARC y los on-offs.',
+    material: 'Vías fáciles o travesía del rocódromo',
+    pasos: [
+      'Escoge terreno al menos 4 grados por debajo de tu a vista.',
+      'Escala 5 min sin parar (vueltas, destrepes o travesía).',
+      'Descansa 3 min.',
+      'Repite hasta 3 bloques.',
+    ],
+    errores: ['Bombear: si notas el antebrazo hinchado, baja de grado.'],
+    paraSi: PARA_SI,
+    parametros: ['P-35', ...SEGURIDAD],
+  },
+  'up-down-up': {
+    id: 'up-down-up',
+    titulo: 'Up-down-up',
+    paraQue: 'Resistencia en vía: subir, destrepar y volver a subir la misma vía. Propuesta de foro (Mountain Project, nivel C). De consulta.',
+    material: 'Vía con cuerda (rocódromo o roca), compañero',
+    pasos: [
+      'Escoge una vía de 2-3 grados por debajo de tu nivel.',
+      'Súbela, destrépala y vuelve a subirla sin descansar en el suelo.',
+      'Descansa lo mismo que has tardado.',
+      '3-4 series; la última, si quieres, en una vía algo más dura.',
+    ],
+    errores: ['Elegir una vía demasiado dura para destrepar con seguridad.'],
+    paraSi: PARA_SI,
+    parametros: ['P-37', ...SEGURIDAD],
+  },
+  'repetir-vias': {
+    id: 'repetir-vias',
+    titulo: 'Repetir vías con descanso fijo',
+    paraQue: 'Resistencia en vía: 3-4 vías seguidas con un descanso fijo entre ellas (Hörst, nivel C). De consulta.',
+    material: 'Vías con cuerda (rocódromo o roca), compañero',
+    pasos: [
+      'Escoge 3-4 vías un grado por debajo de tu límite.',
+      'Escálalas una detrás de otra con el mismo descanso (por ejemplo, el tiempo que tarda tu compañero).',
+      'Descansa 10-15 min.',
+      '1-3 series.',
+    ],
+    errores: ['Alargar los descansos cuando cuesta: el ejercicio es el descanso fijo.'],
+    paraSi: PARA_SI,
+    parametros: ['P-37', ...SEGURIDAD],
+  },
+  inthangs: {
+    id: 'inthangs',
+    titulo: 'IntHangs (Eva López)',
+    paraQue: 'Resistencia de dedos con suspensiones intermitentes: 3-5 series de 4-5 repeticiones de 7-10 s con 3-30 s de descanso, en la regleta más pequeña que te deje completarlas (Eva López, nivel C). De consulta: el entrenador programa las 10:6 de Devise 2022.',
+    material: `Multipresa, regleta de ${REGLETA} o mayor`,
+    pasos: [
+      'Calienta como para cualquier suspensión.',
+      ...PASOS_COLGARSE,
+      'Cuelga 7-10 s, descansa 3-30 s; 4-5 repeticiones.',
+      '1-2 min entre series; 3-5 series.',
+      NOVEL,
+    ],
+    errores: ['Bajar de regleta por debajo de lo seguro para tu experiencia.'],
+    paraSi: ['Pierdes el semiarqueado: termina la serie.', ...PARA_SI],
+    parametros: ['P-36', 'P-10', 'P-12', ...SEGURIDAD],
+    dibujo: 'colgado-multipresa',
+  },
+  'suspensiones-largas': {
+    id: 'suspensiones-largas',
+    titulo: 'Suspensiones largas suaves',
+    paraQue: 'Para iniciarse en la multipresa: suspensiones de 30-60 s a baja intensidad, quitando peso con polea o pies (Lattice, nivel C). De consulta: el entrenador programa los repeaters.',
+    material: `Multipresa, regleta de ${REGLETA}, polea o un taburete para los pies`,
+    pasos: [
+      ...PASOS_COLGARSE,
+      'Quita peso hasta que el esfuerzo sea 5-7 de 10.',
+      'Cuelga 30-60 s.',
+      '4-8 series con 1-2 min de descanso.',
+      NOVEL,
+    ],
+    errores: ['Colgar con todo el peso desde el primer día.'],
+    paraSi: ['Pierdes el semiarqueado: termina la serie.', ...PARA_SI],
+    parametros: ['P-01', 'P-10', 'P-12', ...SEGURIDAD],
+    dibujo: 'colgado-multipresa',
+  },
+  abrahangs: {
+    id: 'abrahangs',
+    titulo: '«Abrahangs»',
+    paraQue: 'Suspensiones de muy baja intensidad, unos 10 min, en días sin carga intensa. En usuarios de Crimpd mejoraron la fuerza casi como las máximas, pero no es un ensayo (Gilmore 2024, B). De consulta.',
+    material: `Multipresa, regleta de ${REGLETA}, polea o taburete para quitar peso`,
+    pasos: [
+      ...PASOS_COLGARSE,
+      'Quita mucho peso: el esfuerzo debe ser bajo (3-4 de 10).',
+      'Cuelga unos 10 s y descansa otros tantos, unos 10 min en total.',
+      'Solo en días sin sesión intensa de dedos.',
+      NOVEL,
+    ],
+    errores: ['Convertirlo en una sesión dura subiendo la carga.'],
+    paraSi: PARA_SI,
+    parametros: ['P-01', 'P-12', 'P-15', ...SEGURIDAD],
+    dibujo: 'colgado-multipresa',
+  },
+  'intermitentes-80': {
+    id: 'intermitentes-80',
+    titulo: 'Intermitentes 10:6 al 80 %',
+    paraQue: 'La otra rama del ensayo de Devise 2022 (A): 10 s colgado y 6 s de descanso al 80 % del máximo, hasta 12 repeticiones, 3 series con 8 min. Mejoró resistencia y fuerza en avanzados. De consulta: para menos de 2 años el entrenador usa la del 60 %.',
+    material: `Multipresa, regleta de ${REGLETA}, lastre o polea`,
+    pasos: [
+      ...PASOS_COLGARSE,
+      'Carga = el 80 % de tu máximo de 10 s.',
+      '10 s colgado, 6 s de descanso, hasta 12 repeticiones.',
+      '8 min entre series; 3 series.',
+      NOVEL,
+    ],
+    errores: ['Hacerla sin un test de dedos reciente.'],
+    paraSi: ['Pierdes el semiarqueado: termina la serie.', ...PARA_SI],
+    parametros: ['P-36', 'P-12', ...SEGURIDAD],
+    dibujo: 'colgado-multipresa',
+  },
+  'finger-curls': {
+    id: 'finger-curls',
+    titulo: 'Finger curls',
+    paraQue: 'Fuerza dinámica de dedos con una barra o mancuerna. En un ensayo no aportó frente a la suspensión isométrica (Saeterbakken 2024, A): prioridad baja, de consulta.',
+    material: 'Barra de pesas o mancuerna',
+    pasos: [
+      'Sentado, antebrazo apoyado en el muslo y la palma hacia arriba.',
+      'Deja que la barra ruede hasta la punta de los dedos.',
+      'Ciérralos y sube la muñeca.',
+      '3-5 series de 4-10 repeticiones.',
+    ],
+    errores: ['Cargar tanto que tira de la muñeca.'],
+    paraSi: PARA_SI,
+    parametros: ['P-01', ...SEGURIDAD],
+  },
+  'dedos-en-barra': {
+    id: 'dedos-en-barra',
+    titulo: 'Dedos en barra o toalla (no se propone)',
+    paraQue: 'Colgarse de la barra o de una toalla no se parece a una regleta de 20 mm: no hay evidencia de que entrene la fuerza de dedos. Por eso el entrenador no lo propone en casa; para los dedos, la multipresa.',
+    material: 'Barra de dominadas',
+    pasos: [
+      'Si no tienes multipresa en casa, dedica la barra a dominadas, hombro y core.',
+      'Deja la fuerza de dedos para el rocódromo.',
+      'Si quieres colgarte, que sea para el hombro (colgado pasivo).',
+    ],
+    errores: ['Contarlo como sesión de dedos.'],
+    paraSi: PARA_SI,
+    parametros: ['P-01', ...SEGURIDAD],
+  },
+  campus: {
+    id: 'campus',
+    titulo: 'Campus (no se propone)',
+    paraQue: 'El campus sobrecarga las poleas de los dedos. Solo hay ensayo en avanzados y los entrenadores piden al menos 1-2 años y un bloque de nivel consistente. Con menos de 2 años escalando, el entrenador no lo propone (P-13): la potencia se trabaja con bloque al límite y dominadas explosivas.',
+    material: 'Campus board',
+    pasos: [
+      'Para potencia, usa el bloque al límite con descanso completo.',
+      'En casa, dominadas explosivas o excéntricas.',
+      'Pregunta por el campus cuando lleves más de 2 años escalando.',
+    ],
+    errores: ['Probarlo «solo un poco» antes de tiempo.'],
+    paraSi: PARA_SI,
+    parametros: ['P-13', ...SEGURIDAD],
+  },
+  'paso-alto': {
+    id: 'paso-alto',
+    titulo: 'Paso alto activo a la pared',
+    paraQue: 'Movilidad activa de cadera para subir el pie alto sin despegar la cadera. Bloque de movilidad de entrenadores (Hooper\'s Beta, The Climbing Doctor, nivel C): la movilidad se asocia poco al nivel, así que va en dosis corta.',
+    material: 'Una pared',
+    pasos: [
+      'De frente a la pared, cerca, con las manos apoyadas.',
+      'Sube una rodilla hacia fuera y lleva el pie lo más alto que puedas sin separar la cadera.',
+      'Mantén 2 s arriba y baja controlando.',
+      '2 × 8 por lado.',
+    ],
+    errores: ['Echar la cadera hacia atrás para subir más.', 'Rebotar.'],
+    paraSi: ['Pinchazo en la ingle: sube menos.', ...PARA_SI],
+    parametros: ['P-72', ...SEGURIDAD],
+  },
+  tobillo: {
+    id: 'tobillo',
+    titulo: 'Tobillo con la rodilla a la pared',
+    paraQue: 'Movilidad de tobillo para cargar bien los pies en presas altas y de puntillas. Bloque de movilidad de entrenadores (Hooper\'s Beta, nivel C), en dosis corta.',
+    material: 'Una pared',
+    pasos: [
+      'De pie, un pie a un palmo de la pared.',
+      'Lleva la rodilla a tocar la pared sin levantar el talón.',
+      'Si la tocas fácil, aleja el pie un poco.',
+      '2 × 10 por lado.',
+    ],
+    errores: ['Levantar el talón.', 'Meter la rodilla hacia dentro.'],
+    paraSi: PARA_SI,
+    parametros: ['P-72', ...SEGURIDAD],
+  },
 }
 
 export interface Grupo {
-  id: 'suspensiones' | 'escalada' | 'barra' | 'hombro' | 'movilidad'
+  id: 'fuerza' | 'resistencia' | 'potencia' | 'tecnica' | 'cabeza' | 'hombro' | 'movilidad'
   titulo: string
   fichas: FichaId[]
 }
 
+// Por cualidad, como el informe 2026-10-31.
 export const GRUPOS: Grupo[] = [
-  { id: 'suspensiones', titulo: 'Suspensiones', fichas: ['agarre-semiarqueado', 'repeaters-7-3', 'resistencia-10-6', 'suspension-maxima-10s', 'colgado-30mm'] },
   {
-    id: 'escalada',
-    titulo: 'Escalada',
-    fichas: ['calentamiento-progresivo', 'bloques-limite', 'via-limite-cuerda', 'cuatro-por-cuatro', 'arc', 'on-offs', 'via-de-practica', 'practica-tecnica', 'video-autoevaluacion'],
+    id: 'fuerza',
+    titulo: 'Fuerza de dedos',
+    fichas: ['agarre-semiarqueado', 'suspension-maxima-10s', 'repeaters-7-3', 'suspensiones-largas', 'abrahangs', 'finger-curls', 'dedos-en-barra'],
   },
-  { id: 'barra', titulo: 'Barra', fichas: ['calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas', 'dominadas-maximas', 'power-slap'] },
+  {
+    id: 'resistencia',
+    titulo: 'Resistencia',
+    fichas: [
+      'resistencia-10-6', 'intermitentes-80', 'inthangs', 'colgado-30mm', 'arc', 'on-offs', 'cuatro-por-cuatro', 'continuidad-5x3',
+      'up-down-up', 'repetir-vias',
+    ],
+  },
+  {
+    id: 'potencia',
+    titulo: 'Potencia y tirón',
+    fichas: [
+      'bloques-limite', 'calentamiento-barra', 'colgarse-barra', 'dominadas-lastradas', 'dominadas-explosivas', 'dominadas-excentricas',
+      'dominadas-maximas', 'power-slap', 'campus',
+    ],
+  },
+  {
+    id: 'tecnica',
+    titulo: 'Técnica',
+    fichas: [
+      'calentamiento-progresivo', 'via-de-practica', 'practica-tecnica', 'video-autoevaluacion', 'pies-silenciosos', 'manos-pegadas',
+      'mismo-lado', 'placa-sin-manos',
+    ],
+  },
+  { id: 'cabeza', titulo: 'Cabeza y táctica', fichas: ['via-limite-cuerda', 'caidas-progresivas', 'respiracion-voy', 'tactica-encadene'] },
   {
     id: 'hombro',
     titulo: 'Hombro y antagonistas',
@@ -792,11 +1113,49 @@ export const GRUPOS: Grupo[] = [
     id: 'movilidad',
     titulo: 'Movilidad y core',
     fichas: [
-      'movilidad', 'rana', 'cadera-90-90', 'dislocaciones-hombro', 'plancha-frontal', 'hollow', 'elevaciones-colgado',
-      'elevaciones-tumbado', 'plancha-lateral', 'apertura-cadera',
+      'movilidad', 'rana', 'cadera-90-90', 'paso-alto', 'tobillo', 'dislocaciones-hombro', 'apertura-cadera', 'plancha-frontal', 'hollow',
+      'elevaciones-colgado', 'elevaciones-tumbado', 'plancha-lateral',
     ],
   },
 ]
+
+export type LugarFicha = 'rocodromo' | 'roca' | 'casa'
+export const NOMBRE_LUGAR_FICHA: Record<LugarFicha, string> = { rocodromo: 'Rocódromo', roca: 'Roca', casa: 'Casa' }
+const R: LugarFicha[] = ['rocodromo']
+const RR: LugarFicha[] = ['rocodromo', 'roca']
+const RC: LugarFicha[] = ['rocodromo', 'casa']
+const C: LugarFicha[] = ['casa']
+const TODOS: LugarFicha[] = ['rocodromo', 'roca', 'casa']
+
+// Dónde se puede hacer cada ejercicio.
+export const LUGARES_FICHA: Record<FichaId, LugarFicha[]> = {
+  'agarre-semiarqueado': RC, 'repeaters-7-3': RC, 'resistencia-10-6': RC, 'suspension-maxima-10s': RC, 'colgado-30mm': RC, 'power-slap': RC,
+  'calentamiento-progresivo': RR, 'calentamiento-barra': RC,
+  'bloques-limite': R, 'via-limite-cuerda': RR, 'cuatro-por-cuatro': R, arc: RR, 'on-offs': RR, 'via-de-practica': RR, 'practica-tecnica': RR,
+  'video-autoevaluacion': RR,
+  'dominadas-lastradas': RC, 'dominadas-explosivas': RC, 'dominadas-excentricas': RC, 'colgarse-barra': RC, 'dominadas-maximas': C,
+  'retracciones-escapulares': RC, flexiones: TODOS, 'rotacion-externa-banda': RC, 'ytw-banda': RC, 'face-pull-banda': RC,
+  'extensores-dedos-banda': RC, 'plancha-toques-hombro': TODOS,
+  movilidad: TODOS, 'plancha-frontal': TODOS, hollow: TODOS, 'elevaciones-colgado': RC, 'elevaciones-tumbado': TODOS, 'plancha-lateral': TODOS,
+  rana: TODOS, 'cadera-90-90': TODOS, 'dislocaciones-hombro': TODOS, 'apertura-cadera': C,
+  'pies-silenciosos': RR, 'manos-pegadas': R, 'mismo-lado': R, 'placa-sin-manos': R, 'caidas-progresivas': RR, 'respiracion-voy': RR,
+  'tactica-encadene': ['roca'], 'continuidad-5x3': R, 'up-down-up': RR, 'repetir-vias': RR, inthangs: RC, 'suspensiones-largas': RC,
+  abrahangs: RC, 'intermitentes-80': RC, 'finger-curls': RC, 'dedos-en-barra': C, campus: R, 'paso-alto': C, tobillo: C,
+}
+
+// Si el entrenador lo programa. Por defecto, sí; las de consulta las puedes hacer por tu cuenta; las «no» explican por
+// qué no se proponen.
+export type UsoFicha = 'plan' | 'consulta' | 'no'
+const USO: Partial<Record<FichaId, UsoFicha>> = {
+  'continuidad-5x3': 'consulta', 'up-down-up': 'consulta', 'repetir-vias': 'consulta', inthangs: 'consulta', 'suspensiones-largas': 'consulta',
+  abrahangs: 'consulta', 'intermitentes-80': 'consulta', 'finger-curls': 'consulta', 'dedos-en-barra': 'no', campus: 'no',
+}
+export const usoFicha = (id: FichaId): UsoFicha => USO[id] ?? 'plan'
+export const TEXTO_USO: Record<UsoFicha, string> = {
+  plan: 'Te lo propone el entrenador.',
+  consulta: 'De consulta: el entrenador no lo programa, pero puedes hacerlo por tu cuenta.',
+  no: 'No se propone: abajo tienes el motivo.',
+}
 
 // La ficha de un id que viene de fuera (una propuesta guardada, la URL): undefined si no existe.
 export function fichaDe(id: string | undefined): Ficha | undefined {

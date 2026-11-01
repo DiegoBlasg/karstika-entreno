@@ -144,6 +144,10 @@ describe('VALORES del diagnóstico', () => {
     expect(columnas('P-75')[2]).toMatch(/4 escalones o más/)
     expect(VALORES['P-75']).toEqual({ ventanaDias: 90, escalones: 4 })
   })
+  it('P-76 coincide con el documento', () => {
+    expect(columnas('P-76')[2]).toMatch(/^Si lo que más te limita es la cabeza, la primera vía al límite de la semana en rocódromo empieza con 10 min de caídas progresivas: 3-5 caídas/)
+    expect(VALORES['P-76']).toEqual({ minutos: 10, caidasMin: 3, caidasMax: 5 })
+  })
   it('P-72 coincide con el documento', () => {
     expect(columnas('P-72')[2]).toMatch(/^Sesión suave de core y movilidad de 20-30 min/)
     expect(VALORES['P-72']).toEqual({ minutosMin: 20, minutosMax: 30 })
