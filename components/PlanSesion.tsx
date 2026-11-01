@@ -35,7 +35,7 @@ export function PlanSesion({ plan }: { plan: SesionPlan }) {
                 <li key={`${ej.nombre}-${j}`}>
                   <span className="font-medium">{ej.nombre}</span>: {detalle(ej)}
                   {ej.notas && <span className="block text-texto-2">{ej.notas}</span>}
-                  <ComoSeHace ids={[ej.ficha, ...(ej.fichasExtra ?? [])]} className="text-progreso" />
+                  <ComoSeHace ids={[ej.ficha, ...(ej.fichasExtra ?? [])]} conTitulo={(ej.fichasExtra ?? []).length > 0} className="text-progreso" />
                 </li>
               ))}
             </ul>

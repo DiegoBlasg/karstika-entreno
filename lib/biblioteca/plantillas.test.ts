@@ -73,8 +73,8 @@ describe('fichas usadas por las plantillas', () => {
   it('se han recorrido muchos ejercicios', () => {
     expect(ejercicios.length).toBeGreaterThan(1000)
   })
-  it('toda ficha usada existe en FICHAS', () => {
-    const faltan = [...new Set(ejercicios.filter((e) => e.ficha !== undefined && !fichaDe(e.ficha)).map((e) => e.ficha))]
+  it('toda ficha usada existe en FICHAS (también las extra)', () => {
+    const faltan = [...new Set(ejercicios.flatMap((e) => [e.ficha, ...(e.fichasExtra ?? [])]).filter((f) => f !== undefined && !fichaDe(f)))]
     expect(faltan).toEqual([])
   })
   it('solo quedan sin ficha los descansos y el board', () => {

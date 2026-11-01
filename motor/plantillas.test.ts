@@ -378,6 +378,9 @@ describe('ejercicio técnico de la semana', () => {
     expect(new Set(fichas.slice(1, 5)).size).toBe(4)
     expect(fichas[5]).toBe(fichas[1])
   })
+  it('en roca, siempre pies silenciosos', () => {
+    for (const f of ['2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23']) expect(ejercicioTecnicaSemana(f, 'roca').ficha).toBe('pies-silenciosos')
+  })
   it('va dentro del bloque de práctica de la sesión técnica', () => {
     const plan = construirSesion('tecnica', peticion({ fecha: '2026-11-03' }))!
     expect(plan.bloques.flatMap((b) => b.ejercicios).some((e) => e.ficha === ejercicioTecnicaSemana('2026-11-03').ficha)).toBe(true)
@@ -387,10 +390,10 @@ describe('ejercicio técnico de la semana', () => {
 describe('caídas progresivas (P-76)', () => {
   const via = (extra: Parameters<typeof peticion>[0] = {}) => construirSesion('via-cuerda-limite', peticion({ limitantePrincipal: 'cabeza', ...extra }))!
   const conCaidas = (p: SesionPlan) => p.bloques.some((b) => b.nombre === 'Caídas progresivas')
-  it('si te limita la cabeza, en rocódromo, tras el calentamiento', () => {
+  it('si te limita la cabeza, en rocódromo, después de las vías progresivas', () => {
     const p = via()
-    expect(p.bloques[1]!.nombre).toBe('Caídas progresivas')
-    expect(p.bloques[1]!.explicacion.parametros).toContain('P-76')
+    expect(p.bloques.map((b) => b.nombre).slice(0, 3)).toEqual(['Calentamiento específico', 'Vías progresivas', 'Caídas progresivas'])
+    expect(p.bloques[2]!.explicacion.parametros).toContain('P-76')
     expect(p.bloques.reduce((a, b) => a + b.minutos, 0)).toBe(p.sesion.duracionMin)
   })
   it('no sin cabeza, no en roca, y no si ya hubo una vía al límite esa semana', () => {
@@ -398,6 +401,15 @@ describe('caídas progresivas (P-76)', () => {
     expect(conCaidas(via({ contexto: { compania: 'con-gente', lugar: 'roca', minutosDisponibles: 120 } }))).toBe(false)
     const antes = ses('v', '2026-10-26', 19, { tipo: 'via-cuerda-limite', intensidad: 'alta', duracionMin: 100 })
     expect(conCaidas(via({ historial: [antes] }))).toBe(false)
+    // Tampoco si ya hay otra planificada más tarde esa misma semana.
+    const despues = ses('w', '2026-10-30', 19, { tipo: 'via-cuerda-limite', intensidad: 'alta', duracionMin: 100 })
+    expect(conCaidas(via({ historial: [despues] }))).toBe(false)
+  })
+  it('como mucho 6 semanas de las 12 anteriores con vía al límite', () => {
+    const semanas = (n: number) => Array.from({ length: n }, (_, i) =>
+      ses(`s${i}`, ['2026-10-21', '2026-10-14', '2026-10-07', '2026-09-30', '2026-09-23', '2026-09-16', '2026-09-09'][i]!, 19, { tipo: 'via-cuerda-limite', intensidad: 'alta', duracionMin: 100 }))
+    expect(conCaidas(via({ historial: semanas(5) }))).toBe(true)
+    expect(conCaidas(via({ historial: semanas(6) }))).toBe(false)
   })
   it('si no caben, quitan un intento; sin sitio ni para un intento con caídas, la sesión de siempre', () => {
     const intentos = (p: SesionPlan) => p.bloques.filter((b) => b.nombre.startsWith('Intento')).length

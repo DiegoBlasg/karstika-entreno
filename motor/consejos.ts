@@ -54,7 +54,7 @@ export const CONSEJOS: readonly Definicion[] = [
     parametros: ['P-62'],
     aplica: (p, r) => p.limitantePrincipal === 'cabeza' && principalEs('via-cuerda-limite', 'pegues-proyecto')(p, r),
     texto: () =>
-      'Si el miedo a caer te frena, practica caídas de forma gradual (cortas al principio, con quien te asegura avisado) y usa siempre la misma rutina de lectura antes de cada intento. No hay un protocolo probado: es un consejo, no una prescripción.',
+      'Si el miedo a caer te frena, practica caídas de forma gradual (cortas al principio, con quien te asegura avisado) y usa siempre la misma rutina de lectura antes de cada intento. En rocódromo, el entrenador mete caídas progresivas una vez por semana (P-76); no hay un protocolo probado con estudios.',
   },
   {
     id: 'lectura-via',

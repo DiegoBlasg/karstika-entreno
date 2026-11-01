@@ -568,7 +568,9 @@ export const EJERCICIOS_TECNICA_SEMANA: readonly Ejercicio[] = [
   { nombre: 'Ejercicio de la semana: placa sin manos y destrepe', cargaTexto: '2-3 vías fáciles', ficha: 'placa-sin-manos' },
 ]
 
-export function ejercicioTecnicaSemana(fecha: string): Ejercicio {
+// En roca, siempre pies silenciosos: los otros son de rocódromo (destrepar o soltar manos en roca no es prudente).
+export function ejercicioTecnicaSemana(fecha: string, lugar: Peticion['contexto']['lugar'] = 'rocodromo'): Ejercicio {
+  if (lugar === 'roca') return { ...EJERCICIOS_TECNICA_SEMANA[0]! }
   const d = diaNumero(fecha)
   const semana = Math.floor((d - desdeLunes(d)) / 7)
   return { ...EJERCICIOS_TECNICA_SEMANA[((semana % 4) + 4) % 4]! }
@@ -587,7 +589,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
         ficha: 'via-de-practica',
       },
       { nombre: '1-2 vías nuevas parecidas, a vista, variando el tipo de presa', cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
-      ejercicioTecnicaSemana(p.fecha),
+      ejercicioTecnicaSemana(p.fecha, p.contexto.lugar),
       {
         nombre: `Previsualiza la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes de cada intento`,
         cargaTexto: 'Sin esfuerzo',
@@ -598,7 +600,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     explicar(
       'plantilla.tecnica',
       ['P-53', 'P-54', 'P-55'],
-      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución. Además, un ejercicio técnico que cambia cada semana (pies silenciosos, manos pegadas, «mismo lado», placa sin manos): son los clásicos de entrenadores como Gresham y Anderson, sin estudio que mida su efecto.',
+      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución. Además, un ejercicio técnico que cambia cada semana (pies silenciosos, manos pegadas, «mismo lado», placa sin manos; en roca, siempre pies silenciosos): son ejercicios clásicos de entrenadores (Gresham, Anderson) y de rocódromos, sin estudio que mida su efecto.',
     ),
   )
   return base && plan(sesionDe('tecnica', p, base.total, 'suave'), base.bloques)
@@ -948,13 +950,19 @@ const MAX_INTENTOS_VIA = 3
 const PROGRESIVOS_BLOQUE_MIN = 10
 const BLOQUES_LIMITE_MIN = [30, 20] as const
 
-// P-76: si te limita la cabeza, la primera vía al límite de la semana (lunes a domingo) en rocódromo empieza con caídas
-// progresivas.
+// P-76: si te limita la cabeza, una vía al límite por semana (lunes a domingo) en rocódromo lleva caídas progresivas:
+// solo si no hay otra vía al límite esa semana (hecha o planificada, antes o después) y como mucho 6 semanas de las 12
+// anteriores con vía al límite (la dosis de Ilgner es de 4-6 semanas; pasado el trimestre, si la cabeza sigue frenando,
+// vuelve).
 export function tocanCaidas(p: Peticion): boolean {
   if (p.limitantePrincipal !== 'cabeza' || p.contexto.lugar !== 'rocodromo') return false
+  const { semanas, ventanaSemanas } = VALORES['P-76']
   const d = diaNumero(p.fecha)
   const lunes = d - desdeLunes(d)
-  return !p.historial.some((s) => s.tipo === 'via-cuerda-limite' && diaNumero(s.fecha) >= lunes && diaNumero(s.fecha) < d)
+  const vias = p.historial.filter((s) => s.tipo === 'via-cuerda-limite').map((s) => diaNumero(s.fecha))
+  if (vias.some((x) => x >= lunes && x <= lunes + 6)) return false
+  const anteriores = new Set(vias.filter((x) => x < lunes && x >= lunes - 7 * ventanaSemanas).map((x) => x - desdeLunes(x)))
+  return anteriores.size < semanas
 }
 
 function bloqueCaidas(): Bloque {
@@ -966,14 +974,14 @@ function bloqueCaidas(): Bloque {
       {
         nombre: `${caidasMin}-${caidasMax} caídas a propósito, de menos a más`,
         cargaTexto: 'Sin prisa: sube de escalón solo si la anterior fue sin ansiedad',
-        notas: 'En una vía desplomada y limpia, con quien te asegura avisado: top-rope o chapa a la cintura, después a los pies y por encima.',
+        notas: 'En una vía desplomada y limpia. Quien te asegura tiene que saber dar un aseguramiento dinámico; si no, quédate en top-rope. Cuerda siempre por delante de la pierna. Top-rope o chapa a la cintura, después a los pies y por encima.',
         ficha: 'caidas-progresivas',
       },
     ],
     explicacion: explicar(
       'plantilla.caidas',
       ['P-76', 'P-62'],
-      'Tus respuestas dicen que te frena la cabeza: la primera vía al límite de la semana empieza con caídas progresivas. Es la propuesta del entrenador Arno Ilgner (sin estudio que la mida y con dudas sobre si se transfiere a roca), por eso solo una vez por semana y en rocódromo.',
+      'Tus respuestas dicen que te frena la cabeza: una vía al límite por semana lleva caídas progresivas. Arno Ilgner propone 3-5 caídas al empezar una sesión por semana, durante 4-6 semanas (sin estudio que lo mida y con dudas sobre si se transfiere a roca). Se hace en rocódromo porque hace falta un desplome limpio para caer sin golpes.',
     ),
   }
 }
@@ -992,7 +1000,6 @@ function construirViaLimite(p: Peticion): SesionPlan | null {
   }
   const bloques: Bloque[] = [
     bloqueCalentamiento(),
-    ...(caidas ? [bloqueCaidas()] : []),
     {
       nombre: 'Vías progresivas',
       minutos: PROGRESIVAS_VIA_MIN,
@@ -1001,6 +1008,8 @@ function construirViaLimite(p: Peticion): SesionPlan | null {
       ],
       explicacion: explicar('plantilla.progresivas', ['P-49'], 'Antes de los intentos al límite se sube la intensidad poco a poco.'),
     },
+    // Las caídas, ya calientes: dedos y hombros listos para frenar.
+    ...(caidas ? [bloqueCaidas()] : []),
   ]
   for (let i = 1; i <= n; i++) {
     bloques.push({
@@ -1157,6 +1166,14 @@ const EJERCICIOS_MOVILIDAD: readonly Ejercicio[] = [
   { nombre: 'Dislocaciones de hombro con cinta o palo', cargaTexto: '2 × 10', ficha: 'dislocaciones-hombro' },
 ]
 
+// Paso alto y tobillo solo con la sesión larga (en la corta no caben) y sin «otra» zona en ámbar (cargan tobillo y
+// rodilla).
+const SOLO_LARGA: readonly string[] = ['paso-alto', 'tobillo']
+function ejerciciosMovilidad(larga: boolean, p: Peticion): Ejercicio[] {
+  const otraAmbar = p.estado?.zonas.otra === 'ambar'
+  return EJERCICIOS_MOVILIDAD.filter((e) => !SOLO_LARGA.includes(e.ficha ?? '') || (larga && !otraAmbar)).map((e) => ({ ...e }))
+}
+
 function construirCoreMovilidad(p: Peticion): SesionPlan | null {
   const { minutosMin, minutosMax } = VALORES['P-72']
   if (p.contexto.minutosDisponibles < minutosMin) return null
@@ -1170,7 +1187,7 @@ function construirCoreMovilidad(p: Peticion): SesionPlan | null {
   )
   return plan(sesionDe('core-movilidad', p, total, 'suave'), [
     { nombre: 'Core', minutos: core, ejercicios: ejerciciosCore(colgado), explicacion },
-    { nombre: 'Movilidad', minutos: total - core, ejercicios: EJERCICIOS_MOVILIDAD.map((e) => ({ ...e })), explicacion },
+    { nombre: 'Movilidad', minutos: total - core, ejercicios: ejerciciosMovilidad(total === minutosMax, p), explicacion },
   ])
 }
 
