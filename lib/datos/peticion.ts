@@ -6,7 +6,7 @@ import {
 import { fechaLarga } from '../fecha'
 import type { DatosAtleta } from './filas'
 import {
-  consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor,
+  consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor, testsHechosMotor,
 } from './mapeo'
 import { semanaSupuesta } from './semana-supuesta'
 import { validarDatos } from './validar'
@@ -81,6 +81,7 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     fase,
     seguimiento,
     consejosMostrados: consejosMostradosMotor(d.consejos),
+    testsHechos: testsHechosMotor(d),
     ...(huecos ? { huecos } : {}),
     ...(diagnostico.limitantes[0] ? { limitantePrincipal: diagnostico.limitantes[0] } : {}),
     ...(evaluacion ? { evaluacion } : {}),

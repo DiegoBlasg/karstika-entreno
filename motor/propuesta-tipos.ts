@@ -76,6 +76,9 @@ export interface Peticion {
   limitantePrincipal?: Limitante                  // de diagnosticar (activa el consejo de miedo a caer)
   consejosMostrados?: { id: string; fecha: string }[]   // para no repetir consejos en 7 días (P-66)
   huecos?: Hueco[]                                // huecos posteriores hasta el domingo: el motor planifica la semana (P-67)
+  // Fechas de los tests hechos de verdad (con resultado o con la sesión registrada), no de los solo planificados: deciden
+  // si toca el test en casa. Sin ellas no se propone.
+  testsHechos?: { dedos: string[]; casa: string[] }
 }
 
 export interface Propuesta {

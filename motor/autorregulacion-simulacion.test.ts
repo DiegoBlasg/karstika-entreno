@@ -44,7 +44,7 @@ for (const s of semanas) {
       fecha, horaInicio: x.hora, contexto: x.ctx, perfil, historial: [...historial], fase: faseEnFecha(temporada, fecha, { descargasAdelantadas }),
       seguimiento,
       consejosMostrados: [...mostrados],
-      ...(evaluacion ? { evaluacion } : {}),
+      ...(evaluacion ? { evaluacion, testsHechos: { dedos: [evaluacion.fecha], casa: [] } } : {}),
     }
     const r = proponerSesion(peticion)
     for (const c of elegirConsejos(peticion, r)) mostrados.push({ id: c.id, fecha })

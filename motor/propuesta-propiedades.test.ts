@@ -19,7 +19,12 @@ for (const fase of [FASE_BASE, FASE_FUERZA]) {
       for (const lugar of ['rocodromo', 'roca', 'casa'] as const) {
         for (const minutosDisponibles of [15, 45, 120]) {
           for (const fecha of ['2026-10-27', '2026-10-28']) {
-            escenarios.push(peticion({ fase, perfil, fecha, historial, evaluacion, contexto: { compania, lugar, minutosDisponibles } }))
+            // Con y sin un test de dedos hecho hace poco (el test en casa queda pendiente).
+            for (const testsHechos of [undefined, { dedos: ['2026-10-25'], casa: [] }]) {
+              escenarios.push(peticion({
+                fase, perfil, fecha, historial, evaluacion, contexto: { compania, lugar, minutosDisponibles }, ...(testsHechos ? { testsHechos } : {}),
+              }))
+            }
           }
         }
       }
@@ -32,8 +37,9 @@ const planes = (p: Peticion): SesionPlan[] => {
 }
 
 describe('propiedades de proponerSesion (todas las combinaciones)', () => {
-  it('hay 144 escenarios', () => {
-    expect(escenarios.length).toBe(2 * 2 * 2 * 3 * 3 * 2)
+  it('hay 288 escenarios y en alguno el test en casa es la principal', () => {
+    expect(escenarios.length).toBe(2 * 2 * 2 * 3 * 3 * 2 * 2)
+    expect(escenarios.some((p) => proponerSesion(p).principal?.sesion.tipo === 'test-casa')).toBe(true)
   })
   it('es determinista y no muta la petición', () => {
     for (const p of escenarios) {

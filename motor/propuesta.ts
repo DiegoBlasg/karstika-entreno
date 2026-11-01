@@ -57,7 +57,7 @@ function bloqueadaPorEstado(s: Sesion, r: Restricciones | undefined): boolean {
   if (r.soloDescanso) return true
   if (r.soloHombro) return s.tipo !== 'hombro'
   if (r.sinCargaAlta && esCargaAlta(s)) return true
-  if (r.sinDominadas && s.tipo === 'dominadas') return true
+  if (r.sinDominadas && (s.tipo === 'dominadas' || s.tipo === 'test-casa')) return true
   return r.sinLimite && AL_LIMITE.includes(s.tipo)
 }
 
@@ -79,7 +79,7 @@ export function motivosNoEncaja(s: Sesion, e: EstadoAtleta): string[] {
     }
   }
   if (r.sinLimite && AL_LIMITE.includes(s.tipo)) out.push('Tienes «otra zona» en ámbar: hoy nada al límite.')
-  if (r.sinDominadas && s.tipo === 'dominadas') out.push('Hoy no tocan dominadas: no hagas esta sesión.')
+  if (r.sinDominadas && (s.tipo === 'dominadas' || s.tipo === 'test-casa')) out.push('Hoy no tocan dominadas: no hagas esta sesión.')
   else if (r.sinDominadas && (s.incluye ?? []).includes('dominadas')) out.push('Hoy no tocan dominadas: sáltate ese complemento.')
   return out
 }
@@ -312,19 +312,21 @@ export function proponerSesion(p: Peticion): Propuesta {
 // desde entonces: así la batería completa queda cerca en el tiempo (informe 2026-10-31, «batería en 2 días»).
 export const DIAS_TEST_CASA = 10
 
-export function testCasaPendiente(historial: readonly Sesion[], fecha: string): boolean {
+export function testCasaPendiente(tests: { dedos: readonly string[]; casa: readonly string[] }, fecha: string): boolean {
   const d = diaNumero(fecha)
-  const dedos = historial.filter((s) => s.tipo === 'evaluacion-dedos' && diaNumero(s.fecha) < d && diaNumero(s.fecha) >= d - DIAS_TEST_CASA)
-  if (dedos.length === 0) return false
-  const ultimo = dedos.reduce((a, s) => (s.fecha > a ? s.fecha : a), '')
-  return !historial.some((s) => s.tipo === 'test-casa' && s.fecha >= ultimo)
+  const ultimo = tests.dedos.filter((f) => diaNumero(f) < d && diaNumero(f) >= d - DIAS_TEST_CASA).reduce((a, f) => (f > a ? f : a), '')
+  if (ultimo === '') return false
+  return !tests.casa.some((f) => f >= ultimo && f <= fecha)
 }
 
-// En casa, con el test pendiente y sin ninguna zona fuera del verde, el test en casa va de principal; lo que había
-// pasa a alternativas. Si hoy tocaba descanso, se ofrece como primera alternativa (el descanso manda).
+// En casa, con el test pendiente, fuera de descarga (P-48: nada al límite), con todas las zonas en verde y con las
+// dominadas permitidas hoy (P-39, P-45: unas dominadas máximas con el chequeo bajo medirían el cansancio), el test en
+// casa va de principal; lo que había pasa a alternativas. Si hoy se recomienda descansar (P-16), va de primera
+// alternativa (el descanso manda); con un descanso obligado (dedos, contexto, estado) no se ofrece.
 function conTestCasa(p: Peticion, r: Propuesta): Propuesta {
-  if (p.contexto.lugar !== 'casa' || !testCasaPendiente(p.historial, p.fecha)) return r
-  if (r.estado && Object.values(r.estado.zonas).some((z) => z !== 'verde')) return r
+  if (p.contexto.lugar !== 'casa' || !p.testsHechos || !testCasaPendiente(p.testsHechos, p.fecha)) return r
+  if (p.fase.descarga || r.estado?.descargaAdelantada) return r
+  if (r.estado && (Object.values(r.estado.zonas).some((z) => z !== 'verde') || restriccionesDe(r.estado).sinDominadas)) return r
   if ([r.principal, ...r.alternativas].some((o) => o?.sesion.tipo === 'test-casa')) return r
   const { huecos: _huecos, seguimiento: _seguimiento, ...sinHuecos } = p
   const c = evaluar('test-casa', r.estado ? { ...sinHuecos, estado: r.estado } : sinHuecos)
@@ -335,8 +337,18 @@ function conTestCasa(p: Peticion, r: Propuesta): Propuesta {
     `Hiciste el test de dedos hace poco: toca el test en casa (dominadas máximas y apertura de cadera, ${c.plan.sesion.duracionMin} min) para completar la batería. Si hoy prefieres otra cosa, tienes las alternativas.`,
   )
   const test: SesionPlan = { ...c.plan, explicaciones: [explicacion, ...c.plan.explicaciones] }
-  if (r.principal === null) return { ...r, alternativas: [test, ...r.alternativas] }
-  return { ...r, principal: test, alternativas: [r.principal, ...r.alternativas].slice(0, 3) }
+  if (r.principal === null) {
+    if (r.descanso?.regla !== 'generador.descanso-recomendado') return r
+    return { ...r, alternativas: [test, ...r.alternativas].slice(0, 2) }
+  }
+  // La que era la principal sigue de primera alternativa; su explicación de elección cambia por el motivo del cambio.
+  const antes = explicar(
+    'generador.test-casa-alternativa',
+    ['P-19'],
+    'Era la propuesta de hoy; pasa a alternativa porque toca el test en casa. Si prefieres entrenar, sigue valiendo.',
+  )
+  const anterior: SesionPlan = { ...r.principal, explicaciones: [antes, ...r.principal.explicaciones.slice(1)] }
+  return { ...r, principal: test, alternativas: [anterior, ...r.alternativas].slice(0, 2) }
 }
 
 // P-72: cuando la propuesta es descanso y no hay rojo, «Core y movilidad» como primera alternativa (si cabe y es válida).
@@ -347,7 +359,10 @@ function conCoreMovilidad(p: Peticion, r: Propuesta): Propuesta {
   const { huecos: _huecos, seguimiento: _seguimiento, ...sinHuecos } = p
   const c = evaluar('core-movilidad', r.estado ? { ...sinHuecos, estado: r.estado } : sinHuecos)
   if (!c || c.violaciones.length > 0) return r
-  return { ...r, alternativas: [c.plan, ...r.alternativas] }
+  // El test en casa pendiente va primero; como mucho 2 alternativas.
+  const [primera, ...resto] = r.alternativas
+  const alternativas = primera?.sesion.tipo === 'test-casa' ? [primera, c.plan, ...resto] : [c.plan, ...r.alternativas]
+  return { ...r, alternativas: alternativas.slice(0, 2) }
 }
 
 function proponerSesionBase(p: Peticion): Propuesta {
