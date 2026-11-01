@@ -52,7 +52,7 @@ export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proy
   return [...grupos.values()].map((xs) => {
     const ultima = xs.at(-1)!
     return {
-      nombre: ultima.nombre!.trim(),
+      nombre: xs[0]!.nombre!.trim(),   // como se escribió la primera vez
       tipo: ultima.tipo,
       lugar: ultima.lugar,
       grado: [...xs].reverse().find((e) => e.grado !== null)?.grado ?? null,
