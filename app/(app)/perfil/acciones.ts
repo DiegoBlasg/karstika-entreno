@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { planificarTemporada } from '@/motor'
-import type { PerfilNuevo } from '@/lib/datos/filas'
+import { DIAS_SEMANA, type PerfilNuevo } from '@/lib/datos/filas'
 import type { EstadoAccion } from '@/lib/estado'
 import { inicioTemporadaDe } from '@/lib/fecha'
-import { fecha, mensajeDe, numero, texto, textoOpcional } from '@/lib/formulario'
+import { fecha, mensajeDe, numero, opcionOpcional, texto, textoOpcional } from '@/lib/formulario'
 import { bd } from '@/lib/servidor/bd'
 import { cargarDatos, guardarPerfilBd } from '@/lib/servidor/consultas'
 
@@ -24,6 +24,7 @@ export async function guardarPerfil(_previo: EstadoAccion, fd: FormData): Promis
       inicio_temporada: inicioTemporadaDe(fecha(fd, 'inicio_temporada', 'El inicio de la temporada')),
       objetivo_temporada: fecha(fd, 'objetivo_temporada', 'La fecha objetivo'),
       multipresa_en_casa: fd.get('multipresa_en_casa') === 'on',
+      dias_semana: opcionOpcional(fd, 'dias_semana', 'Los días por semana', DIAS_SEMANA),
     }
     if (fila.grado_actual.length > 10 || fila.grado_objetivo.length > 10) return { error: 'Los grados tienen como mucho 10 caracteres.' }
     if (!previo && fd.get('aviso') !== 'on') return { error: 'Para empezar tienes que leer y aceptar el aviso.' }

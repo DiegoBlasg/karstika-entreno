@@ -3,7 +3,8 @@ import { FilaSesion } from '@/components/FilaSesion'
 import { GenerarEntreno } from '@/components/GenerarEntreno'
 import { BOTON_SECUNDARIO } from '@/components/estilos'
 import { Etiqueta } from '@/components/ui/Etiqueta'
-import { claveFila, vistaAgenda } from '@/lib/datos/agenda'
+import { claveFila, HORA_FRANJA, inicialGenerar, vistaAgenda } from '@/lib/datos/agenda'
+import { lineaSemanaSupuesta } from '@/lib/datos/semana-supuesta'
 import { ahoraMadrid, lunesDe, sumarDias } from '@/lib/fecha'
 import { chequeoDelDia } from '@/lib/formulario'
 import { requerirDatos } from '@/lib/servidor/consultas'
@@ -34,6 +35,11 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
   const primero = v.dias.find((d) => d.generable && d.tarjetas.length === 0)?.fecha
   const chequeoHoy = chequeoDelDia(datos.chequeos, hoy)
   const conEstrella = v.dias.some((d) => d.tarjetas.some((t) => esCargaAlta(t.fila.sesion)))
+  // Solo en esta semana: lo que la app supone del resto de la semana si generaras hoy (P-74).
+  const inicialHoy = inicialGenerar(datos, hoy)
+  const supuesta = lunes === estaSemana
+    ? lineaSemanaSupuesta(datos, hoy, { compania: inicialHoy.compania, lugar: inicialHoy.lugar, minutosDisponibles: inicialHoy.minutos }, HORA_FRANJA[inicialHoy.franja])
+    : null
   return (
     <div className="space-y-5">
       <header className="space-y-2">
@@ -50,6 +56,12 @@ export default async function PaginaSemana({ searchParams }: { searchParams: Pro
           {lunes === estaSemana ? <Link href={`/semana?lunes=${siguiente}`} className={NAVEGAR}>Siguiente ›</Link> : <span aria-hidden="true" />}
         </nav>
       </header>
+      {supuesta && (
+        <p className="text-sm text-texto-2">
+          {supuesta}
+          {!datos.perfil.dias_semana && <> <Link href="/perfil" className="text-progreso underline">Ir a Yo</Link></>}
+        </p>
+      )}
       <ol className="border-t border-borde">
         {v.dias.map((d) => {
           const esHoy = d.fecha === hoy

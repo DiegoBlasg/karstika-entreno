@@ -10,8 +10,12 @@ export interface FilaPerfil {
   inicio_temporada: string
   objetivo_temporada: string
   multipresa_en_casa: boolean
+  dias_semana?: DiasSemana | null   // cuántos días suele entrenar (P-74); nulo = sin contestar
   aviso_aceptado_en: string
 }
+
+export const DIAS_SEMANA = ['1', '2', '3-4', '5-6', 'todos'] as const
+export type DiasSemana = (typeof DIAS_SEMANA)[number]
 export type PerfilNuevo = Omit<FilaPerfil, 'aviso_aceptado_en'>
 
 export interface FilaEvaluacion {

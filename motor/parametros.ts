@@ -50,6 +50,8 @@ export const VALORES = {
   'P-69': { ventanaDias: 56, minRespuestas: 6, mayoriaPct: 40 },
   // Core y movilidad cuando toca descansar (decisión de diseño, sinEvidencia).
   'P-72': { minutosMin: 20, minutosMax: 30 },
+  // Semana supuesta al generar: 6 semanas de historial y al menos 3 con sesión para usar la media.
+  'P-74': { semanasHistorial: 6, semanasMinimas: 3 },
   // Dominadas de potencia (alternan con las lastradas de P-39); series y repeticiones, decisión de diseño.
   'P-73': {
     minutos: 20, explosivasSeries: 4, explosivasDescansoMin: 3, excentricasSeries: 3, excentricasDescansoMin: 2,

@@ -8,6 +8,7 @@ import type { DatosAtleta } from './filas'
 import {
   consejosMostradosMotor, evaluacionesMotor, evaluacionParaFecha, historialMotor, frenosMotor, perfilMotor, seguimientoMotor,
 } from './mapeo'
+import { semanaSupuesta } from './semana-supuesta'
 import { validarDatos } from './validar'
 
 export interface EntradaPeticion {
@@ -69,6 +70,8 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
   const evaluaciones = evaluacionesMotor(d.evaluaciones)
   const diagnostico = diagnosticar(evaluaciones, frenosMotor(d), e.fecha)
   const evaluacion = evaluacionParaFecha(evaluaciones, e.fecha)
+  // P-74: los días que la app supone que entrenarás el resto de la semana, para repartir la carga (P-67).
+  const huecos = semanaSupuesta(d, e)
   const peticion: Peticion = {
     fecha: e.fecha,
     horaInicio: e.horaInicio,
@@ -78,6 +81,7 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     fase,
     seguimiento,
     consejosMostrados: consejosMostradosMotor(d.consejos),
+    ...(huecos.length > 0 ? { huecos } : {}),
     ...(diagnostico.limitantes[0] ? { limitantePrincipal: diagnostico.limitantes[0] } : {}),
     ...(evaluacion ? { evaluacion } : {}),
   }

@@ -63,6 +63,14 @@ describe('temporadaDe', () => {
   })
 })
 
+describe('prepararPropuesta con la semana supuesta (P-74)', () => {
+  it('con días por semana en Yo, el motor planifica el resto de la semana', () => {
+    const d = datosVacios({ perfil: { ...datosVacios().perfil, dias_semana: '3-4' } })
+    const p = propuestaDe(prepararPropuesta(d, MARTES))
+    expect(p.propuesta.semana?.length).toBeGreaterThan(0)
+  })
+})
+
 describe('prepararPropuesta sin ratos', () => {
   it('los ratos guardados ya no cuentan: no hay plan semanal', () => {
     const d = datosVacios({

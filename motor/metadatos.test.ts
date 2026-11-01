@@ -12,8 +12,8 @@ describe('metadatos de parámetros', () => {
     const actual = readFileSync('motor/metadatos.ts', 'utf8').replace(/\r\n/g, '\n')
     expect(actual).toBe(esperado)
   })
-  it('hay 73 parámetros consecutivos P-01…P-73', () => {
-    expect(PARAMETRO_IDS).toHaveLength(73)
+  it('hay 74 parámetros consecutivos P-01…P-74', () => {
+    expect(PARAMETRO_IDS).toHaveLength(74)
     PARAMETRO_IDS.forEach((id, i) => expect(id).toBe(`P-${String(i + 1).padStart(2, '0')}`))
   })
   it('todos los ids de evidencia citados existen', () => {
@@ -29,7 +29,7 @@ describe('metadatos de parámetros', () => {
     }
   })
   it('valores fijados a mano, independientes del parser', () => {
-    expect(PARAMETRO_IDS.filter((id) => METADATOS[id].origen === 'diseno')).toHaveLength(38)
+    expect(PARAMETRO_IDS.filter((id) => METADATOS[id].origen === 'diseno')).toHaveLength(39)
     // P-48 nombra sinEvidencia en la columna de valor, pero su columna de ids sí cita evidencia.
     expect(METADATOS['P-48']).toMatchObject({ origen: 'evidencia', nivelMinimo: 'C', evidencia: ['EV-PERIOD-008'] })
     expect(METADATOS['P-60']).toMatchObject({ origen: 'diseno', nivelMinimo: 'sinEvidencia', evidencia: [] })

@@ -18,6 +18,7 @@ const S2 = '00000000-0000-4000-8000-000000000002'
 const casos: [string, () => Promise<unknown>][] = [
   ['segundo perfil', () => sql`insert into perfil (id, peso_kg, anos_escalando, grado_actual, grado_objetivo, inicio_temporada, objetivo_temporada) values (2, 70, 1, '6b', '7a', '2026-11-02', '2027-10-04')`],
   ['peso de 10 kg', () => sql`update perfil set peso_kg = 10`],
+  ['días por semana desconocidos', () => sql`update perfil set dias_semana = '8'`],
   ['objetivo antes del inicio', () => sql`update perfil set objetivo_temporada = '2026-01-01'`],
   ['evaluación repetida el mismo día', () => sql`insert into evaluaciones (fecha, peso_corporal_kg, lastre_kg) values ('2026-11-04', 70, 12)`],
   ['técnica 8', () => sql`insert into evaluaciones (fecha, peso_corporal_kg, lastre_kg, tecnica) values ('2026-11-05', 70, 10, 8)`],
