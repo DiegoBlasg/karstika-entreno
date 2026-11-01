@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { FASE_BASE, TIPOS_COMPLEMENTO, construirComplemento, construirSesion, descargar, TIPOS_CON_PLANTILLA } from '../../motor'
 import type { Bloque, EstadoAtleta, Peticion, Sesion } from '../../motor'
-import { FICHAS, fichaDe } from './fichas'
+import { FICHA_IDS, FICHAS, fichaDe, usoFicha } from './fichas'
 
 const evaluacion = { fecha: '2026-10-20', pesoCorporalKg: 70, lastreKg: 30 }
 const estado = (z: Partial<EstadoAtleta['zonas']>): EstadoAtleta =>
@@ -44,6 +44,28 @@ function bloquesDeTodo(): Bloque[] {
   }
   return bloques
 }
+
+describe('quién propone cada ficha', () => {
+  // Las plantillas con todo lo que activa fichas nuevas: 4 semanas de técnica, cabeza, pegues, core y movilidad, test en casa.
+  const base = peticiones()
+  const extra: Peticion[] = ['2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23'].flatMap((fecha) =>
+    base.slice(0, 40).map((p) => ({ ...p, fecha, limitantePrincipal: 'cabeza' as const })),
+  )
+  const usadas = new Set<string>()
+  for (const p of [...base, ...extra]) {
+    for (const t of [...TIPOS_CON_PLANTILLA, 'core-movilidad', 'test-casa'] as const) {
+      for (const b of construirSesion(t, p)?.bloques ?? []) for (const e of b.ejercicios) for (const f of [e.ficha, ...(e.fichasExtra ?? [])]) if (f) usadas.add(f)
+    }
+  }
+  it('las de consulta y las que no se proponen no salen en ninguna plantilla', () => {
+    expect(FICHA_IDS.filter((id) => usoFicha(id) !== 'plan' && usadas.has(id))).toEqual([])
+  })
+  it('las nuevas del plan sí salen', () => {
+    for (const id of ['pies-silenciosos', 'manos-pegadas', 'mismo-lado', 'placa-sin-manos', 'caidas-progresivas', 'respiracion-voy', 'tactica-encadene', 'paso-alto', 'tobillo'] as const) {
+      expect(usadas.has(id), id).toBe(true)
+    }
+  })
+})
 
 describe('fichas usadas por las plantillas', () => {
   const ejercicios = bloquesDeTodo().flatMap((b) => b.ejercicios.map((e) => ({ bloque: b.nombre, ...e })))

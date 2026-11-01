@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
-import { construirComplemento, construirSesion, TIPOS_CON_PLANTILLA } from './plantillas'
+import { construirComplemento, construirSesion, ejercicioTecnicaSemana, TIPOS_CON_PLANTILLA } from './plantillas'
 import type { EstadoAtleta } from './autorregulacion-tipos'
 import type { EvaluacionDedos, SesionPlan } from './propuesta-tipos'
 import type { Sesion } from './tipos'
@@ -368,6 +368,44 @@ describe('TIPOS_CON_PLANTILLA', () => {
       expect(plan.bloques.reduce((a, b) => a + b.minutos, 0)).toBe(plan.sesion.duracionMin)
       expect(plan.explicaciones).toHaveLength(plan.bloques.length)
     }
+  })
+})
+
+describe('ejercicio técnico de la semana', () => {
+  it('el mismo toda la semana (lunes a domingo) y cambia cada semana, en ciclo de 4', () => {
+    const fichas = ['2026-11-02', '2026-11-08', '2026-11-09', '2026-11-16', '2026-11-23', '2026-11-30'].map((f) => ejercicioTecnicaSemana(f).ficha)
+    expect(fichas[0]).toBe(fichas[1])
+    expect(new Set(fichas.slice(1, 5)).size).toBe(4)
+    expect(fichas[5]).toBe(fichas[1])
+  })
+  it('va dentro del bloque de práctica de la sesión técnica', () => {
+    const plan = construirSesion('tecnica', peticion({ fecha: '2026-11-03' }))!
+    expect(plan.bloques.flatMap((b) => b.ejercicios).some((e) => e.ficha === ejercicioTecnicaSemana('2026-11-03').ficha)).toBe(true)
+  })
+})
+
+describe('caídas progresivas (P-76)', () => {
+  const via = (extra: Parameters<typeof peticion>[0] = {}) => construirSesion('via-cuerda-limite', peticion({ limitantePrincipal: 'cabeza', ...extra }))!
+  const conCaidas = (p: SesionPlan) => p.bloques.some((b) => b.nombre === 'Caídas progresivas')
+  it('si te limita la cabeza, en rocódromo, tras el calentamiento', () => {
+    const p = via()
+    expect(p.bloques[1]!.nombre).toBe('Caídas progresivas')
+    expect(p.bloques[1]!.explicacion.parametros).toContain('P-76')
+    expect(p.bloques.reduce((a, b) => a + b.minutos, 0)).toBe(p.sesion.duracionMin)
+  })
+  it('no sin cabeza, no en roca, y no si ya hubo una vía al límite esa semana', () => {
+    expect(conCaidas(construirSesion('via-cuerda-limite', peticion())!)).toBe(false)
+    expect(conCaidas(via({ contexto: { compania: 'con-gente', lugar: 'roca', minutosDisponibles: 120 } }))).toBe(false)
+    const antes = ses('v', '2026-10-26', 19, { tipo: 'via-cuerda-limite', intensidad: 'alta', duracionMin: 100 })
+    expect(conCaidas(via({ historial: [antes] }))).toBe(false)
+  })
+  it('si no caben, quitan un intento; sin sitio ni para un intento con caídas, la sesión de siempre', () => {
+    const intentos = (p: SesionPlan) => p.bloques.filter((b) => b.nombre.startsWith('Intento')).length
+    expect(intentos(via({ contexto: { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: 110 } }))).toBe(3)
+    expect(intentos(via({ contexto: { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: 105 } }))).toBe(2)
+    const justo = via({ contexto: { compania: 'con-gente', lugar: 'rocodromo', minutosDisponibles: 55 } })
+    expect(conCaidas(justo)).toBe(false)
+    expect(intentos(justo)).toBe(1)
   })
 })
 

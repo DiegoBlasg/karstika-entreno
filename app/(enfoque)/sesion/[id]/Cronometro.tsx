@@ -312,7 +312,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
                 <ul className="mt-1 space-y-0.5 text-sm text-texto-2">
                   {b.ejercicios.map((e, j) => <li key={`${e.nombre}-${j}`}>{e.nombre} · {e.cargaTexto}</li>)}
                 </ul>
-                <ComoSeHace ids={b.ejercicios.map((e) => e.ficha)} conTitulo className="text-sm text-progreso" />
+                <ComoSeHace ids={b.ejercicios.flatMap((e) => [e.ficha, ...(e.fichasExtra ?? [])])} conTitulo className="text-sm text-progreso" />
               </div>
             </li>
           ))}

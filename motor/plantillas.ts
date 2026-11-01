@@ -3,6 +3,7 @@ import { explicar, type Explicacion } from './explicacion'
 import { evaluacionVigente, lastreRepeaters } from './evaluacion'
 import { VALORES } from './parametros'
 import type { Bloque, Ejercicio, Peticion, SesionPlan } from './propuesta-tipos'
+import { desdeLunes } from './temporada'
 import { diaNumero } from './tiempo'
 import type { Sesion, TipoComplemento, TipoSesion } from './tipos'
 
@@ -368,6 +369,7 @@ function construirPegues(p: Peticion): SesionPlan | null {
           cargaTexto: 'Esfuerzo máximo, 9–10 de 10',
           notas: `Lee la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes. En los reposos, sacude el brazo colgando. Después, 20 min de recuperación activa suave, no reposo pasivo.`,
           ficha: 'via-limite-cuerda',
+          fichasExtra: ['respiracion-voy', 'tactica-encadene'],
         },
       ],
       explicacion: explicar(
@@ -558,6 +560,20 @@ function modalidadTecnica(p: Peticion): string {
   return 'Bloque y vías autoaseguradas de nivel cómodo'
 }
 
+// El ejercicio técnico de la semana: rota cada semana natural, el mismo toda la semana (entrenadores, nivel C).
+export const EJERCICIOS_TECNICA_SEMANA: readonly Ejercicio[] = [
+  { nombre: 'Ejercicio de la semana: pies silenciosos', cargaTexto: '10 min en vías fáciles', ficha: 'pies-silenciosos' },
+  { nombre: 'Ejercicio de la semana: manos pegadas', cargaTexto: '10 min en vías fáciles', ficha: 'manos-pegadas' },
+  { nombre: 'Ejercicio de la semana: brazos estirados y «mismo lado»', cargaTexto: '2-3 travesías de 2-3 min', ficha: 'mismo-lado' },
+  { nombre: 'Ejercicio de la semana: placa sin manos y destrepe', cargaTexto: '2-3 vías fáciles', ficha: 'placa-sin-manos' },
+]
+
+export function ejercicioTecnicaSemana(fecha: string): Ejercicio {
+  const d = diaNumero(fecha)
+  const semana = Math.floor((d - desdeLunes(d)) / 7)
+  return { ...EJERCICIOS_TECNICA_SEMANA[((semana % 4) + 4) % 4]! }
+}
+
 function construirTecnica(p: Peticion): SesionPlan | null {
   const modalidad = modalidadTecnica(p)
   const base = bloquePrincipalMasCalentamiento(
@@ -571,6 +587,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
         ficha: 'via-de-practica',
       },
       { nombre: '1-2 vías nuevas parecidas, a vista, variando el tipo de presa', cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
+      ejercicioTecnicaSemana(p.fecha),
       {
         nombre: `Previsualiza la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes de cada intento`,
         cargaTexto: 'Sin esfuerzo',
@@ -581,7 +598,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     explicar(
       'plantilla.tecnica',
       ['P-53', 'P-54', 'P-55'],
-      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución.',
+      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución. Además, un ejercicio técnico que cambia cada semana (pies silenciosos, manos pegadas, «mismo lado», placa sin manos): son los clásicos de entrenadores como Gresham y Anderson, sin estudio que mida su efecto.',
     ),
   )
   return base && plan(sesionDe('tecnica', p, base.total, 'suave'), base.bloques)
@@ -931,13 +948,51 @@ const MAX_INTENTOS_VIA = 3
 const PROGRESIVOS_BLOQUE_MIN = 10
 const BLOQUES_LIMITE_MIN = [30, 20] as const
 
+// P-76: si te limita la cabeza, la primera vía al límite de la semana (lunes a domingo) en rocódromo empieza con caídas
+// progresivas.
+export function tocanCaidas(p: Peticion): boolean {
+  if (p.limitantePrincipal !== 'cabeza' || p.contexto.lugar !== 'rocodromo') return false
+  const d = diaNumero(p.fecha)
+  const lunes = d - desdeLunes(d)
+  return !p.historial.some((s) => s.tipo === 'via-cuerda-limite' && diaNumero(s.fecha) >= lunes && diaNumero(s.fecha) < d)
+}
+
+function bloqueCaidas(): Bloque {
+  const { minutos, caidasMin, caidasMax } = VALORES['P-76']
+  return {
+    nombre: 'Caídas progresivas',
+    minutos,
+    ejercicios: [
+      {
+        nombre: `${caidasMin}-${caidasMax} caídas a propósito, de menos a más`,
+        cargaTexto: 'Sin prisa: sube de escalón solo si la anterior fue sin ansiedad',
+        notas: 'En una vía desplomada y limpia, con quien te asegura avisado: top-rope o chapa a la cintura, después a los pies y por encima.',
+        ficha: 'caidas-progresivas',
+      },
+    ],
+    explicacion: explicar(
+      'plantilla.caidas',
+      ['P-76', 'P-62'],
+      'Tus respuestas dicen que te frena la cabeza: la primera vía al límite de la semana empieza con caídas progresivas. Es la propuesta del entrenador Arno Ilgner (sin estudio que la mida y con dudas sobre si se transfiere a roca), por eso solo una vez por semana y en rocódromo.',
+    ),
+  }
+}
+
 function construirViaLimite(p: Peticion): SesionPlan | null {
-  const total = (n: number): number => CALENTAMIENTO_MIN + PROGRESIVAS_VIA_MIN + n * INTENTO_VIA_MIN
+  const caidas = tocanCaidas(p)
+  const extra = caidas ? VALORES['P-76'].minutos : 0
+  const total = (n: number): number => CALENTAMIENTO_MIN + extra + PROGRESIVAS_VIA_MIN + n * INTENTO_VIA_MIN
   let n = MAX_INTENTOS_VIA
   while (n >= 1 && total(n) > p.contexto.minutosDisponibles) n--
-  if (n < 1) return null
+  if (n < 1) {
+    if (!caidas) return null
+    // Sin sitio para las caídas y un intento: la sesión de siempre.
+    const { limitantePrincipal: _limitante, ...sinCabeza } = p
+    return construirViaLimite(sinCabeza)
+  }
   const bloques: Bloque[] = [
     bloqueCalentamiento(),
+    ...(caidas ? [bloqueCaidas()] : []),
     {
       nombre: 'Vías progresivas',
       minutos: PROGRESIVAS_VIA_MIN,
@@ -957,6 +1012,7 @@ function construirViaLimite(p: Peticion): SesionPlan | null {
           cargaTexto: 'Esfuerzo máximo, 9–10 de 10',
           notas: `Lee la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes. En los reposos, sacude el brazo colgando. Después, 20 min de recuperación activa suave (pedalear o caminar), no reposo pasivo.`,
           ficha: 'via-limite-cuerda',
+          fichasExtra: ['respiracion-voy'],
         },
       ],
       explicacion: explicar(
@@ -1096,6 +1152,8 @@ const ejerciciosCore = (colgado: boolean): Ejercicio[] => [
 const EJERCICIOS_MOVILIDAD: readonly Ejercicio[] = [
   { nombre: 'Rana', cargaTexto: '2 × 45 s', ficha: 'rana' },
   { nombre: '90/90 de cadera', cargaTexto: '2 × 5 por lado', ficha: 'cadera-90-90' },
+  { nombre: 'Paso alto activo a la pared', cargaTexto: '2 × 8 por lado', ficha: 'paso-alto' },
+  { nombre: 'Tobillo con la rodilla a la pared', cargaTexto: '2 × 10 por lado', ficha: 'tobillo' },
   { nombre: 'Dislocaciones de hombro con cinta o palo', cargaTexto: '2 × 10', ficha: 'dislocaciones-hombro' },
 ]
 

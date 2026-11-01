@@ -413,3 +413,20 @@ test('Escaladas: una vía suelta en «Tu nivel» y un proyecto con un día de pe
   // Las últimas escaladas, con su botón de borrar.
   await expect(page.getByRole('button', { name: 'Borrar Ojo de pez · vía 6c' })).toBeVisible()
 })
+
+test('Biblioteca ampliada: filtro por lugar, una ficha nueva y una que no se propone', async ({ page }) => {
+  await page.goto('/entrar')
+  await page.getByLabel('Contraseña').fill(process.env.E2E_CLAVE_ACCESO!)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await page.goto('/biblioteca')
+  await page.getByRole('button', { name: 'Casa', exact: true }).click()
+  await expect(page.getByRole('link', { name: /Tobillo con la rodilla a la pared/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Pies silenciosos/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'En cualquier sitio' }).click()
+  await page.getByRole('button', { name: 'Técnica', exact: true }).click()
+  await page.getByRole('link', { name: /Pies silenciosos/ }).click()
+  await expect(page.getByText(/Te lo propone el entrenador/)).toBeVisible()
+  await page.goto('/biblioteca/campus')
+  await expect(page.getByText(/No se propone/)).toBeVisible()
+})
