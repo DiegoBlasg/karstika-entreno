@@ -1,5 +1,3 @@
-import { PieDeVia } from '@/components/PieDeVia'
-import type { PasosArranque } from '@/lib/datos/arranque'
 import type { EstadoTramo, VistaVia } from '@/lib/datos/via'
 import { fechaLarga } from '@/lib/fecha'
 import { CarruselLargos } from './CarruselLargos'
@@ -40,14 +38,13 @@ export function resumenVia(vista: VistaVia): string | null {
 }
 
 // La temporada: fila de pasos (un largo por paso y la cima), carrusel de largos centrado en el actual y, debajo, la
-// próxima reunión. En el primer uso, el pie de vía con sus tres pasos.
-export function Via({ vista, arranque }: { vista: VistaVia; arranque: PasosArranque }) {
+// próxima reunión.
+export function Via({ vista }: { vista: VistaVia }) {
   const { largos, cima, tests } = vista
   const reuniones = largos.flatMap((l) => l.reuniones)
   // R1, R2…: posición de cada reunión entre todas las de la temporada (un largo puede tener una a mitad).
   const numeros: Record<string, number> = Object.fromEntries(reuniones.map((r, i) => [r.lunes, i + 1]))
-  const pie = !arranque.completo && <PieDeVia pasos={arranque} />
-  if (largos.length === 0) return pie || null
+  if (largos.length === 0) return null
 
   const pasos: PasoVia[] = [
     ...largos.map((l) => ({
@@ -69,7 +66,6 @@ export function Via({ vista, arranque }: { vista: VistaVia; arranque: PasosArran
   return (
     <>
       <CarruselLargos pasos={pasos} tarjetas={tarjetas} inicial={inicial} />
-      {pie}
       <ProximaReunion reuniones={reuniones} tests={tests} lunesActual={lunesActualDe(vista)} />
     </>
   )

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import { House, Play } from 'lucide-react'
 import { FondoTopo } from '@/components/FondoTopo'
-import { PieDeVia } from '@/components/PieDeVia'
 import { IconoChapa, IconoCima, IconoCuerda, IconoMultipresa, IconoPresa, IconoReunion } from '@/components/iconos/Escalada'
 import { Aviso } from '@/components/ui/Aviso'
 import { BarraProgreso } from '@/components/ui/BarraProgreso'
@@ -50,9 +49,6 @@ export default function PaginaMuestrario() {
       <Aviso tono="rojo">En rojo: no cargues el hombro.</Aviso>
       <EstadoVacio titulo="Sin sesión hoy" texto="No tienes nada planeado para hoy." />
       <Hoja disparador="¿Por qué?" titulo="¿Por qué esta sesión?"><p className="text-sm text-texto-2">Contenido de la hoja.</p></Hoja>
-      <PieDeVia pasos={{ generado: false, sesion: false, test: false, completo: false }} />
-      <PieDeVia pasos={{ generado: true, sesion: false, test: false, completo: false }} />
-      <PieDeVia pasos={{ generado: true, sesion: true, test: false, completo: false }} />
       <div className="flex gap-4 text-texto-2">
         <House aria-hidden="true" /><IconoMultipresa /><IconoChapa /><IconoReunion /><IconoCima className="text-cima" /><IconoPresa /><IconoCuerda />
       </div>

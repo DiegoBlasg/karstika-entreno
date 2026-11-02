@@ -4,11 +4,9 @@ import { FilaSesion } from '@/components/FilaSesion'
 import { GenerarEntreno } from '@/components/GenerarEntreno'
 import { FondoTopo } from '@/components/FondoTopo'
 import { MiniVia } from '@/components/MiniVia'
-import { PieDeVia } from '@/components/PieDeVia'
 import { Aviso } from '@/components/ui/Aviso'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
 import { Etiqueta } from '@/components/ui/Etiqueta'
-import { pasosArranque } from '@/lib/datos/arranque'
 import { testsSinResultado, vistaHoy } from '@/lib/datos/hoy'
 import { progresoLargo, tituloLargo } from '@/lib/datos/largo'
 import { posicionSiSePuede, type PosicionTemporada } from '@/lib/datos/temporada'
@@ -36,7 +34,6 @@ export default async function PaginaHoy() {
   const v = vistaHoy(datos, hoy)
   const sinResultado = testsSinResultado(datos, hoy)
   const largo = progresoLargo(datos, hoy)
-  const arranque = pasosArranque(datos)
   const referencia = gradosReferencia(datos.escaladas ?? [], datos.perfil, hoy)
   const posiciones = new Map<string, PosicionTemporada | null>()
   const posicionDe = (fecha: string): PosicionTemporada | null => {
@@ -55,7 +52,6 @@ export default async function PaginaHoy() {
         </div>
       </header>
 
-      {!arranque.completo && <PieDeVia pasos={arranque} principal={false} />}
       {largo && <MiniVia largo={largo} />}
 
       {v.zonasRojo.length > 0 && (
