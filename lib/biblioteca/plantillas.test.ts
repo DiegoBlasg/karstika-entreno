@@ -48,8 +48,12 @@ function bloquesDeTodo(): Bloque[] {
 describe('quién propone cada ficha', () => {
   // Las plantillas con todo lo que activa fichas nuevas: 4 semanas de técnica, cabeza, pegues, core y movilidad, test en casa.
   const base = peticiones()
-  const extra: Peticion[] = ['2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23'].flatMap((fecha) =>
-    base.slice(0, 40).map((p) => ({ ...p, fecha, limitantePrincipal: 'cabeza' as const })),
+  // 0 a 3 técnicas anteriores: salen los cuatro ejercicios técnicos.
+  const tecnicas = (n: number): Sesion[] => Array.from({ length: n }, (_, i) => ({
+    id: `t${i}`, tipo: 'tecnica', intensidad: 'suave', fecha: `2026-10-${String(10 + i).padStart(2, '0')}`, horaInicio: 19, duracionMin: 60,
+  }))
+  const extra: Peticion[] = [0, 1, 2, 3].flatMap((n) =>
+    base.slice(0, 40).map((p) => ({ ...p, historial: [...p.historial, ...tecnicas(n)], limitantePrincipal: 'cabeza' as const })),
   )
   const usadas = new Set<string>()
   for (const p of [...base, ...extra]) {

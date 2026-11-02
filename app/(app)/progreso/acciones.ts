@@ -11,7 +11,7 @@ import type { EstadoAccion } from '@/lib/estado'
 import { ahoraMadrid } from '@/lib/fecha'
 import { entero, fecha, mensajeDe, numero, numeroOpcional, texto, textoOpcional } from '@/lib/formulario'
 import { escaladaSuelta } from '@/lib/escaladas/formulario'
-import { proyectos } from '@/lib/escaladas/nivel'
+import { proyectosAbiertos } from '@/lib/escaladas/nivel'
 import { borrarEscaladaBd, borrarEvaluacionBd, borrarPruebaCasaBd, insertarEscalada, insertarEvaluacion, insertarPruebaCasa, requerirDatos } from '@/lib/servidor/consultas'
 
 export async function guardarEvaluacion(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
@@ -104,7 +104,7 @@ export async function guardarEscalada(_previo: EstadoAccion, fd: FormData): Prom
   const hoy = ahoraMadrid(new Date()).fecha
   let fila
   try {
-    fila = escaladaSuelta(fd, hoy, proyectos(datos.escaladas ?? [], hoy).filter((p) => p.encadenado === null))
+    fila = escaladaSuelta(fd, hoy, proyectosAbiertos(datos.escaladas ?? [], hoy))
   } catch (e) {
     return { error: mensajeDe(e) }
   }
@@ -116,6 +116,26 @@ export async function guardarEscalada(_previo: EstadoAccion, fd: FormData): Prom
   revalidatePath('/progreso')
   revalidatePath('/')
   return { ok: 'Escalada apuntada.' }
+}
+
+// Dejar un proyecto sin encadenarlo: una escalada «abandonado» de hoy que lo cierra (borrándola se reabre).
+export async function dejarProyecto(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {
+  const { sql, datos } = await requerirDatos()
+  const hoy = ahoraMadrid(new Date()).fecha
+  const clave = fd.get('clave')
+  const p = proyectosAbiertos(datos.escaladas ?? [], hoy).find((x) => x.clave === clave)
+  if (!p) return { error: 'Ese proyecto ya no está abierto.' }
+  try {
+    await insertarEscalada(sql, {
+      id: crypto.randomUUID(), fecha: hoy, sesion_id: null, tipo: p.tipo, lugar: p.lugar, grado: null, estilo: 'abandonado', pegues: 1,
+      nombre: p.nombre, proyecto: true,
+    })
+  } catch (e) {
+    return { error: `No se ha podido dejar el proyecto: ${mensajeDe(e)}` }
+  }
+  revalidatePath('/progreso')
+  revalidatePath('/')
+  return { ok: 'Proyecto dejado.' }
 }
 
 export async function borrarEscalada(_previo: EstadoAccion, fd: FormData): Promise<EstadoAccion> {

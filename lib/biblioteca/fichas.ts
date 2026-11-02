@@ -1159,6 +1159,9 @@ const USO: Partial<Record<FichaId, UsoFicha>> = {
   abrahangs: 'consulta', 'intermitentes-80': 'consulta', 'finger-curls': 'consulta', 'dedos-en-barra': 'no', campus: 'no',
 }
 export const usoFicha = (id: FichaId): UsoFicha => USO[id] ?? 'plan'
+
+// Las fichas que son tests (se repiten para medir, no para entrenar).
+export const FICHAS_TEST: ReadonlySet<FichaId> = new Set<FichaId>(['suspension-maxima-10s', 'colgado-30mm', 'power-slap', 'dominadas-maximas', 'apertura-cadera'])
 export const TEXTO_USO: Record<UsoFicha, string> = {
   plan: 'Te lo propone el entrenador cuando toca.',
   consulta: 'De consulta: el entrenador no lo programa, pero puedes hacerlo por tu cuenta.',

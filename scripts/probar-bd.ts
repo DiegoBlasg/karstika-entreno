@@ -29,6 +29,8 @@ const casos: [string, () => Promise<unknown>][] = [
   ['encadene sin grado', () => sql`insert into escaladas (fecha, tipo, lugar, estilo) values ('2026-11-06', 'via', 'roca', 'a-vista')`],
   ['pegues fuera de un proyecto', () => sql`insert into escaladas (fecha, tipo, lugar, estilo) values ('2026-11-06', 'via', 'roca', 'pegues')`],
   ['proyecto sin nombre', () => sql`insert into escaladas (fecha, tipo, lugar, grado, estilo, proyecto) values ('2026-11-06', 'via', 'roca', '7a', 'encadenada', true)`],
+  ['abandono fuera de un proyecto', () => sql`insert into escaladas (fecha, tipo, lugar, estilo) values ('2026-11-06', 'via', 'roca', 'abandonado')`],
+  ['estilo de escalada desconocido', () => sql`insert into escaladas (fecha, tipo, lugar, grado, estilo) values ('2026-11-06', 'via', 'roca', '6a', 'colgado')`],
   ['escalada con 0 pegues', () => sql`insert into escaladas (fecha, tipo, lugar, grado, estilo, pegues) values ('2026-11-06', 'via', 'roca', '6b', 'encadenada', 0)`],
   ['dos tests en casa el mismo día', () => sql`insert into pruebas_casa (fecha, dominadas) values ('2026-11-04', 5), ('2026-11-04', 6)`],
   ['objetivo antes del inicio', () => sql`update perfil set objetivo_temporada = '2026-01-01'`],

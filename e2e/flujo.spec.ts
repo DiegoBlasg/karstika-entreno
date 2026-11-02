@@ -361,6 +361,9 @@ test('al límite: «¿Qué te frenó hoy?», encadené, último freno y «Tu per
   await expect(page.getByText('✓ Hoy encadené algo al límite')).toBeVisible()
   // Qué se encadenó: en una sesión de bloque, bloque ya elegido; grado y cómo.
   await expect(page.getByLabel('Bloque', { exact: true })).toBeChecked()
+  // 6B+ no está entre los 6 botones alrededor de 6A: «Otro grado…» abre la escala completa.
+  await expect(page.getByLabel('6A', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Otro grado…' }).click()
   await page.getByLabel('Grado').selectOption('6B+')
   await page.getByLabel('Flash').check()
   await page.getByLabel('Esfuerzo (RPE 0-10)').selectOption('8')
@@ -393,7 +396,15 @@ test('Escaladas: una vía suelta en «Tu nivel» y un proyecto con un día de pe
     await page.getByText('+ Apuntar escalada').click()
     const form = page.locator('#apuntar-escalada')
     await form.getByLabel(campos.estilo).check()
-    if (campos.grado) await form.getByLabel(/^Grado/).selectOption(campos.grado)
+    if (campos.grado) {
+      // Un botón si está cerca de tu nivel; si no, «Otro grado…».
+      const boton = form.getByLabel(campos.grado, { exact: true })
+      if (await boton.count() > 0) await boton.check()
+      else {
+        await form.getByRole('button', { name: 'Otro grado…' }).click()
+        await form.getByLabel(/^Grado/).selectOption(campos.grado)
+      }
+    }
     if (campos.nombre) await form.getByLabel(/^Nombre/).fill(campos.nombre)
     if (campos.pegues) await form.getByLabel('Pegues ese día').fill(campos.pegues)
     await form.getByRole('button', { name: 'Apuntar escalada' }).click()
@@ -412,6 +423,13 @@ test('Escaladas: una vía suelta en «Tu nivel» y un proyecto con un día de pe
   await expect(nivel.getByText(/Hasta tu objetivo te faltan 6c\+ y 7a/)).toBeVisible()
   // Las últimas escaladas, con su botón de borrar.
   await expect(page.getByRole('button', { name: 'Borrar Ojo de pez · vía 6c' })).toBeVisible()
+  // Otro proyecto y dejarlo: deja de salir como abierto.
+  await apuntar({ estilo: 'Pegues a un proyecto, sin encadenar', nombre: 'La fisura', pegues: '2' })
+  await expect(nivel.getByText(/La fisura · vía en roca · 2 pegues/)).toBeVisible()
+  page.once('dialog', (d) => void d.accept())
+  await nivel.getByRole('button', { name: 'Dejar el proyecto La fisura' }).click()
+  await expect(nivel.getByText(/La fisura/)).toHaveCount(0)
+  await expect(page.getByText(/lo dejé/)).toBeVisible()
 })
 
 test('Biblioteca ampliada: filtro por lugar, una ficha nueva y una que no se propone', async ({ page }) => {

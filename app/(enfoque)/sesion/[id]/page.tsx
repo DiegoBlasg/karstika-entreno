@@ -5,6 +5,7 @@ import { posicionSiSePuede } from '@/lib/datos/temporada'
 import { ahoraMadrid } from '@/lib/fecha'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { lugarDeSesion } from '@/lib/escaladas/formulario'
+import { gradosReferencia } from '@/lib/escaladas/nivel'
 import { Cronometro } from './Cronometro'
 import { YaRegistrada } from './YaRegistrada'
 
@@ -34,5 +35,5 @@ export default async function PaginaSesion({ params }: { params: Promise<{ id: s
   // Peso del test: el de la última evaluación o, si no hay, el del perfil.
   const pesoInicial = datos.evaluaciones.at(-1)?.peso_corporal_kg ?? datos.perfil.peso_kg
   return <Cronometro plan={fila.propuesta} pasos={pasosDeSesion(fila.propuesta)} molestiasChequeo={molestias} hoy={hoy} pesoInicial={pesoInicial}
-    evaluacionHoy={datos.evaluaciones.some((e) => e.fecha === hoy)} posicion={posicionSiSePuede(datos, hoy)} escaladas={datos.escaladas ?? []} lugar={lugarDeSesion(fila)} />
+    evaluacionHoy={datos.evaluaciones.some((e) => e.fecha === hoy)} posicion={posicionSiSePuede(datos, hoy)} escaladas={datos.escaladas ?? []} lugar={lugarDeSesion(fila)} referencia={gradosReferencia(datos.escaladas ?? [], datos.perfil, hoy)} />
 }

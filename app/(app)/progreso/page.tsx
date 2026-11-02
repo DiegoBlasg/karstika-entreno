@@ -32,7 +32,7 @@ import { FormularioEvaluacion } from './FormularioEvaluacion'
 import { FormularioPruebaCasa } from './FormularioPruebaCasa'
 
 const TITULO_SECCION = 'font-titular text-2xl font-bold uppercase leading-none'
-const ESTILO_ESCALADA = { 'a-vista': 'a vista', flash: 'flash', encadenada: 'trabajada', pegues: 'pegues sin encadenar' } as const
+const ESTILO_ESCALADA = { 'a-vista': 'a vista', flash: 'flash', encadenada: 'trabajada', pegues: 'pegues sin encadenar', abandonado: 'lo dejé' } as const
 
 function Fuerza({ tests }: { tests: ResultadoTest[] }) {
   const ultimo = tests.at(-1)
@@ -133,7 +133,8 @@ export default async function PaginaProgreso() {
         </summary>
         <div className="space-y-3 p-4 pt-1">
           <p className="text-sm text-texto-2">Un encadene o un día de pegues a un proyecto que no apuntaste al registrar una sesión.</p>
-          <FormularioEscalada hoy={hoy} desde={sumarDias(hoy, -DIAS_ATRAS_SUELTA)} proyectos={nivel.abiertos.map((p) => p.nombre)} />
+          <FormularioEscalada hoy={hoy} desde={sumarDias(hoy, -DIAS_ATRAS_SUELTA)} proyectos={nivel.abiertos.map((p) => p.nombre)}
+            referencia={{ via: nivel.objetivo.escalones !== null ? nivel.objetivo.actual : '6b', bloque: nivel.bloque ?? '6A' }} />
         </div>
       </details>
 
@@ -148,7 +149,7 @@ export default async function PaginaProgreso() {
                   <div>
                     <p className="font-medium">{texto}</p>
                     <p className="text-texto-2">
-                      {fechaLarga(e.fecha)} · {e.lugar === 'roca' ? 'roca' : 'rocódromo'} · {ESTILO_ESCALADA[e.estilo]}{e.pegues > 1 || e.estilo === 'pegues' ? ` · ${plural(e.pegues, 'pegue', 'pegues')}` : ''}
+                      {fechaLarga(e.fecha)} · {e.lugar === 'roca' ? 'roca' : 'rocódromo'} · {ESTILO_ESCALADA[e.estilo]}{e.estilo !== 'abandonado' && (e.pegues > 1 || e.estilo === 'pegues') ? ` · ${plural(e.pegues, 'pegue', 'pegues')}` : ''}
                     </p>
                   </div>
                   <BotonBorrarEscalada id={e.id} texto={texto} />

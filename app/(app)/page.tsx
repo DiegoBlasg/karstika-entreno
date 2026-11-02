@@ -19,6 +19,7 @@ import { NOMBRE_ZONA } from '@/lib/nombres'
 import { requerirDatos } from '@/lib/servidor/consultas'
 import { BotonAlta } from './_hoy/BotonAlta'
 import { LimpiezaCronometro } from './_hoy/LimpiezaCronometro'
+import { gradosReferencia } from '@/lib/escaladas/nivel'
 import { FormularioEntrenamientoLibre } from './_hoy/FormularioEntrenamientoLibre'
 import { TarjetaChequeo } from './_hoy/TarjetaChequeo'
 import { TarjetaSesion } from './_hoy/TarjetaSesion'
@@ -36,6 +37,7 @@ export default async function PaginaHoy() {
   const sinResultado = testsSinResultado(datos, hoy)
   const largo = progresoLargo(datos, hoy)
   const arranque = pasosArranque(datos)
+  const referencia = gradosReferencia(datos.escaladas ?? [], datos.perfil, hoy)
   const posiciones = new Map<string, PosicionTemporada | null>()
   const posicionDe = (fecha: string): PosicionTemporada | null => {
     if (!posiciones.has(fecha)) posiciones.set(fecha, posicionSiSePuede(datos, fecha))
@@ -84,7 +86,7 @@ export default async function PaginaHoy() {
         </div>
       ) : (
         <>
-          {v.hoy.map((t, i) => <TarjetaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} escaladas={datos.escaladas} />)}
+          {v.hoy.map((t, i) => <TarjetaSesion key={claveFila(t)} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} destacada={i === primeraPendiente} escaladas={datos.escaladas} referencia={referencia} />)}
           {enTemporada && libresHoy.length > 0 && (
             <GenerarEntreno fecha={hoy} titulo="hoy" inicial={inicialGenerar(datos, hoy)} libres={libresHoy} compacto
               pedirChequeo={!chequeoDelDia(datos.chequeos, hoy)} />
@@ -100,7 +102,7 @@ export default async function PaginaHoy() {
           </summary>
           <div className="space-y-3 p-3 pt-0">
             <p className="text-sm text-texto-2">Las sesiones sin registro no cuentan para progresar: apunta cómo fueron.</p>
-            {v.pendientes.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} escaladas={datos.escaladas} />)}
+            {v.pendientes.map((t) => <TarjetaSesion key={t.fila.id} tarjeta={t} hoy={hoy} posicion={posicionDe(t.fila.fecha)} escaladas={datos.escaladas} referencia={referencia} />)}
           </div>
         </details>
       )}
@@ -121,7 +123,7 @@ export default async function PaginaHoy() {
         </details>
       )}
 
-      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} escaladas={datos.escaladas ?? []} />
+      <FormularioEntrenamientoLibre hoy={hoy} hora={ahora.hhmm} escaladas={datos.escaladas ?? []} referencia={referencia} />
     </div>
   )
 }

@@ -15,7 +15,7 @@ const enRoca: FilaSesion = {
   ...sesionFila(uuid(3), '2026-11-10', { tipo: 'via-cuerda-limite', intensidad: 'alta' }),
   propuesta: { sesion: sesionFila(uuid(3), '2026-11-10').sesion, bloques: [], explicaciones: [], contexto: { compania: 'con-gente', lugar: 'roca', minutosDisponibles: 120 } },
 }
-const abierto: Proyecto = { clave: 'ojo de pez|via|roca', nombre: 'Ojo de Pez', tipo: 'via', lugar: 'roca', grado: '7a', pegues: 3, ultimo: '2026-11-01', encadenado: null }
+const abierto: Proyecto = { clave: 'ojo de pez|via|roca', nombre: 'Ojo de Pez', tipo: 'via', lugar: 'roca', grado: '7a', pegues: 3, ultimo: '2026-11-01', encadenado: null, abandonado: null }
 
 describe('lugar y tipo de la sesión', () => {
   it('pegues en roca; si no, el sitio con que se generó (rocódromo por defecto); bloque en bloque y board', () => {

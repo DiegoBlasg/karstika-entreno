@@ -3,6 +3,7 @@ import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Tarjeta } from '@/components/ui/Tarjeta'
 import type { NivelLugar, Proyecto, VistaNivel } from '@/lib/escaladas/nivel'
 import { NOMBRE_FRENO } from '@/lib/nombres'
+import { BotonDejarProyecto } from './BotonDejarProyecto'
 import type { Freno } from '@/motor'
 
 const LUGAR = { roca: 'Roca', rocodromo: 'Rocódromo' } as const
@@ -76,7 +77,12 @@ export function TuNivel({ v, encadenes, ultimoFreno }: { v: VistaNivel; encadene
           <ul className="space-y-1 text-sm">
             {v.abiertos.map((p) => (
               <li key={p.clave}>
-                <span className="font-medium">{p.nombre}</span>{p.grado && ` · ${p.grado}`} · {dondeProyecto(p)} · {plural(p.pegues, 'pegue', 'pegues')} · último el {fechaCorta(p.ultimo)}
+                <div className="flex items-start justify-between gap-2">
+                  <span>
+                    <span className="font-medium">{p.nombre}</span>{p.grado && ` · ${p.grado}`} · {dondeProyecto(p)} · {plural(p.pegues, 'pegue', 'pegues')} · último el {fechaCorta(p.ultimo)}
+                  </span>
+                  <BotonDejarProyecto clave={p.clave} nombre={p.nombre} />
+                </div>
               </li>
             ))}
             {v.encadenados.map((p) => (
