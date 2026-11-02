@@ -55,9 +55,16 @@ export const claveProyecto = (e: Pick<FilaEscalada, 'tipo' | 'lugar'> & { nombre
 export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proyecto[] {
   const grupos: FilaEscalada[][] = []
   const abiertos = new Map<string, FilaEscalada[]>()
-  for (const e of [...escaladas].filter((x) => x.proyecto && x.nombre !== null && x.fecha <= hoy).sort((a, b) => a.fecha.localeCompare(b.fecha))) {
+  // El mismo día, el abandono va después de los pegues (al corregir un registro, sus filas se reinsertan más tarde).
+  const ultimoSiAbandono = (e: FilaEscalada): number => (e.estilo === 'abandonado' ? 1 : 0)
+  const ordenadas = [...escaladas]
+    .filter((x) => x.proyecto && x.nombre !== null && x.fecha <= hoy)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha) || ultimoSiAbandono(a) - ultimoSiAbandono(b))
+  for (const e of ordenadas) {
     const clave = claveProyecto({ ...e, nombre: e.nombre! })
     let grupo = abiertos.get(clave)
+    // Un abandono sin proyecto abierto (repetido) no cierra nada ni crea un proyecto vacío.
+    if (!grupo && e.estilo === 'abandonado') continue
     if (!grupo) {
       grupo = []
       grupos.push(grupo)

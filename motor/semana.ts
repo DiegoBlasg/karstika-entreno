@@ -163,7 +163,9 @@ export function planificarSemana(
   )
   const primera = p.historial.reduce<Sesion | undefined>((a, s) => (!a || s.fecha < a.fecha ? s : a), undefined)
   const corto = p.historial.filter(
-    (s) => diaNumero(s.fecha) >= hoy - DIAS_HISTORIAL_PLAN || conMolestia.has(s.id) || s.tipo === 'evaluacion-dedos' || s === primera,
+    // Las sesiones que hacen rotar los ejercicios (técnica, ARC A/B, hombro) se cuentan todas, como al generar el día.
+    (s) => diaNumero(s.fecha) >= hoy - DIAS_HISTORIAL_PLAN || conMolestia.has(s.id) || s.tipo === 'evaluacion-dedos' || s === primera
+      || s.tipo === 'tecnica' || s.tipo === 'arc' || s.tipo === 'hombro',
   )
   const ids = new Set(corto.map((s) => s.id))
   const baseCorta: Peticion = {

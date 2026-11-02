@@ -42,7 +42,7 @@ export default async function PaginaFicha({ params }: { params: Promise<{ id: st
         </div>
       )}
       <div className="space-y-2">
-        {grupo && <Etiqueta>{grupo.titulo}{FICHAS_TEST.has(f.id) ? ' · Test' : ''}</Etiqueta>}
+        {(grupo || FICHAS_TEST.has(f.id)) && <Etiqueta>{[grupo?.titulo, FICHAS_TEST.has(f.id) ? 'Test' : null].filter(Boolean).join(' · ')}</Etiqueta>}
         <h1 className="font-titular text-3xl font-extrabold uppercase leading-none">{f.titulo}</h1>
         <p className="text-texto-2">{f.paraQue}</p>
         <p className={usoFicha(f.id) === 'no' ? 'font-medium text-ambar' : 'text-xs text-texto-2'}>

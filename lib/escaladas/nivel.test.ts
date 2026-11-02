@@ -104,6 +104,15 @@ describe('dejar un proyecto', () => {
     expect(v.encadenados).toEqual([])
     expect(v.vias).toEqual([])
   })
+  it('el mismo día, el abandono cierra aunque los pegues se guarden después; uno repetido no crea un proyecto vacío', () => {
+    const xs = [
+      esc('2026-10-05', null, { estilo: 'abandonado', proyecto: true, nombre: 'Ojo de pez' }),
+      esc('2026-10-05', '7a', { estilo: 'pegues', proyecto: true, nombre: 'Ojo de pez', pegues: 2 }),
+      esc('2026-10-06', null, { estilo: 'abandonado', proyecto: true, nombre: 'Ojo de pez' }),
+    ]
+    expect(proyectosAbiertos(xs, HOY)).toEqual([])
+    expect(proyectos(xs, HOY)).toHaveLength(1)
+  })
   it('el mismo nombre después abre otro proyecto', () => {
     const xs = [
       esc('2026-10-05', null, { estilo: 'abandonado', proyecto: true, nombre: 'Ojo de pez' }),

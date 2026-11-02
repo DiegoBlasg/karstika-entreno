@@ -32,7 +32,12 @@ export function SelectorGrado({ nombre, tipo, referencia = REFERENCIA_POR_DEFECT
   return (
     <div className="space-y-1">
       <Opciones nombre={nombre} leyenda={etiqueta} opciones={ventana.map((g) => ({ valor: g, texto: g }))} valor={valor} onCambio={setValor} columnas={3} requerido={requerido} />
-      <button type="button" onClick={() => setLista(true)} className="inline-flex min-h-11 items-center text-sm text-texto-2 underline">Otro grado…</button>
+      <div className="flex gap-4">
+        <button type="button" onClick={() => setLista(true)} className="inline-flex min-h-11 items-center text-sm text-texto-2 underline">Otro grado…</button>
+        {!requerido && valor !== '' && (
+          <button type="button" onClick={() => setValor('')} className="inline-flex min-h-11 items-center text-sm text-texto-2 underline">Quitar grado</button>
+        )}
+      </div>
     </div>
   )
 }
