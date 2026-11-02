@@ -12,15 +12,16 @@ import {
   AGARRES, ETIQUETA_RPE, NOMBRE_AGARRE, NOMBRE_TIPO, TIPOS_AL_LIMITE, TIPOS_CON_REGLETA,
 } from '@/lib/nombres'
 import type { FilaEscalada } from '@/lib/datos/filas'
-import { proyectos } from '@/lib/escaladas/nivel'
+import { proyectosAbiertos } from '@/lib/escaladas/nivel'
+import type { ReferenciaGrados } from '@/components/SelectorGrado'
 import { CamposProyecto } from './CamposEscaladas'
 import { CamposEncadenesDelRegistro } from './FormularioRegistro'
 import { apuntarEntrenamiento } from './acciones'
 
 // La sesión y su registro en un solo formulario. Se envía sin vaciar: tras los avisos, «Lo hice así de todos modos»
 // guarda lo que se ha escrito. La duración de la sesión y los minutos reales son el mismo campo (`minutos`).
-function Formulario({ hoy, hora, alTerminar, escaladas }: {
-  hoy: string; hora: string; alTerminar: (mensaje: string) => void; escaladas: readonly FilaEscalada[]
+function Formulario({ hoy, hora, alTerminar, escaladas, referencia }: {
+  hoy: string; hora: string; alTerminar: (mensaje: string) => void; escaladas: readonly FilaEscalada[]; referencia?: ReferenciaGrados
 }) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(apuntarEntrenamiento, null)
   const [tipo, setTipo] = useState<TipoSesion>('tecnica')
@@ -73,9 +74,9 @@ function Formulario({ hoy, hora, alTerminar, escaladas }: {
         </select>
       </label>
       <CamposMolestias plegable />
-      {tipo === 'pegues-proyecto' && <CamposProyecto abiertos={proyectos(escaladas, hoy).filter((p) => p.encadenado === null)} />}
+      {tipo === 'pegues-proyecto' && <CamposProyecto abiertos={proyectosAbiertos(escaladas, hoy)} referencia={referencia} />}
       {TIPOS_AL_LIMITE.includes(tipo) && (
-        <CamposEncadenesDelRegistro key={tipo} sesion={{ id: 'libre', tipo, intensidad: 'alta', fecha: hoy, horaInicio: 0, duracionMin: 1 }} deEsta={[]} />
+        <CamposEncadenesDelRegistro key={tipo} sesion={{ id: 'libre', tipo, intensidad: 'alta', fecha: hoy, horaInicio: 0, duracionMin: 1 }} deEsta={[]} referencia={referencia} />
       )}
       {estado?.avisos && (
         <div className="space-y-2 rounded border border-ambar/40 bg-ambar/10 p-3 text-sm">
@@ -90,7 +91,9 @@ function Formulario({ hoy, hora, alTerminar, escaladas }: {
 }
 
 // Al final de Hoy: un entrenamiento que no estaba planeado, de hoy o de los 7 días anteriores.
-export function FormularioEntrenamientoLibre({ hoy, hora, escaladas = [] }: { hoy: string; hora: string; escaladas?: readonly FilaEscalada[] }) {
+export function FormularioEntrenamientoLibre({ hoy, hora, escaladas = [], referencia }: {
+  hoy: string; hora: string; escaladas?: readonly FilaEscalada[]; referencia?: ReferenciaGrados
+}) {
   const [abierto, setAbierto] = useState(false)
   const [hecho, setHecho] = useState<string | null>(null)
   const alTerminar = (mensaje: string): void => {
@@ -107,7 +110,7 @@ export function FormularioEntrenamientoLibre({ hoy, hora, escaladas = [] }: { ho
         {abierto ? 'Cancelar' : 'Apuntar un entrenamiento que no estaba planeado'}
       </button>
       {hecho && <p role="status" className="text-sm text-progreso">{hecho}</p>}
-      {abierto && <Formulario hoy={hoy} hora={hora} alTerminar={alTerminar} escaladas={escaladas} />}
+      {abierto && <Formulario hoy={hoy} hora={hora} alTerminar={alTerminar} escaladas={escaladas} referencia={referencia} />}
     </section>
   )
 }

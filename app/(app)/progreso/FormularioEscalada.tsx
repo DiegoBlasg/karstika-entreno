@@ -4,7 +4,8 @@ import { useActionState, useState } from 'react'
 import { BOTON, CAMPO } from '@/components/estilos'
 import { Opciones } from '@/components/ui/Opciones'
 import type { EstadoAccion } from '@/lib/estado'
-import { ESCALA, type TipoEscalada } from '@/lib/escaladas/grados'
+import { SelectorGrado, type ReferenciaGrados } from '@/components/SelectorGrado'
+import type { TipoEscalada } from '@/lib/escaladas/grados'
 import { guardarEscalada } from './acciones'
 
 const ESTILOS = [
@@ -14,7 +15,9 @@ const ESTILOS = [
 
 // Una escalada suelta: un encadene o un día de pegues a un proyecto (de hoy o de los 30 días anteriores). Con el nombre
 // de un proyecto abierto, cuenta como de ese proyecto.
-export function FormularioEscalada({ hoy, desde, proyectos }: { hoy: string; desde: string; proyectos: readonly string[] }) {
+export function FormularioEscalada({ hoy, desde, proyectos, referencia }: {
+  hoy: string; desde: string; proyectos: readonly string[]; referencia: ReferenciaGrados
+}) {
   const [estado, accion, pendiente] = useActionState<EstadoAccion, FormData>(guardarEscalada, null)
   const [tipo, setTipo] = useState<TipoEscalada>('via')
   const [estilo, setEstilo] = useState('encadenada')
@@ -27,13 +30,7 @@ export function FormularioEscalada({ hoy, desde, proyectos }: { hoy: string; des
       <Opciones nombre="tipo" leyenda="¿Vía o bloque?" opciones={[{ valor: 'via', texto: 'Vía' }, { valor: 'bloque', texto: 'Bloque' }]} valor={tipo} onCambio={(v) => setTipo(v as TipoEscalada)} columnas={2} />
       <Opciones nombre="lugar" leyenda="¿Dónde?" opciones={[{ valor: 'roca', texto: 'Roca' }, { valor: 'rocodromo', texto: 'Rocódromo' }]} valor="roca" columnas={2} />
       <Opciones nombre="estilo" leyenda="¿Cómo fue?" opciones={ESTILOS} valor={estilo} onCambio={setEstilo} columnas={2} />
-      <label className="block">
-        {pegues ? 'Grado (opcional)' : 'Grado'}
-        <select key={tipo} name="grado" defaultValue="" required={!pegues} className={CAMPO}>
-          <option value="">—</option>
-          {ESCALA[tipo].map((g) => <option key={g} value={g}>{g}</option>)}
-        </select>
-      </label>
+      <SelectorGrado key={tipo} nombre="grado" tipo={tipo} referencia={referencia} etiqueta={pegues ? 'Grado (opcional)' : 'Grado'} requerido={!pegues} />
       {!pegues && (
         <label className="flex min-h-11 items-center gap-2">
           <input type="checkbox" name="proyecto" checked={proyecto} onChange={(e) => setProyecto(e.target.checked)} className="size-5" /> Era un proyecto

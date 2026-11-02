@@ -1,4 +1,5 @@
 // Progreso real del atleta: constancia por semanas, escalada y logros (derivados, sin tabla propia). Puro.
+import { esEncadene } from '../escaladas/nivel'
 import type { MotivoCaida, SemanaPlan } from '../../motor'
 import { lunesDe, sumarDias } from '../fecha'
 import type { DatosAtleta, FilaRegistro } from './filas'
@@ -106,7 +107,7 @@ export function logros(d: DatosAtleta, hoy: string): Logro[] {
   const fechasEncadene = [
     ...d.intentos.filter((i) => i.encadenado && i.fecha <= hoy).map((i) => i.fecha),
     ...encadenesNuevos(d, registrosConFecha(d, hoy)).map((r) => r.fecha),
-    ...(d.escaladas ?? []).filter((e) => e.estilo !== 'pegues' && e.fecha <= hoy).map((e) => e.fecha),
+    ...(d.escaladas ?? []).filter((e) => esEncadene(e) && e.fecha <= hoy).map((e) => e.fecha),
   ].sort()
   let record: string | null = null
   let mejor = -Infinity

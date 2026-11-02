@@ -18,6 +18,7 @@ import {
 } from '@/lib/nombres'
 import { OtraOpcion } from '@/components/OtraOpcion'
 import { franja } from '@/lib/datos/agenda'
+import type { ReferenciaGrados } from '@/components/SelectorGrado'
 import { lugarDeSesion } from '@/lib/escaladas/formulario'
 import { FormularioRegistro } from './FormularioRegistro'
 import { borrarRegistrada, noLaHice, otraCosa } from './acciones'
@@ -113,7 +114,9 @@ function BotonBorrar({ id }: { id: string }) {
   )
 }
 
-export function Registrada({ tarjeta, hoy, escaladas }: { tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string; escaladas?: readonly FilaEscalada[] }) {
+export function Registrada({ tarjeta, hoy, escaladas, referencia }: {
+  tarjeta: Tarjeta & { registro: FilaRegistro }; hoy: string; escaladas?: readonly FilaEscalada[]; referencia?: ReferenciaGrados
+}) {
   const { fila, registro } = tarjeta
   const [corrigiendo, setCorrigiendo] = useState(false)
   const cerrar = (): void => setCorrigiendo(false)
@@ -133,14 +136,15 @@ export function Registrada({ tarjeta, hoy, escaladas }: { tarjeta: Tarjeta & { r
           </div>
         )}
       </div>
-      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} />}
+      {corrigiendo && <FormularioRegistro sesion={fila.sesion} previo={{ registro }} alTerminar={cerrar} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} referencia={referencia} />}
     </>
   )
 }
 
 // `posicion`: dónde cae el día de la sesión en la temporada (se calcula en el servidor); solo se muestra si hay plan.
-export function TarjetaSesion({ tarjeta, hoy, posicion, destacada, escaladas }: {
+export function TarjetaSesion({ tarjeta, hoy, posicion, destacada, escaladas, referencia }: {
   tarjeta: Tarjeta; hoy: string; posicion?: PosicionTemporada | null; destacada?: boolean; escaladas?: readonly FilaEscalada[]
+  referencia?: ReferenciaGrados
 }) {
   const { fila, registro } = tarjeta
   const s = fila.sesion
@@ -179,7 +183,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada, escaladas }: 
       )}
       {registro ? (
         <>
-          <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} escaladas={escaladas} />
+          <Registrada tarjeta={{ ...tarjeta, registro }} hoy={hoy} escaladas={escaladas} referencia={referencia} />
           {fila.propuesta && (
             <details className="group border-t border-borde pt-1">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm text-texto-2 [&::-webkit-details-marker]:hidden">
@@ -209,7 +213,7 @@ export function TarjetaSesion({ tarjeta, hoy, posicion, destacada, escaladas }: 
           {pasada && !cambiando && terminando && (
             <>
               {/* Sin alTerminar: registrar redirige a la chapa, así que nunca devuelve ok (solo corregir lo usa). */}
-              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} />
+              <FormularioRegistro sesion={s} iniciales={tarjeta.molestiasChequeo} escaladas={escaladas} hoy={hoy} lugar={lugarDeSesion(fila)} referencia={referencia} />
               <button type="button" onClick={cerrarRegistro} className={`${TOQUE} text-sm underline`}>Cancelar</button>
             </>
           )}

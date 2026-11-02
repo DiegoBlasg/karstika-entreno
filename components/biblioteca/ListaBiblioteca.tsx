@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { Dibujo } from '@/components/dibujos'
 import { IconoCima, IconoCuerda, IconoMultipresa } from '@/components/iconos/Escalada'
 import { ETIQUETA } from '@/components/estilos'
-import { FICHAS, GRUPOS, LUGARES_FICHA, NOMBRE_LUGAR_FICHA, usoFicha, type FichaId, type Grupo, type LugarFicha } from '@/lib/biblioteca/fichas'
+import { FICHAS, FICHAS_TEST, GRUPOS, LUGARES_FICHA, NOMBRE_LUGAR_FICHA, usoFicha, type FichaId, type Grupo, type LugarFicha } from '@/lib/biblioteca/fichas'
 import { resumenMaterial } from './material'
 
 // Sin tildes ni mayúsculas, para que «rotacion» encuentre «Rotación».
@@ -111,7 +111,10 @@ export function ListaBiblioteca() {
                             : ICONO_GRUPO[g.id]}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-titular text-base font-bold uppercase leading-tight">{f.titulo}</span>
+                        <span className="block font-titular text-base font-bold uppercase leading-tight">
+                          {f.titulo}
+                          {FICHAS_TEST.has(id) && <span className="ml-2 rounded-full bg-cima/15 px-2 py-0.5 align-middle font-sans text-[10px] font-bold text-cima">Test</span>}
+                        </span>
                         <span className="block truncate text-xs text-texto-2">
                           {usoFicha(id) === 'consulta' ? 'De consulta · ' : ''}{resumenMaterial(f.material)}
                         </span>

@@ -2,7 +2,7 @@
 // lectura y táctica (P-75). Puro. Solo informa: el motor no lo usa (no hay umbrales de grado con estudio para prescribir).
 import { diaNumero, VALORES } from '../../motor'
 import type { FilaEscalada } from '../datos/filas'
-import { distanciaGrados, esGradoValido, GRADOS_VIA, maxGrado } from './grados'
+import { distanciaGrados, esGradoValido, GRADOS_BLOQUE, GRADOS_VIA, maxGrado, type TipoEscalada } from './grados'
 
 type Lugar = FilaEscalada['lugar']
 
@@ -22,7 +22,8 @@ export interface Proyecto {
   grado: string | null               // el del último registro que lo tenga
   pegues: number                     // todos los pegues apuntados, incluido el día que cayó
   ultimo: string                     // fecha del último día apuntado
-  encadenado: string | null          // fecha del encadene; null = abierto
+  encadenado: string | null          // fecha del encadene
+  abandonado: string | null          // fecha en que lo dejaste; abierto = ni encadenado ni abandonado
 }
 
 export interface VistaNivel {
@@ -37,7 +38,9 @@ export interface VistaNivel {
 const { ventanaDias: VENTANA, escalones: ESCALONES } = VALORES['P-75']
 const LUGARES: readonly Lugar[] = ['roca', 'rocodromo']
 
-const encadene = (e: FilaEscalada): boolean => e.estilo !== 'pegues' && e.grado !== null
+export const esEncadene = (e: Pick<FilaEscalada, 'estilo' | 'grado'>): boolean =>
+  (e.estilo === 'a-vista' || e.estilo === 'flash' || e.estilo === 'encadenada') && e.grado !== null
+const encadene = esEncadene
 const aVista = (e: FilaEscalada): boolean => (e.estilo === 'a-vista' || e.estilo === 'flash') && e.grado !== null
 const enVentana = (hoy: string) => (e: FilaEscalada): boolean => diaNumero(e.fecha) > diaNumero(hoy) - VENTANA && e.fecha <= hoy
 const grados = (xs: readonly FilaEscalada[]): string[] => xs.flatMap((e) => (e.grado === null ? [] : [e.grado]))
@@ -47,7 +50,7 @@ export const claveNombre = (nombre: string): string => nombre.trim().replace(/\s
 
 export const claveProyecto = (e: Pick<FilaEscalada, 'tipo' | 'lugar'> & { nombre: string }): string => `${claveNombre(e.nombre)}|${e.tipo}|${e.lugar}`
 
-// Los proyectos en orden: un proyecto se cierra al encadenarlo, y el mismo nombre después abre otro. Los abiertos, el
+// Los proyectos en orden: un proyecto se cierra al encadenarlo o al dejarlo, y el mismo nombre después abre otro. El
 // de actividad más reciente primero.
 export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proyecto[] {
   const grupos: FilaEscalada[][] = []
@@ -61,7 +64,7 @@ export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proy
       abiertos.set(clave, grupo)
     }
     grupo.push(e)
-    if (encadene(e)) abiertos.delete(clave)
+    if (encadene(e) || e.estilo === 'abandonado') abiertos.delete(clave)
   }
   return grupos.map((xs): Proyecto => {
     const ultima = xs.at(-1)!
@@ -71,11 +74,33 @@ export function proyectos(escaladas: readonly FilaEscalada[], hoy: string): Proy
       tipo: ultima.tipo,
       lugar: ultima.lugar,
       grado: [...xs].reverse().find((e) => e.grado !== null)?.grado ?? null,
-      pegues: xs.reduce((a, e) => a + e.pegues, 0),
+      pegues: xs.reduce((a, e) => a + (e.estilo === 'abandonado' ? 0 : e.pegues), 0),
       ultimo: ultima.fecha,
       encadenado: xs.find(encadene)?.fecha ?? null,
+      abandonado: xs.find((e) => e.estilo === 'abandonado')?.fecha ?? null,
     }
   }).sort((a, b) => b.ultimo.localeCompare(a.ultimo))
+}
+
+// Los grados de referencia para los botones de grado: tu nivel en vía (como en «Tu nivel») y tu mejor bloque reciente.
+export function gradosReferencia(
+  escaladas: readonly FilaEscalada[], perfil: { grado_actual: string; grado_objetivo: string }, hoy: string,
+): { via: string; bloque: string } {
+  const v = vistaNivel(escaladas, perfil, hoy)
+  return { via: esGradoValido('via', v.objetivo.actual) ? v.objetivo.actual : '6b', bloque: v.bloque ?? '6A' }
+}
+
+export const estaAbierto = (p: Proyecto): boolean => p.encadenado === null && p.abandonado === null
+
+// Los proyectos abiertos (los que se pueden elegir al apuntar pegues).
+export const proyectosAbiertos = (escaladas: readonly FilaEscalada[], hoy: string): Proyecto[] => proyectos(escaladas, hoy).filter(estaAbierto)
+
+// Los grados que se ofrecen como botones: 3 por debajo y 2 por encima del de referencia, dentro de la escala.
+export function ventanaGrados(tipo: TipoEscalada, referencia: string): string[] {
+  const escala = tipo === 'via' ? GRADOS_VIA : GRADOS_BLOQUE
+  const i = Math.max(0, escala.indexOf(referencia))
+  const desde = Math.min(Math.max(0, i - 3), escala.length - 6)
+  return escala.slice(desde, desde + 6)
 }
 
 // El grado del perfil es texto libre: «6B » vale como 6b.
@@ -120,7 +145,7 @@ export function vistaNivel(
     vias,
     bloque: maxGrado('bloque', grados(recientes.filter((e) => e.tipo === 'bloque' && encadene(e)))),
     objetivo: { grado: meta, actual, desde, escalones },
-    abiertos: todos.filter((p) => p.encadenado === null),
+    abiertos: todos.filter(estaAbierto),
     encadenados: todos.filter((p) => p.encadenado !== null && diaNumero(p.encadenado) > diaNumero(hoy) - VENTANA),
   }
 }

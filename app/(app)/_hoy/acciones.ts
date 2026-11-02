@@ -6,7 +6,7 @@ import { TIPOS_SESION, validarSesion, ZONAS, type TipoSesion, type Zona } from '
 import { conAlta, conChequeo, conRegistro, conRegistroCorregido, conSesion, filaSesionLibre, sinSesion } from '@/lib/datos/cambios'
 import type { DatosAtleta, FilaChequeo, FilaEscalada, FilaRegistro, FilaSesion } from '@/lib/datos/filas'
 import { escaladasDelRegistro } from '@/lib/escaladas/formulario'
-import { proyectos } from '@/lib/escaladas/nivel'
+import { esEncadene, proyectosAbiertos } from '@/lib/escaladas/nivel'
 import { corregible, vistaHoy } from '@/lib/datos/hoy'
 import { historialMotor, perfilMotor } from '@/lib/datos/mapeo'
 import { validarDatos } from '@/lib/datos/validar'
@@ -40,10 +40,10 @@ function leerRegistro(fd: FormData, fila: FilaSesion): FilaRegistro {
 function leerEscaladas(fd: FormData, fila: FilaSesion, datos: DatosAtleta, hoy: string, r: FilaRegistro): { registro: FilaRegistro; escaladas: FilaEscalada[] } {
   if (!TIPOS_AL_LIMITE.includes(fila.sesion.tipo)) return { registro: r, escaladas: [] }
   const todas = datos.escaladas ?? []
-  const abiertos = proyectos(todas.filter((e) => e.sesion_id !== fila.id), hoy).filter((p) => p.encadenado === null)
+  const abiertos = proyectosAbiertos(todas.filter((e) => e.sesion_id !== fila.id), hoy)
   const previa = todas.find((e) => e.sesion_id === fila.id && e.proyecto)
   const escaladas = escaladasDelRegistro(fd, fila, abiertos, previa)
-  const encadenado = escaladas.some((e) => e.estilo !== 'pegues')
+  const encadenado = escaladas.some(esEncadene)
   return { registro: { ...r, encadene: r.encadene || encadenado }, escaladas }
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { uuid } from '../datos/_fabrica'
 import type { FilaEscalada } from '../datos/filas'
-import { claveNombre, pistaLectura, proyectos, vistaNivel } from './nivel'
+import { claveNombre, gradosReferencia, pistaLectura, proyectos, proyectosAbiertos, ventanaGrados, vistaNivel } from './nivel'
 
 let n = 0
 const esc = (fecha: string, grado: string | null, extra: Partial<FilaEscalada> = {}): FilaEscalada => ({
@@ -87,6 +87,45 @@ describe('proyectos: un proyecto se cierra al encadenarlo', () => {
       esc('2026-10-05', null, { estilo: 'pegues', proyecto: true, nombre: 'Rojo', tipo: 'bloque', lugar: 'rocodromo' }),
     ], HOY)
     expect(ps.map((p) => p.clave)).toEqual(['rojo|bloque|rocodromo', 'rojo|via|roca'])
+  })
+})
+
+describe('dejar un proyecto', () => {
+  it('lo cierra: no sale como abierto, no es un encadene y sus pegues no suman el día que lo dejas', () => {
+    const xs = [
+      esc('2026-10-01', '7a', { estilo: 'pegues', proyecto: true, nombre: 'Ojo de pez', pegues: 3 }),
+      esc('2026-10-05', null, { estilo: 'abandonado', proyecto: true, nombre: 'Ojo de pez' }),
+    ]
+    const [p] = proyectos(xs, HOY)
+    expect(p).toMatchObject({ abandonado: '2026-10-05', encadenado: null, pegues: 3 })
+    expect(proyectosAbiertos(xs, HOY)).toEqual([])
+    const v = vistaNivel(xs, perfil, HOY)
+    expect(v.abiertos).toEqual([])
+    expect(v.encadenados).toEqual([])
+    expect(v.vias).toEqual([])
+  })
+  it('el mismo nombre después abre otro proyecto', () => {
+    const xs = [
+      esc('2026-10-05', null, { estilo: 'abandonado', proyecto: true, nombre: 'Ojo de pez' }),
+      esc('2026-10-08', null, { estilo: 'pegues', proyecto: true, nombre: 'Ojo de pez', pegues: 2 }),
+    ]
+    expect(proyectosAbiertos(xs, HOY).map((p) => p.pegues)).toEqual([2])
+  })
+})
+
+describe('botones de grado', () => {
+  it('6 grados: 3 por debajo y 2 por encima de la referencia', () => {
+    expect(ventanaGrados('via', '6b')).toEqual(['5c+', '6a', '6a+', '6b', '6b+', '6c'])
+    expect(ventanaGrados('bloque', '6A')).toEqual(['4+', '5', '5+', '6A', '6A+', '6B'])
+  })
+  it('en los bordes de la escala se desplaza para seguir dando 6', () => {
+    expect(ventanaGrados('via', '4a')).toEqual(['4a', '4b', '4c', '5a', '5a+', '5b'])
+    expect(ventanaGrados('via', '9a')).toHaveLength(6)
+    expect(ventanaGrados('via', '9a').at(-1)).toBe('9a')
+  })
+  it('la referencia: tu nivel en vía y tu mejor bloque, o 6b y 6A', () => {
+    expect(gradosReferencia([], { grado_actual: 'V3', grado_objetivo: '7a' }, HOY)).toEqual({ via: '6b', bloque: '6A' })
+    expect(gradosReferencia([esc('2026-10-01', '6c'), esc('2026-10-02', '6B+', { tipo: 'bloque', lugar: 'rocodromo' })], perfil, HOY)).toEqual({ via: '6c', bloque: '6B+' })
   })
 })
 

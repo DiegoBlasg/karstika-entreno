@@ -97,7 +97,8 @@ export interface FilaHueco {
 }
 
 // Una escalada: un encadene o un día de pegues a un proyecto (migración 008).
-export type EstiloEscalada = 'a-vista' | 'flash' | 'encadenada' | 'pegues'
+// `abandonado`: deja un proyecto sin encadenarlo (lo cierra; sin grado).
+export type EstiloEscalada = 'a-vista' | 'flash' | 'encadenada' | 'pegues' | 'abandonado'
 export interface FilaEscalada {
   id: string
   fecha: string

@@ -11,6 +11,7 @@ import { BarraProgreso } from '@/components/ui/BarraProgreso'
 import { Etiqueta } from '@/components/ui/Etiqueta'
 import type { Paso } from '@/lib/cronometro/pasos'
 import type { FilaEscalada } from '@/lib/datos/filas'
+import type { ReferenciaGrados } from '@/components/SelectorGrado'
 import { crearPitidos } from '@/lib/cronometro/pitidos'
 import { intentoAbierto, leerDatosTest, mejorLastre, textoLastre, type DatosTest, type Intento } from '@/lib/cronometro/test'
 import {
@@ -93,9 +94,9 @@ const pesoValido = (texto: string): number | null => {
   return texto.trim() !== '' && Number.isFinite(v) && v >= PESO.min && v <= PESO.max ? v : null
 }
 
-export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy, posicion, escaladas, lugar }: {
+export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, evaluacionHoy, posicion, escaladas, lugar, referencia }: {
   plan: SesionPlan; pasos: Paso[]; molestiasChequeo: Molestia[]; hoy: string; pesoInicial: number; evaluacionHoy: boolean
-  posicion: PosicionTemporada | null; escaladas: readonly FilaEscalada[]; lugar: FilaEscalada['lugar']
+  posicion: PosicionTemporada | null; escaladas: readonly FilaEscalada[]; lugar: FilaEscalada['lugar']; referencia: ReferenciaGrados
 }) {
   const clave = `cronometro:${plan.sesion.id}`
   // Test de dedos guiado: peso e intentos. Las demás sesiones no usan nada de esto.
@@ -413,6 +414,7 @@ export function Cronometro({ plan, pasos, molestiasChequeo, hoy, pesoInicial, ev
           escaladas={escaladas}
           hoy={hoy}
           lugar={lugar}
+          referencia={referencia}
         />
         <button type="button" className={BOTON_SECUNDARIO} onClick={volverALaSesion}>Volver a la sesión</button>
       </div>

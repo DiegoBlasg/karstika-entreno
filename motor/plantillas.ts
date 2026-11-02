@@ -560,20 +560,21 @@ function modalidadTecnica(p: Peticion): string {
   return 'Bloque y vías autoaseguradas de nivel cómodo'
 }
 
-// El ejercicio técnico de la semana: rota cada semana natural, el mismo toda la semana (entrenadores, nivel C).
+// El ejercicio técnico de cada sesión de técnica: rota por las sesiones de técnica anteriores, como el ARC A/B, para que
+// salgan los cuatro aunque la técnica no sea semanal (entrenadores, nivel C).
 export const EJERCICIOS_TECNICA_SEMANA: readonly Ejercicio[] = [
-  { nombre: 'Ejercicio de la semana: pies silenciosos', cargaTexto: '10 min en vías fáciles', ficha: 'pies-silenciosos' },
-  { nombre: 'Ejercicio de la semana: manos pegadas', cargaTexto: '10 min en vías fáciles', ficha: 'manos-pegadas' },
-  { nombre: 'Ejercicio de la semana: brazos estirados y «mismo lado»', cargaTexto: '2-3 travesías de 2-3 min', ficha: 'mismo-lado' },
-  { nombre: 'Ejercicio de la semana: placa sin manos y destrepe', cargaTexto: '2-3 vías fáciles', ficha: 'placa-sin-manos' },
+  { nombre: 'Ejercicio técnico de hoy: pies silenciosos', cargaTexto: '10 min en vías fáciles', ficha: 'pies-silenciosos' },
+  { nombre: 'Ejercicio técnico de hoy: manos pegadas', cargaTexto: '10 min en vías fáciles', ficha: 'manos-pegadas' },
+  { nombre: 'Ejercicio técnico de hoy: brazos estirados y «mismo lado»', cargaTexto: '2-3 travesías de 2-3 min', ficha: 'mismo-lado' },
+  { nombre: 'Ejercicio técnico de hoy: placa sin manos y destrepe en top-rope', cargaTexto: '2-3 vías fáciles', ficha: 'placa-sin-manos' },
 ]
 
 // En roca, siempre pies silenciosos: los otros son de rocódromo (destrepar o soltar manos en roca no es prudente).
-export function ejercicioTecnicaSemana(fecha: string, lugar: Peticion['contexto']['lugar'] = 'rocodromo'): Ejercicio {
-  if (lugar === 'roca') return { ...EJERCICIOS_TECNICA_SEMANA[0]! }
-  const d = diaNumero(fecha)
-  const semana = Math.floor((d - desdeLunes(d)) / 7)
-  return { ...EJERCICIOS_TECNICA_SEMANA[((semana % 4) + 4) % 4]! }
+export function ejercicioTecnica(p: Pick<Peticion, 'fecha' | 'historial' | 'contexto'>): Ejercicio {
+  if (p.contexto.lugar === 'roca') return { ...EJERCICIOS_TECNICA_SEMANA[0]! }
+  const hoy = diaNumero(p.fecha)
+  const antes = p.historial.filter((s) => s.tipo === 'tecnica' && diaNumero(s.fecha) < hoy).length
+  return { ...EJERCICIOS_TECNICA_SEMANA[antes % EJERCICIOS_TECNICA_SEMANA.length]! }
 }
 
 function construirTecnica(p: Peticion): SesionPlan | null {
@@ -589,7 +590,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
         ficha: 'via-de-practica',
       },
       { nombre: '1-2 vías nuevas parecidas, a vista, variando el tipo de presa', cargaTexto: 'Esfuerzo percibido 4–5 de 10', ficha: 'practica-tecnica' },
-      ejercicioTecnicaSemana(p.fecha, p.contexto.lugar),
+      ejercicioTecnica(p),
       {
         nombre: `Previsualiza la vía hasta ${VALORES['P-53'].minutosPrevisualizacion} min antes de cada intento`,
         cargaTexto: 'Sin esfuerzo',
@@ -600,7 +601,7 @@ function construirTecnica(p: Peticion): SesionPlan | null {
     explicar(
       'plantilla.tecnica',
       ['P-53', 'P-54', 'P-55'],
-      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución. Además, un ejercicio técnico que cambia cada semana (pies silenciosos, manos pegadas, «mismo lado», placa sin manos; en roca, siempre pies silenciosos): son ejercicios clásicos de entrenadores (Gresham, Anderson) y de rocódromos, sin estudio que mida su efecto.',
+      'Práctica técnica: una vía de práctica repetida hasta que fluya y 1-2 vías nuevas (Hacques 2022, en novatos: repetir mejora la fluidez en esa vía y variar hace la mirada más anticipatoria), con lectura previa de hasta 3 min y vídeo para revisar la ejecución. Además, un ejercicio técnico que cambia en cada sesión de técnica (pies silenciosos, manos pegadas, «mismo lado», placa sin manos; en roca, siempre pies silenciosos): son ejercicios clásicos de entrenadores (Gresham, Anderson) y de rocódromos, sin estudio que mida su efecto.',
     ),
   )
   return base && plan(sesionDe('tecnica', p, base.total, 'suave'), base.bloques)

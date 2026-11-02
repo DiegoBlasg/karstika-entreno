@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
-import { construirComplemento, construirSesion, ejercicioTecnicaSemana, TIPOS_CON_PLANTILLA } from './plantillas'
+import { construirComplemento, construirSesion, ejercicioTecnica, TIPOS_CON_PLANTILLA } from './plantillas'
 import type { EstadoAtleta } from './autorregulacion-tipos'
 import type { EvaluacionDedos, SesionPlan } from './propuesta-tipos'
 import type { Sesion } from './tipos'
@@ -371,19 +371,21 @@ describe('TIPOS_CON_PLANTILLA', () => {
   })
 })
 
-describe('ejercicio técnico de la semana', () => {
-  it('el mismo toda la semana (lunes a domingo) y cambia cada semana, en ciclo de 4', () => {
-    const fichas = ['2026-11-02', '2026-11-08', '2026-11-09', '2026-11-16', '2026-11-23', '2026-11-30'].map((f) => ejercicioTecnicaSemana(f).ficha)
-    expect(fichas[0]).toBe(fichas[1])
-    expect(new Set(fichas.slice(1, 5)).size).toBe(4)
-    expect(fichas[5]).toBe(fichas[1])
+describe('ejercicio técnico de cada sesión de técnica', () => {
+  const tecnicas = (n: number) => Array.from({ length: n }, (_, i) => ses(`t${i}`, `2026-10-${String(10 + i).padStart(2, '0')}`, 19, { tipo: 'tecnica', intensidad: 'suave', duracionMin: 60 }))
+  const roco = { compania: 'solo' as const, lugar: 'rocodromo' as const, minutosDisponibles: 90 }
+  it('rota por las técnicas anteriores, en ciclo de 4, aunque estén separadas', () => {
+    const fichas = [0, 1, 2, 3, 4].map((n) => ejercicioTecnica({ fecha: '2026-10-27', historial: tecnicas(n), contexto: roco }).ficha)
+    expect(new Set(fichas.slice(0, 4)).size).toBe(4)
+    expect(fichas[4]).toBe(fichas[0])
   })
   it('en roca, siempre pies silenciosos', () => {
-    for (const f of ['2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23']) expect(ejercicioTecnicaSemana(f, 'roca').ficha).toBe('pies-silenciosos')
+    for (const n of [0, 1, 2, 3]) expect(ejercicioTecnica({ fecha: '2026-10-27', historial: tecnicas(n), contexto: { ...roco, lugar: 'roca' } }).ficha).toBe('pies-silenciosos')
   })
   it('va dentro del bloque de práctica de la sesión técnica', () => {
-    const plan = construirSesion('tecnica', peticion({ fecha: '2026-11-03' }))!
-    expect(plan.bloques.flatMap((b) => b.ejercicios).some((e) => e.ficha === ejercicioTecnicaSemana('2026-11-03').ficha)).toBe(true)
+    const p = peticion({ fecha: '2026-11-03' })
+    const plan = construirSesion('tecnica', p)!
+    expect(plan.bloques.flatMap((b) => b.ejercicios).some((e) => e.ficha === ejercicioTecnica(p).ficha)).toBe(true)
   })
 })
 

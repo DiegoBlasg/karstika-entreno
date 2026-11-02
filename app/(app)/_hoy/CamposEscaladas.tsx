@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { CAMPO } from '@/components/estilos'
+import { SelectorGrado, type ReferenciaGrados } from '@/components/SelectorGrado'
 import { Opciones } from '@/components/ui/Opciones'
 import type { FilaEscalada } from '@/lib/datos/filas'
 import { MAX_ENCADENES, PROYECTO_NUEVO } from '@/lib/escaladas/formulario'
-import { ESCALA, type TipoEscalada } from '@/lib/escaladas/grados'
+import type { TipoEscalada } from '@/lib/escaladas/grados'
 import { claveProyecto, type Proyecto } from '@/lib/escaladas/nivel'
 
 const TIPOS = [{ valor: 'via', texto: 'Vía' }, { valor: 'bloque', texto: 'Bloque' }]
@@ -13,22 +14,8 @@ const LUGARES = [{ valor: 'roca', texto: 'Roca' }, { valor: 'rocodromo', texto: 
 const ESTILOS = [{ valor: 'a-vista', texto: 'A vista' }, { valor: 'flash', texto: 'Flash' }, { valor: 'encadenada', texto: 'Trabajada' }]
 const LUGAR = { roca: 'roca', rocodromo: 'rocódromo' } as const
 
-function SelectorGrado({ nombre, tipo, inicial, etiqueta, requerido }: {
-  nombre: string; tipo: TipoEscalada; inicial?: string | null; etiqueta: string; requerido?: boolean
-}) {
-  return (
-    <label className="block">
-      {etiqueta}
-      <select key={tipo} name={nombre} defaultValue={inicial && ESCALA[tipo].includes(inicial) ? inicial : ''} required={requerido} className={CAMPO}>
-        <option value="">—</option>
-        {ESCALA[tipo].map((g) => <option key={g} value={g}>{g}</option>)}
-      </select>
-    </label>
-  )
-}
-
-function LineaEncadene({ i, numero, tipoInicial, previa, alQuitar }: {
-  i: number; numero: number; tipoInicial: TipoEscalada; previa?: FilaEscalada; alQuitar?: () => void
+function LineaEncadene({ i, numero, tipoInicial, previa, alQuitar, referencia }: {
+  i: number; numero: number; tipoInicial: TipoEscalada; previa?: FilaEscalada; alQuitar?: () => void; referencia?: ReferenciaGrados
 }) {
   const [tipo, setTipo] = useState<TipoEscalada>(previa?.tipo ?? tipoInicial)
   const [estilo, setEstilo] = useState<string>(previa?.estilo ?? 'encadenada')
@@ -36,7 +23,7 @@ function LineaEncadene({ i, numero, tipoInicial, previa, alQuitar }: {
     <fieldset className="space-y-2 rounded-xl border border-borde p-3">
       <legend className="sr-only">Encadene {numero}</legend>
       <Opciones nombre={`esc_tipo_${i}`} leyenda="¿Vía o bloque?" opciones={TIPOS} valor={tipo} onCambio={(v) => setTipo(v as TipoEscalada)} columnas={2} />
-      <SelectorGrado nombre={`esc_grado_${i}`} tipo={tipo} inicial={previa?.grado} etiqueta="Grado" />
+      <SelectorGrado key={tipo} nombre={`esc_grado_${i}`} tipo={tipo} referencia={referencia} inicial={previa?.grado} etiqueta="Grado" />
       <Opciones nombre={`esc_estilo_${i}`} leyenda="¿Cómo?" opciones={ESTILOS} valor={estilo} onCambio={setEstilo} columnas={3} />
       {alQuitar && (
         <button type="button" onClick={alQuitar} className="inline-flex min-h-11 items-center text-sm text-rojo underline">Quitar este encadene</button>
@@ -47,8 +34,8 @@ function LineaEncadene({ i, numero, tipoInicial, previa, alQuitar }: {
 
 // Los encadenes del día, al marcar «encadené»: dónde y una línea por vía o bloque (sin grado, la línea no se guarda).
 // Cada línea ocupa un hueco fijo de 0 a 4 (los nombres de sus campos), para poder quitar cualquiera.
-export function CamposEncadenes({ tipoInicial, lugarInicial, previas }: {
-  tipoInicial: TipoEscalada; lugarInicial: FilaEscalada['lugar']; previas: readonly FilaEscalada[]
+export function CamposEncadenes({ tipoInicial, lugarInicial, previas, referencia }: {
+  tipoInicial: TipoEscalada; lugarInicial: FilaEscalada['lugar']; previas: readonly FilaEscalada[]; referencia?: ReferenciaGrados
 }) {
   const [huecos, setHuecos] = useState<number[]>(() => Array.from({ length: Math.min(MAX_ENCADENES, Math.max(1, previas.length)) }, (_, i) => i))
   const anadir = (): void => {
@@ -61,7 +48,7 @@ export function CamposEncadenes({ tipoInicial, lugarInicial, previas }: {
       <Opciones nombre="esc_lugar" leyenda="¿Dónde?" opciones={LUGARES} valor={previas[0]?.lugar ?? lugarInicial} columnas={2} />
       {huecos.map((i, k) => (
         <LineaEncadene
-          key={i} i={i} numero={k + 1} tipoInicial={tipoInicial} previa={previas[i]}
+          key={i} i={i} numero={k + 1} tipoInicial={tipoInicial} previa={previas[i]} referencia={referencia}
           {...(huecos.length > 1 ? { alQuitar: () => setHuecos(huecos.filter((h) => h !== i)) } : {})}
         />
       ))}
@@ -74,7 +61,7 @@ export function CamposEncadenes({ tipoInicial, lugarInicial, previas }: {
 
 // Pegues a un proyecto (sesión de pegues): elegir uno abierto o crear uno, cuántos pegues y si cayó. Empieza en
 // «Ninguno» para no sumar pegues sin querer. `previa`: el que ya tenía esta sesión, al corregir.
-export function CamposProyecto({ abiertos, previa }: { abiertos: readonly Proyecto[]; previa?: FilaEscalada }) {
+export function CamposProyecto({ abiertos, previa, referencia }: { abiertos: readonly Proyecto[]; previa?: FilaEscalada; referencia?: ReferenciaGrados }) {
   const clavePrevia = previa?.nombre ? claveProyecto({ ...previa, nombre: previa.nombre }) : ''
   const [elegido, setElegido] = useState<string>(clavePrevia)
   const nuevo = elegido === PROYECTO_NUEVO
@@ -98,12 +85,12 @@ export function CamposProyecto({ abiertos, previa }: { abiertos: readonly Proyec
       {nuevo && (
         <>
           <label className="block">Nombre del proyecto<input name="proy_nombre" maxLength={80} required className={CAMPO} /></label>
-          <SelectorGrado nombre="proy_grado" tipo="via" etiqueta="Grado" requerido />
+          <SelectorGrado nombre="proy_grado" tipo="via" referencia={referencia} etiqueta="Grado" requerido />
           <p className="text-xs text-texto-2">Un proyecto nuevo se apunta como vía en roca.</p>
         </>
       )}
       {existente && (
-        <SelectorGrado key={elegido} nombre="proy_grado" tipo={existente.tipo} inicial={existente.grado}
+        <SelectorGrado key={elegido} nombre="proy_grado" tipo={existente.tipo} referencia={referencia} inicial={existente.grado}
           etiqueta={existente.grado ? 'Grado (cámbialo si no era ese)' : 'Grado (hace falta si lo encadenaste)'} />
       )}
       {elegido !== '' && (
