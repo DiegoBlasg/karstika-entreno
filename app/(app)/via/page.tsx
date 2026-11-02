@@ -6,7 +6,6 @@ import { Etiqueta } from '@/components/ui/Etiqueta'
 import { Tarjeta } from '@/components/ui/Tarjeta'
 import { Via, resumenVia } from '@/components/via/Via'
 import { textoLastre } from '@/lib/cronometro/test'
-import { pasosArranque } from '@/lib/datos/arranque'
 import { cambiosPorResultados, type CambiosResultados } from '@/lib/datos/plan'
 import { vistaVia } from '@/lib/datos/via'
 import { ahoraMadrid, fechaLarga } from '@/lib/fecha'
@@ -106,7 +105,7 @@ export default async function PaginaVia() {
         </div>
       </header>
       {vista.aviso && <Aviso tono="ambar">{vista.aviso}</Aviso>}
-      <Via vista={vista} arranque={pasosArranque(datos)} />
+      <Via vista={vista} />
       <Cambios c={cambios} />
     </div>
   )
