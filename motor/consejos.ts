@@ -107,15 +107,25 @@ export const CONSEJOS: readonly Definicion[] = [
     aplica: () => true,
     texto: (p) => {
       const g = Math.round((VALORES['P-57'].gramosPorKg * p.perfil.pesoKg) / 5) * 5
-      return `Como orientación, no como prescripción: unos ${String(VALORES['P-57'].gramosPorKg).replace('.', ',')} g de proteína por kg al día en total (con tu peso, unos ${g} g).`
+      const reparto = p.objetivoEstetico ? ', repartidos en 3-4 comidas: es lo que más ayuda a ganar músculo' : ''
+      return `Como orientación, no como prescripción: unos ${String(VALORES['P-57'].gramosPorKg).replace('.', ',')} g de proteína por kg al día en total (con tu peso, unos ${g} g)${reparto}.`
     },
   },
   {
     id: 'peso',
     grupo: 'general',
     parametros: ['P-58'],
-    aplica: () => true,
+    aplica: (p) => !p.objetivoEstetico,
     texto: () => 'El plan no te pone ningún objetivo de peso ni de grasa corporal: explican muy poco del rendimiento en escalada.',
+  },
+  {
+    // P-58 y P-77: con el objetivo de verse definido, cómo bajar grasa sin perjudicar la escalada; sin cifras.
+    id: 'definicion',
+    grupo: 'general',
+    parametros: ['P-58', 'P-77'],
+    aplica: (p) => p.objetivoEstetico === true,
+    texto: () =>
+      'Verte definido es sobre todo tener algo menos de grasa: si quieres bajarla, hazlo despacio y sin pasar hambre, nunca en una fase de fuerza ni la semana de un test. Hacer abdominales no quema la grasa de la tripa. Comer de menos baja el rendimiento y sube el riesgo de lesión.',
   },
   {
     id: 'suplementos',

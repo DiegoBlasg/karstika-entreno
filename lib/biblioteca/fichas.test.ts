@@ -122,9 +122,10 @@ describe('fichas de hombro: la dosis la marca la sesión', () => {
 })
 
 describe('GRUPOS', () => {
-  it('son las siete cualidades, en orden', () => {
+  it('son las siete cualidades y «Fuerza y forma», en orden', () => {
     expect(GRUPOS.map((g) => g.titulo)).toEqual([
       'Fuerza de dedos', 'Resistencia', 'Potencia y tirón', 'Técnica', 'Cabeza y táctica', 'Hombro y antagonistas', 'Movilidad y core',
+      'Fuerza y forma',
     ])
   })
   it('cada ficha dice dónde se hace y si el entrenador la propone', () => {

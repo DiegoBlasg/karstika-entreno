@@ -93,6 +93,8 @@ export const DONDE_SE_HACE: Record<TipoSesion, string> = {
   campus: 'Campus',
   'core-movilidad': 'Suelo y barra, en casa o en el rocódromo (en roca, en el suelo)',
   'test-casa': 'Barra de dominadas y una cinta métrica, en casa',
+  'fuerza-forma': 'Suelo y barra, en casa',
+  cardio: 'Donde quieras: calle, bici o montaña',
   descanso: '—',
 }
 

@@ -3,7 +3,7 @@ import type { Explicacion } from './explicacion'
 export const TIPOS_SESION = [
   'multipresa-resistencia', 'multipresa-maxima', 'multipresa-resistencia-fuerza', 'evaluacion-dedos', 'board', 'bloque-limite',
   'bloque-suave', 'via-cuerda-limite', 'via-autoasegurada', 'pegues-proyecto',
-  'campus', 'resistencia-4x4', 'arc', 'tecnica', 'dominadas', 'hombro', 'core-movilidad', 'test-casa', 'descanso',
+  'campus', 'resistencia-4x4', 'arc', 'tecnica', 'dominadas', 'hombro', 'core-movilidad', 'test-casa', 'fuerza-forma', 'cardio', 'descanso',
 ] as const
 export type TipoSesion = (typeof TIPOS_SESION)[number]
 

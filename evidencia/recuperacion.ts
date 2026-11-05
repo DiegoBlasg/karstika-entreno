@@ -269,4 +269,23 @@ export const hallazgos: Hallazgo[] = [
       'Revisión de estudios mayoritariamente observacionales y heterogéneos; ningún estudio en escalada. No establece umbrales cuantitativos para ajustar la carga (cuánto reducir con cierto bienestar, sueño o dolor): sin evidencia de reglas de ajuste concretas. Se leyó el resumen en PMC; el texto completo no se revisó.',
     verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
+  {
+    id: 'EV-RECUP-013',
+    bloque: 'recuperacion',
+    afirmacion:
+      'En un ensayo aleatorizado con 24 adultos sedentarios, 6 semanas de ejercicios abdominales mejoraron la resistencia abdominal pero no cambiaron el peso, el porcentaje de grasa, la grasa abdominal ni el perímetro de la cintura: los abdominales no queman la grasa de la tripa.',
+    fuentes: [
+      {
+        autores: 'Vispute, S. S.; Smith, J. D.; LeCheminant, J. D.; Hurley, K. S.',
+        anio: 2011,
+        titulo: 'The effect of abdominal exercise on abdominal fat',
+        publicacion: 'Journal of Strength and Conditioning Research, 25(9), 2559-2564',
+        doi: '10.1519/JSC.0b013e3181fb4a46',
+      },
+    ],
+    nivel: 'A',
+    aplicaA: { nivel: 'adultos sedentarios, no escaladores', objetivo: 'definición abdominal' },
+    limitaciones: 'Muestra pequeña y solo 6 semanas, en sedentarios. No son escaladores. Solo resumen.',
+    verificada: { fecha: '2026-11-05', metodo: 'resumen' },
+  },
 ]

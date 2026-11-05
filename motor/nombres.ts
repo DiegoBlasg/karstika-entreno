@@ -20,5 +20,7 @@ export const NOMBRE_TIPO: Record<TipoSesion, string> = {
   hombro: 'Hombro',
   'core-movilidad': 'Core y movilidad',
   'test-casa': 'Test en casa',
+  'fuerza-forma': 'Fuerza y forma',
+  cardio: 'Cardio suave',
   descanso: 'Descanso',
 }

@@ -63,7 +63,10 @@ describe('propiedades de proponerSesion (todas las combinaciones)', () => {
       expect(new Set(t).size).toBe(t.length)
       expect(r.alternativas.length).toBeLessThanOrEqual(2)
       if (!r.principal) {
-        if (r.descanso?.regla !== 'generador.descanso-recomendado') expect(r.alternativas).toEqual([])
+        // Sin principal solo hay alternativas suaves para moverse (cardio, core y movilidad, test en casa, fuerza y forma).
+        if (r.descanso?.regla !== 'generador.descanso-recomendado') {
+          for (const a of r.alternativas) expect(['cardio', 'core-movilidad']).toContain(a.sesion.tipo)
+        }
         expect(r.descanso).toBeDefined()
       }
     }

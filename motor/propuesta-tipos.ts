@@ -81,6 +81,7 @@ export interface Peticion {
   // Fechas de los tests hechos de verdad (con resultado o con la sesión registrada), no de los solo planificados: deciden
   // si toca el test en casa. Sin ellas no se propone.
   testsHechos?: { dedos: string[]; casa: string[] }
+  objetivoEstetico?: boolean                      // también quiere verse fuerte y definido: «Fuerza y forma» (P-77) y consejos
 }
 
 export interface Propuesta {

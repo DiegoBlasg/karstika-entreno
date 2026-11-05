@@ -17,14 +17,14 @@ const peticion = (lugar: Lugar, minutos = 45, extra: Partial<Peticion> = {}): Pe
 })
 
 describe('core-movilidad (P-72)', () => {
-  it('cuando la propuesta es descanso, sale como primera alternativa', () => {
+  it('cuando la propuesta es descanso, sale como alternativa, detrás del cardio suave (P-78)', () => {
     const r = proponerSesion(peticion('casa'))
     expect(r.principal).toBeNull()
     expect(r.descanso).toBeDefined()
-    expect(r.alternativas[0]?.sesion.tipo).toBe('core-movilidad')
+    expect(r.alternativas.map((a) => a.sesion.tipo)).toEqual(['cardio', 'core-movilidad'])
   })
   it('nunca es carga alta y dura 30 min con 30 o más disponibles, 20 con menos', () => {
-    const core = proponerSesion(peticion('casa')).alternativas[0]!
+    const core = proponerSesion(peticion('casa')).alternativas.find((o) => o.sesion.tipo === 'core-movilidad')!
     expect(esCargaAlta(core.sesion)).toBe(false)
     expect(core.sesion.intensidad).toBe('suave')
     expect(core.sesion.duracionMin).toBe(30)

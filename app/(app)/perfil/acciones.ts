@@ -25,6 +25,7 @@ export async function guardarPerfil(_previo: EstadoAccion, fd: FormData): Promis
       objetivo_temporada: fecha(fd, 'objetivo_temporada', 'La fecha objetivo'),
       multipresa_en_casa: fd.get('multipresa_en_casa') === 'on',
       dias_semana: opcionOpcional(fd, 'dias_semana', 'Los días por semana', DIAS_SEMANA),
+      objetivo_estetico: fd.get('objetivo_estetico') === 'on',
     }
     if (fila.grado_actual.length > 10 || fila.grado_objetivo.length > 10) return { error: 'Los grados tienen como mucho 10 caracteres.' }
     if (!previo && fd.get('aviso') !== 'on') return { error: 'Para empezar tienes que leer y aceptar el aviso.' }

@@ -10,7 +10,7 @@ export async function cargarDatos(sql: Sql): Promise<DatosAtleta | null> {
   const [perfil, evaluaciones, sesiones, registros, chequeos, altas, consejos, intentos, huecos, pruebasCasa, escaladas] = await sql.transaction(
     [
       sql`select peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada::text as inicio_temporada,
-            objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, dias_semana, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
+            objetivo_temporada::text as objetivo_temporada, multipresa_en_casa, dias_semana, objetivo_estetico, aviso_aceptado_en::text as aviso_aceptado_en from perfil where id = 1`,
       sql`select id::text as id, fecha::text as fecha, peso_corporal_kg, lastre_kg, resistencia_s, tecnica, colgado_30_s, colgado_con_descarga, power_slap_cm, creada_en::text as creada_en from evaluaciones order by fecha`,
       sql`select id::text as id, fecha::text as fecha, sesion, propuesta, origen from sesiones order by fecha, creada_en`,
       sql`select sesion_id::text as sesion_id, rpe, duracion_min, molestias, registrado_en::text as registrado_en, freno, encadene from registros`,
@@ -50,12 +50,12 @@ export async function requerirDatos(): Promise<{ sql: Sql; datos: DatosAtleta }>
 }
 
 export async function guardarPerfilBd(sql: Sql, f: PerfilNuevo): Promise<void> {
-  await sql`insert into perfil (id, peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada, objetivo_temporada, multipresa_en_casa, dias_semana)
-    values (1, ${f.peso_kg}, ${f.anos_escalando}, ${f.lesiones}, ${f.grado_actual}, ${f.grado_objetivo}, ${f.inicio_temporada}, ${f.objetivo_temporada}, ${f.multipresa_en_casa}, ${f.dias_semana ?? null})
+  await sql`insert into perfil (id, peso_kg, anos_escalando, lesiones, grado_actual, grado_objetivo, inicio_temporada, objetivo_temporada, multipresa_en_casa, dias_semana, objetivo_estetico)
+    values (1, ${f.peso_kg}, ${f.anos_escalando}, ${f.lesiones}, ${f.grado_actual}, ${f.grado_objetivo}, ${f.inicio_temporada}, ${f.objetivo_temporada}, ${f.multipresa_en_casa}, ${f.dias_semana ?? null}, ${f.objetivo_estetico ?? false})
     on conflict (id) do update set peso_kg = excluded.peso_kg, anos_escalando = excluded.anos_escalando, lesiones = excluded.lesiones,
       grado_actual = excluded.grado_actual, grado_objetivo = excluded.grado_objetivo,
       inicio_temporada = excluded.inicio_temporada, objetivo_temporada = excluded.objetivo_temporada,
-      multipresa_en_casa = excluded.multipresa_en_casa, dias_semana = excluded.dias_semana`
+      multipresa_en_casa = excluded.multipresa_en_casa, dias_semana = excluded.dias_semana, objetivo_estetico = excluded.objetivo_estetico`
 }
 
 export async function insertarEvaluacion(sql: Sql, e: FilaEvaluacion): Promise<void> {

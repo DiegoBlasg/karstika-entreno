@@ -12,8 +12,8 @@ describe('metadatos de parámetros', () => {
     const actual = readFileSync('motor/metadatos.ts', 'utf8').replace(/\r\n/g, '\n')
     expect(actual).toBe(esperado)
   })
-  it('hay 76 parámetros consecutivos P-01…P-76', () => {
-    expect(PARAMETRO_IDS).toHaveLength(76)
+  it('hay 78 parámetros consecutivos P-01…P-78', () => {
+    expect(PARAMETRO_IDS).toHaveLength(78)
     PARAMETRO_IDS.forEach((id, i) => expect(id).toBe(`P-${String(i + 1).padStart(2, '0')}`))
   })
   it('todos los ids de evidencia citados existen', () => {
