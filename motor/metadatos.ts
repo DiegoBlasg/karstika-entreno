@@ -81,6 +81,6 @@ export const METADATOS: Record<ParametroId, MetadatoParametro<ParametroId>> = {
   "P-74": {"id":"P-74","titulo":"Semana supuesta al generar un entreno","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
   "P-75": {"id":"P-75","titulo":"Pista de lectura y táctica por la diferencia entre a vista y trabajado","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
   "P-76": {"id":"P-76","titulo":"Caídas progresivas cuando te limita la cabeza","origen":"diseno","evidencia":[],"nivelMinimo":"sinEvidencia"},
-  "P-77": {"id":"P-77","titulo":"Fuerza y forma en casa (objetivo estético opcional)","origen":"evidencia","evidencia":["EV-FUERZA-013","EV-FUERZA-014","EV-FUERZA-015","EV-FUERZA-016"],"nivelMinimo":"A"},
+  "P-77": {"id":"P-77","titulo":"Fuerza y forma en casa (objetivo estético opcional)","origen":"evidencia","evidencia":["EV-FUERZA-013","EV-FUERZA-014","EV-FUERZA-015","EV-FUERZA-016","EV-RECUP-013"],"nivelMinimo":"A"},
   "P-78": {"id":"P-78","titulo":"Cardio suave los días sin escalada","origen":"evidencia","evidencia":["EV-FUERZA-012"],"nivelMinimo":"C"},
 }

@@ -12,9 +12,11 @@ const ZONAS_P46: readonly Zona[] = ['dedos', 'muneca']
 const NOMBRE_ZONA: Record<Zona, string> = { dedos: 'dedos', muneca: 'muñeca/antebrazo', codo: 'codo', hombro: 'hombro', otra: 'otra zona' }
 const MAX_MINUTOS = 24 * 60
 
-// P-63: RPE máximo de la sesión. El test de dedos (esfuerzo máximo a propósito) y el descanso no tienen objetivo.
+// P-63: RPE máximo de la sesión. El test de dedos (esfuerzo máximo a propósito), el descanso y los extras que no son
+// escalada (cardio suave, «Fuerza y forma», a 1-3 del fallo a propósito) no tienen objetivo: no frenan la carga ni
+// adelantan la descarga de la escalada.
 export function objetivoRpe(s: Sesion): number | undefined {
-  if (s.tipo === 'descanso' || s.tipo === 'evaluacion-dedos') return undefined
+  if (s.tipo === 'descanso' || s.tipo === 'evaluacion-dedos' || s.tipo === 'cardio' || s.tipo === 'fuerza-forma') return undefined
   return esCargaAlta(s) ? VALORES['P-63'].rpeMaxAlta : VALORES['P-63'].rpeMaxSuave
 }
 

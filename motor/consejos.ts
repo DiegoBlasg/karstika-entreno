@@ -107,7 +107,7 @@ export const CONSEJOS: readonly Definicion[] = [
     aplica: () => true,
     texto: (p) => {
       const g = Math.round((VALORES['P-57'].gramosPorKg * p.perfil.pesoKg) / 5) * 5
-      const reparto = p.objetivoEstetico ? ', repartidos en 3-4 comidas: es lo que más ayuda a ganar músculo' : ''
+      const reparto = p.objetivoEstetico ? ', repartidos en varias comidas (lo que más cuenta es el total del día)' : ''
       return `Como orientación, no como prescripción: unos ${String(VALORES['P-57'].gramosPorKg).replace('.', ',')} g de proteína por kg al día en total (con tu peso, unos ${g} g)${reparto}.`
     },
   },

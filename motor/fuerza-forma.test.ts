@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { peticion, ses } from './_fabrica'
-import { elegirConsejos } from './consejos'
+import { objetivoRpe } from './autorregulacion'
+import { CONSEJOS, elegirConsejos } from './consejos'
 import { descargar, FASE_BASE } from './fases'
 import { construirSesion } from './plantillas'
 import { proponerSesion } from './propuesta'
@@ -38,16 +39,28 @@ describe('plantilla de cardio suave (P-78)', () => {
 })
 
 describe('cuándo se propone Fuerza y forma', () => {
-  it('con el objetivo, en casa, va de principal en lugar de hombro, dominadas o core', () => {
+  const hombro = (id: string, fecha: string) => ses(id, fecha, 10, { tipo: 'hombro', intensidad: 'suave', duracionMin: 20 })
+  it('con el hombro pendiente, el hombro manda y «Fuerza y forma» va de alternativa', () => {
     const r = proponerSesion(casa())
+    expect(r.principal?.sesion.tipo).toBe('hombro')
+    expect(r.alternativas[0]?.sesion.tipo).toBe('fuerza-forma')
+    expect(tipos(proponerSesion(casa({ objetivoEstetico: false })))).not.toContain('fuerza-forma')
+  })
+  it('con el hombro de la semana cubierto, va de principal', () => {
+    const r = proponerSesion(casa({ historial: [hombro('h1', '2026-10-26'), hombro('h2', '2026-10-27')] }))
     expect(r.principal?.sesion.tipo).toBe('fuerza-forma')
     expect(r.alternativas.length).toBeLessThanOrEqual(2)
-    expect(tipos(proponerSesion(casa({ objetivoEstetico: false })))).not.toContain('fuerza-forma')
+  })
+  it('no el mismo día que hombro o dominadas, ni dos días seguidos, ni dos veces el mismo día', () => {
+    const ff = (id: string, fecha: string) => ses(id, fecha, 8, { tipo: 'fuerza-forma', intensidad: 'suave', duracionMin: 35 })
+    expect(tipos(proponerSesion(casa({ historial: [hombro('h', '2026-10-28')] })))).not.toContain('fuerza-forma')
+    expect(tipos(proponerSesion(casa({ historial: [ff('a', '2026-10-27')] })))).not.toContain('fuerza-forma')
+    expect(tipos(proponerSesion(casa({ historial: [ff('a', '2026-10-28')] })))).not.toContain('fuerza-forma')
   })
   it('como mucho 2 en la semana natural, contando las planificadas', () => {
     const ff = (id: string, fecha: string) => ses(id, fecha, 10, { tipo: 'fuerza-forma', intensidad: 'suave', duracionMin: 35 })
     expect(tipos(proponerSesion(casa({ historial: [ff('a', '2026-10-26')] })))).toContain('fuerza-forma')
-    expect(tipos(proponerSesion(casa({ historial: [ff('a', '2026-10-26'), ff('b', '2026-10-31')] })))).not.toContain('fuerza-forma')
+    expect(tipos(proponerSesion(casa({ historial: [ff('a', '2026-10-26'), ff('b', '2026-11-01')] })))).not.toContain('fuerza-forma')
   })
   it('no el mismo día ni el día antes de una sesión de carga alta', () => {
     const alta = (fecha: string) => ses('x', fecha, 19, { tipo: 'bloque-limite', intensidad: 'alta', duracionMin: 90 })
@@ -79,6 +92,13 @@ describe('cuándo se propone el cardio suave', () => {
   })
 })
 
+describe('los extras no frenan la escalada', () => {
+  it('cardio y «Fuerza y forma» no tienen RPE objetivo (no frenan la carga ni adelantan la descarga)', () => {
+    expect(objetivoRpe(ses('c', '2026-10-27', 10, { tipo: 'cardio', intensidad: 'suave', duracionMin: 240 }))).toBeUndefined()
+    expect(objetivoRpe(ses('f', '2026-10-27', 10, { tipo: 'fuerza-forma', intensidad: 'suave', duracionMin: 35 }))).toBeUndefined()
+  })
+})
+
 describe('consejos con el objetivo estético', () => {
   it('el de definición sustituye al de «ningún objetivo de peso» y no da cifras de peso ni de calorías', () => {
     const p = casa()
@@ -87,5 +107,9 @@ describe('consejos con el objetivo estético', () => {
     const conObjetivo = elegirConsejos({ ...p, consejosMostrados: [] }, r)
     expect(conObjetivo.every((c) => c.id !== 'peso')).toBe(true)
     expect(textos).not.toMatch(/kcal|calor/i)
+    const definicion = CONSEJOS.find((c) => c.id === 'definicion')!
+    expect(definicion.aplica(p, r)).toBe(true)
+    expect(definicion.texto(p)).not.toMatch(/\d/)
+    expect(definicion.texto(p)).toMatch(/Comer de menos baja el rendimiento/)
   })
 })

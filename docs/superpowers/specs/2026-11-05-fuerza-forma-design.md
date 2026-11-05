@@ -47,15 +47,22 @@ peso.
 
 EV-FUERZA: volumen semanal (Schoenfeld, Ogborn y Krieger 2017, A), cargas bajas cerca del fallo (Schoenfeld et al. 2017,
 A), flexiones como press (Kikuchi y Nakazato 2017, A), frecuencia con volumen igualado (Schoenfeld, Grgic y Krieger
-2019, A), entrenamiento concurrente (Wilson et al. 2012, A). EV-RECUP: abdominales y grasa abdominal (Vispute et al.
+2019, A); el entrenamiento concurrente ya estaba (Wilson et al. 2012, EV-FUERZA-012, C). EV-RECUP: abdominales y grasa abdominal (Vispute et al.
 2011, A). Todas no escaladores: extrapolación.
 
 ## 6. Biblioteca
 
-Grupo «Fuerza y forma»: flexiones con progresión, flexiones diamante, pike push-up, L-sit, cardio suave (además de
-hollow, elevaciones colgado y plancha lateral, que ya existen).
+Grupo «Fuerza y forma»: flexiones con progresión (incluye la diamante), pike push-up, L-sit y cardio suave (además de
+hollow, elevaciones tumbado y plancha lateral, que ya existen).
 
 ## 7. Pruebas
 
 Plantillas (minutos, dosis, sin tirón ni piernas); reglas de cuándo (cupo, día antes de carga alta, descarga, zonas,
 día libre de la semana); consejos; perfil y migración; e2e: activar el objetivo en Yo y ver «Fuerza y forma» en casa.
+
+## Tras la revisión (2026-11-05)
+
+Sin RPE objetivo (no frenan la carga ni adelantan la descarga); no dos días seguidos ni el mismo día que dominadas u
+hombro; miran también el plan de la semana; no quitan el hombro con cupo pendiente; llenan el día en casa sin opciones;
+el test en casa pendiente va siempre primero; abdominales en el suelo (sin colgarse); no cuentan en la semana supuesta
+ni en el descanso recomendado.

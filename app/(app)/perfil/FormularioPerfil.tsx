@@ -34,7 +34,7 @@ export function FormularioPerfil({ perfil }: { perfil: FilaPerfil | null }) {
         <p className="text-xs text-texto-2">Con esto y lo que vas haciendo, la app supone el resto de tu semana al generar un entreno, para repartir bien la carga.</p>
         <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="multipresa_en_casa" defaultChecked={perfil?.multipresa_en_casa ?? false} className={CASILLA} /> Tengo multipresa en casa</label>
         <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="objetivo_estetico" defaultChecked={perfil?.objetivo_estetico ?? false} className={CASILLA} /> También quiero verme fuerte y definido</label>
-        <p className="text-xs text-texto-2">Suma 2 sesiones de «Fuerza y forma» en casa por semana (pecho, hombros, tríceps y abdominales) sin quitarle nada a la escalada, y consejos de alimentación sin cifras.</p>
+        <p className="text-xs text-texto-2">Suma 2 sesiones de «Fuerza y forma» en casa por semana (pecho, hombros, tríceps y abdominales) sin quitarle nada a la escalada, y consejos de alimentación sin objetivos ni cifras de peso.</p>
         <label className="block">Fecha objetivo<input type="date" name="objetivo_temporada" required defaultValue={perfil?.objetivo_temporada ?? '2027-10-04'} className={CAMPO} /></label>
         {perfil && <p className="text-xs text-texto-2">Cambiar las fechas replanifica toda la temporada.</p>}
       </Tarjeta>

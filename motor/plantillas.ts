@@ -1242,7 +1242,7 @@ function construirFuerzaForma(p: Peticion): SesionPlan | null {
   const explicacion = explicar(
     'plantilla.fuerza-forma',
     ['P-77'],
-    'Para verte fuerte y definido sin quitarle nada a la escalada: empuje y abdominales, que la escalada apenas trabaja. Lo que hace crecer el músculo es el volumen semanal cerca del fallo, y con peso corporal se gana igual que con pesas (las flexiones equivalen al press de banca; estudios en no escaladores). Sin tirón, que ya lo dan la escalada y las dominadas, ni piernas, que entrenas en la montaña.',
+    'Para verte fuerte y definido sin quitarle nada a la escalada: empuje y abdominales, que la escalada apenas trabaja. Lo que hace crecer el músculo es el volumen semanal cerca del fallo, y con peso corporal se puede ganar parecido a con pesas (flexiones frente a press de banca ligero, al fallo; estudios en no escaladores). Aquí se para a 1-3 del fallo para no cansarte de cara a la escalada. Sin tirón, que ya lo dan la escalada y las dominadas, ni piernas, que entrenas en la montaña.',
   )
   const empuje = 15
   const calentamiento = 5
@@ -1250,7 +1250,7 @@ function construirFuerzaForma(p: Peticion): SesionPlan | null {
     {
       nombre: 'Calentamiento',
       minutos: calentamiento,
-      ejercicios: [{ nombre: 'Movilidad de hombro y flexiones suaves de menos a más', cargaTexto: 'Esfuerzo percibido 2–4 de 10', ficha: 'dislocaciones-hombro' }],
+      ejercicios: [{ nombre: 'Movilidad de hombro y flexiones suaves de menos a más', cargaTexto: 'Esfuerzo percibido 2–4 de 10', ficha: 'movilidad' }],
       explicacion: explicar('plantilla.calentamiento-forma', ['P-49'], 'Antes de series cerca del fallo se calienta de menos a más, por prudencia.'),
     },
     {
@@ -1266,8 +1266,9 @@ function construirFuerzaForma(p: Peticion): SesionPlan | null {
       nombre: 'Abdominales y core',
       minutos: v.minutos - calentamiento - empuje,
       ejercicios: [
-        { nombre: 'Elevaciones de piernas colgado', series: v.series, cargaTexto: dosis, ficha: 'elevaciones-colgado' },
-        { nombre: 'Hollow o L-sit (según tu nivel)', series: v.series, cargaTexto: '20-40 s por serie, cerca de no aguantar más', ficha: 'l-sit' },
+        // Tumbado: colgarse cerca del fallo cargaría dedos y antebrazos, que son de la escalada.
+        { nombre: 'Elevaciones de piernas tumbado', series: v.series, cargaTexto: dosis, ficha: 'elevaciones-tumbado' },
+        { nombre: 'Hollow o L-sit (según tu nivel)', series: v.series, cargaTexto: '20-40 s por serie, cerca de no aguantar más', ficha: 'hollow', fichasExtra: ['l-sit'] },
         { nombre: 'Plancha lateral', series: 2, cargaTexto: '30-45 s por lado', ficha: 'plancha-lateral' },
       ],
       explicacion: explicar(
@@ -1291,13 +1292,13 @@ function construirCardio(p: Peticion): SesionPlan | null {
       ejercicios: [{
         nombre: 'Andar rápido, bici, correr suave o montaña',
         cargaTexto: 'A ritmo de poder hablar',
-        notas: 'Mejor bici o andar que correr si quieres ganar fuerza: el cardio suave resta poco, y la bici menos que la carrera.',
+        notas: 'Si quieres ganar fuerza, mejor bici que correr: en los estudios restó menos.',
         ficha: 'cardio-suave',
       }],
       explicacion: explicar(
         'plantilla.cardio',
         ['P-78'],
-        'Hoy no toca escalar: cardio suave para moverte sin cargar dedos ni codos. Poco y suave apenas resta a la fuerza (estudios en no escaladores); se deja un día de la semana sin nada para recuperar.',
+        'Hoy no toca escalar: cardio suave para moverte sin cargar dedos ni codos. En estudios en no escaladores, el cardio restó menos a la fuerza en bici que corriendo, y menos cuanto menos frecuente y largo; se deja un día de la semana sin nada para recuperar.',
       ),
     },
   ])

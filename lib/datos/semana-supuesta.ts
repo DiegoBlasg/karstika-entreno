@@ -5,6 +5,9 @@ import { lunesDe, sumarDias } from '../fecha'
 import { franja, HORA_FRANJA, type Franja } from './agenda'
 import type { DatosAtleta, DiasSemana } from './filas'
 
+// Lo que no cuenta como día de entrenamiento al suponer la semana: el descanso y los extras suaves.
+const NO_ES_ENTRENAMIENTO: readonly string[] = ['descanso', 'cardio', 'fuerza-forma', 'core-movilidad']
+
 export interface EntradaSupuesta {
   fecha: string
   horaInicio: number
@@ -38,7 +41,7 @@ export function habitos(d: DatosAtleta, fecha: string): Habitos {
   const desde = sumarDias(lunes, -7 * semanasHistorial)
   const registradas = new Set(d.registros.map((r) => r.sesion_id))
   const hechas = d.sesiones.filter((s) =>
-    s.propuesta?.contexto && registradas.has(s.id) && s.sesion.tipo !== 'descanso' && s.fecha >= desde && s.fecha < lunes)
+    s.propuesta?.contexto && registradas.has(s.id) && !NO_ES_ENTRENAMIENTO.includes(s.sesion.tipo) && s.fecha >= desde && s.fecha < lunes)
   const porSemana = new Map<string, Set<number>>()
   const porRatoSesiones = new Map<string, typeof hechas>()
   for (const s of hechas) {
@@ -87,7 +90,7 @@ export function ratosSupuestos(d: DatosAtleta, e: EntradaSupuesta): RatoSupuesto
   if (!respuesta) return []
   const lunes = lunesDe(e.fecha)
   const domingo = sumarDias(lunes, 6)
-  const sesionesSemana = d.sesiones.filter((s) => s.fecha >= lunes && s.fecha <= domingo && s.sesion.tipo !== 'descanso')
+  const sesionesSemana = d.sesiones.filter((s) => s.fecha >= lunes && s.fecha <= domingo && !NO_ES_ENTRENAMIENTO.includes(s.sesion.tipo))
   const conSesion = new Set(sesionesSemana.map((s) => s.fecha))
   conSesion.add(e.fecha)
   const h = habitos(d, e.fecha)

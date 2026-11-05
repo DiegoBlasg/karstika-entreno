@@ -308,60 +308,85 @@ export function proponerSesion(p: Peticion): Propuesta {
   return conCoreMovilidad(p, conCardio(p, conFuerzaForma(p, conTestCasa(p, proponerSesionBase(p)))))
 }
 
-// Fuerza y forma (P-77): con el objetivo estético y en casa, como mucho 2 en la semana natural; no el mismo día ni el
-// día antes de una sesión de carga alta, ni en descarga, ni con hombro, codo o muñeca fuera del verde o el chequeo bajo.
-// La escalada manda: va de principal solo en lugar de hombro, dominadas o core y movilidad.
-const SIN_ESCALADA_SUSTITUIBLE: readonly TipoSesion[] = ['hombro', 'dominadas', 'core-movilidad']
+// Fuerza y forma (P-77): con el objetivo estético y en casa. La escalada manda, así que no va:
+// - más de 2 veces en la semana natural, ni dos días seguidos, ni dos veces el mismo día;
+// - el mismo día que dominadas u hombro (ya cargan el hombro y llevan empujes);
+// - el mismo día ni el día antes de una sesión de carga alta (del historial o del plan de la semana);
+// - en descarga, con el chequeo bajo o con dedos, hombro, codo o muñeca fuera del verde.
+// Sesiones conocidas de la semana: el historial y las que reparte el plan semanal (P-67).
+const sesionesConocidas = (p: Peticion, r: Propuesta): Sesion[] => [...p.historial, ...(r.semana ?? []).flatMap((x) => (x.sesion ? [x.sesion] : []))]
 
-export function fuerzaFormaPosible(p: Peticion, estado: Propuesta['estado']): boolean {
+export function fuerzaFormaPosible(p: Peticion, r: Pick<Propuesta, 'estado' | 'semana'>): boolean {
+  const estado = r.estado
   if (!p.objetivoEstetico || p.contexto.lugar !== 'casa') return false
   if (p.fase.descarga || estado?.descargaAdelantada || estado?.chequeoBajoHoy) return false
-  if (estado && (['hombro', 'codo', 'muneca'] as const).some((z) => estado.zonas[z] !== 'verde')) return false
+  if (estado && (['dedos', 'hombro', 'codo', 'muneca'] as const).some((z) => estado.zonas[z] !== 'verde')) return false
   const d = diaNumero(p.fecha)
   const lunes = d - desdeLunes(d)
-  const enSemana = p.historial.filter((s) => s.tipo === 'fuerza-forma' && diaNumero(s.fecha) >= lunes && diaNumero(s.fecha) <= lunes + 6)
-  if (enSemana.length >= VALORES['P-77'].porSemana) return false
-  return !p.historial.some((s) => esCargaAlta(s) && (diaNumero(s.fecha) === d || diaNumero(s.fecha) === d + 1))
+  const todas = sesionesConocidas(p, { semana: r.semana } as Propuesta)
+  const ff = todas.filter((s) => s.tipo === 'fuerza-forma').map((s) => diaNumero(s.fecha))
+  if (ff.filter((x) => x >= lunes && x <= lunes + 6).length >= VALORES['P-77'].porSemana) return false
+  if (ff.some((x) => Math.abs(x - d) <= 1)) return false
+  if (todas.some((s) => diaNumero(s.fecha) === d && (s.tipo === 'dominadas' || cuentaPara(s, 'hombro')))) return false
+  return !todas.some((s) => esCargaAlta(s) && (diaNumero(s.fecha) === d || diaNumero(s.fecha) === d + 1))
+}
+
+// Las alternativas con una delante: el test en casa pendiente sigue primero; como mucho 2.
+function anteponer(alternativas: readonly SesionPlan[], plan: SesionPlan): SesionPlan[] {
+  const [primera, ...resto] = alternativas
+  return (primera?.sesion.tipo === 'test-casa' ? [primera, plan, ...resto] : [plan, ...alternativas]).slice(0, 2)
 }
 
 function conFuerzaForma(p: Peticion, r: Propuesta): Propuesta {
-  if (!fuerzaFormaPosible(p, r.estado)) return r
+  if (!fuerzaFormaPosible(p, r)) return r
   if (r.estado && Object.values(r.estado.zonas).includes('rojo')) return r
   if ([r.principal, ...r.alternativas].some((o) => o?.sesion.tipo === 'fuerza-forma')) return r
   const { huecos: _huecos, seguimiento: _seguimiento, ...sinHuecos } = p
   const c = evaluar('fuerza-forma', r.estado ? { ...sinHuecos, estado: r.estado } : sinHuecos)
   if (!c || c.violaciones.length > 0) return r
-  if (r.principal === null) {
-    if (r.descanso?.regla !== 'generador.descanso-recomendado') return r
-    const plan: SesionPlan = { ...c.plan, explicaciones: [explicar('generador.fuerza-forma', ['P-77'], 'Toca descansar de escalar; si te apetece, «Fuerza y forma» no carga los dedos.'), ...c.plan.explicaciones] }
-    return { ...r, alternativas: [plan, ...r.alternativas].slice(0, 2) }
-  }
   const conEleccion = (motivo: string): SesionPlan => ({ ...c.plan, explicaciones: [explicar('generador.fuerza-forma', ['P-77'], motivo), ...c.plan.explicaciones] })
-  if (!SIN_ESCALADA_SUSTITUIBLE.includes(r.principal.sesion.tipo)) {
-    return { ...r, alternativas: [conEleccion('Si hoy prefieres trabajar tu objetivo de verte fuerte y definido: «Fuerza y forma» en casa.'), ...r.alternativas].slice(0, 2) }
+  if (r.principal === null) {
+    // En casa sin nada posible (sin multipresa ni cupos), «Fuerza y forma» llena el día; con el descanso recomendado
+    // solo se ofrece.
+    if (r.descanso?.regla === 'contexto.sin-opciones') {
+      const { descanso: _descanso, ...sinDescanso } = r
+      return { ...sinDescanso, principal: conEleccion('En casa no hay nada de escalada que hacer hoy: toca «Fuerza y forma» para tu objetivo de verte fuerte y definido.') }
+    }
+    if (r.descanso?.regla !== 'generador.descanso-recomendado') return r
+    return { ...r, alternativas: anteponer(r.alternativas, conEleccion('Toca descansar de escalar; si te apetece, «Fuerza y forma» no carga los dedos.')) }
+  }
+  // Va de principal solo en lugar de dominadas o de core y movilidad, o de un hombro que ya tiene su cupo cubierto, y
+  // nunca cuando la principal la eligió el plan de la semana (la reparte él).
+  const t = r.principal.sesion.tipo
+  const sustituible = t === 'dominadas' || t === 'core-movilidad' || (t === 'hombro' && !cupoPendiente(p, 'hombro'))
+  if (!sustituible || r.semana) {
+    return { ...r, alternativas: anteponer(r.alternativas, conEleccion('Si hoy prefieres trabajar tu objetivo de verte fuerte y definido: «Fuerza y forma» en casa.')) }
   }
   const antes = explicar('generador.fuerza-forma-alternativa', ['P-77'], 'Era la propuesta de hoy; pasa a alternativa porque toca «Fuerza y forma». Si lo prefieres, sigue valiendo.')
   const anterior: SesionPlan = { ...r.principal, explicaciones: [antes, ...r.principal.explicaciones.slice(1)] }
-  return { ...r, principal: conEleccion('En casa y sin nada de escalada que haga falta hoy: toca «Fuerza y forma» para tu objetivo de verte fuerte y definido.'), alternativas: [anterior, ...r.alternativas].slice(0, 2) }
+  return {
+    ...r,
+    principal: conEleccion('En casa y sin nada de escalada que haga falta hoy: toca «Fuerza y forma» para tu objetivo de verte fuerte y definido.'),
+    alternativas: [anterior, ...r.alternativas].slice(0, 2),
+  }
 }
 
-// Cardio suave (P-78): cuando la propuesta es descanso (salvo rojo o chequeo bajo), primera alternativa, si en la
-// semana natural queda al menos un día sin ninguna sesión.
+// Cardio suave (P-78): cuando la propuesta es descanso (salvo rojo o chequeo bajo), como alternativa (detrás del test en
+// casa pendiente), si en la semana natural queda al menos un día sin ninguna sesión, contando las del plan.
 function conCardio(p: Peticion, r: Propuesta): Propuesta {
   if (r.principal !== null || !r.descanso) return r
   if (r.estado && (Object.values(r.estado.zonas).includes('rojo') || r.estado.chequeoBajoHoy)) return r
   if (r.alternativas.some((a) => a.sesion.tipo === 'cardio')) return r
   const d = diaNumero(p.fecha)
   const lunes = d - desdeLunes(d)
-  const dias = new Set([d, ...p.historial.map((s) => diaNumero(s.fecha)).filter((x) => x >= lunes && x <= lunes + 6)])
+  const dias = new Set([d, ...sesionesConocidas(p, r).map((s) => diaNumero(s.fecha)).filter((x) => x >= lunes && x <= lunes + 6)])
   if (7 - dias.size < VALORES['P-78'].diasLibres) return r
   const { huecos: _huecos, seguimiento: _seguimiento, ...sinHuecos } = p
   const c = evaluar('cardio', r.estado ? { ...sinHuecos, estado: r.estado } : sinHuecos)
   if (!c || c.violaciones.length > 0) return r
   const plan: SesionPlan = { ...c.plan, explicaciones: [explicar('generador.cardio', ['P-78'], 'Hoy toca descansar de escalar; si quieres hacer algo que canse, cardio suave no carga dedos ni codos.'), ...c.plan.explicaciones] }
-  return { ...r, alternativas: [plan, ...r.alternativas].slice(0, 2) }
+  return { ...r, alternativas: anteponer(r.alternativas, plan) }
 }
-
 
 // El test en casa (dominadas máximas y cadera) toca en los 10 días siguientes a un test de dedos, si no se ha hecho
 // desde entonces: así la batería completa queda cerca en el tiempo (informe 2026-10-31, «batería en 2 días»).
@@ -612,9 +637,10 @@ function proponer(recibida: Peticion, conVentana: boolean, sinDominadas = false,
       : explicarContexto('contexto.sin-opciones', 'Con este contexto y esta fase no hay ninguna sesión posible hoy.')
   } else {
     const d = diaNumero(p.fecha)
+    // El cardio suave y «Fuerza y forma» no cuentan: no son escalada ni cargan los dedos.
     const recientes = p.historial.filter((s) => {
       const x = diaNumero(s.fecha)
-      return x >= d - DIAS_RECIENTES && x <= d - 1
+      return x >= d - DIAS_RECIENTES && x <= d - 1 && s.tipo !== 'cardio' && s.tipo !== 'fuerza-forma'
     }).length
     // Las dominadas son opcionales (P-39): su cupo pendiente no impide recomendar el descanso (P-16).
     const cuposCubiertos = validos.every((v) => v.tipoPlan === 'dominadas' || !cupoPendiente(p, v.tipoPlan))
