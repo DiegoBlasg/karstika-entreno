@@ -27,6 +27,8 @@ const LUGARES: Record<TipoSesion, readonly Lugar[]> = {
   campus: CASA_O_ROCODROMO,
   'core-movilidad': ['rocodromo', 'roca', 'casa'],   // P-72: la alternativa suave del descanso, en cualquier sitio
   'test-casa': ['casa'],   // dominadas máximas y apertura de cadera: solo hace falta la barra
+  'fuerza-forma': ['casa'],   // P-77: empuje y core con peso corporal
+  cardio: ['rocodromo', 'roca', 'casa'],   // P-78: andar, bici, correr suave o montaña
   descanso: ['rocodromo', 'roca', 'casa'],
 }
 
@@ -36,9 +38,10 @@ function comprobarContexto(ctx: Contexto): void {
   }
 }
 
-// En roca toda la escalada es con cuerda: cualquier sesión salvo el descanso necesita compañero.
+// En roca toda la escalada es con cuerda: cualquier sesión salvo el descanso y el cardio (andar por el monte) necesita
+// compañero.
 const necesitaCompania = (t: TipoSesion, lugar: Lugar): boolean =>
-  NECESITA_COMPANIA.has(t) || (lugar === 'roca' && t !== 'descanso')
+  NECESITA_COMPANIA.has(t) || (lugar === 'roca' && t !== 'descanso' && t !== 'cardio')
 
 // Fail-closed solo cuando el usuario dice explícitamente que no tiene multipresa en casa; ausente = sí la tiene.
 const sinMaterial = (t: TipoSesion, ctx: Contexto): boolean =>

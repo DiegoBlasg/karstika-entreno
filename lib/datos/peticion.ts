@@ -82,6 +82,7 @@ export function prepararPropuesta(d: DatosAtleta, e: EntradaPeticion): Preparaci
     seguimiento,
     consejosMostrados: consejosMostradosMotor(d.consejos),
     testsHechos: testsHechosMotor(d),
+    ...(d.perfil.objetivo_estetico ? { objetivoEstetico: true } : {}),
     ...(huecos ? { huecos } : {}),
     ...(diagnostico.limitantes[0] ? { limitantePrincipal: diagnostico.limitantes[0] } : {}),
     ...(evaluacion ? { evaluacion } : {}),

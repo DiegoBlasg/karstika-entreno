@@ -96,3 +96,16 @@ test('Semana invita a decir cuántos días entrenas y deja de hacerlo al contest
   await expect(page.getByRole('heading', { name: 'Tu semana' })).toBeVisible()
   await expect(page.getByText(/^Dime en Yo cuántos días sueles entrenar/)).toHaveCount(0)
 })
+
+test('Yo: el objetivo «verme fuerte y definido» se guarda y la Biblioteca tiene «Fuerza y forma»', async ({ page }) => {
+  await page.goto('/perfil')
+  await page.getByLabel('También quiero verme fuerte y definido').check()
+  await page.getByRole('button', { name: 'Guardar perfil' }).click()
+  await expect(page.getByText('Perfil guardado.')).toBeVisible()
+  await page.reload()
+  await expect(page.getByLabel('También quiero verme fuerte y definido')).toBeChecked()
+  await page.goto('/biblioteca')
+  await page.getByRole('button', { name: 'Fuerza y forma', exact: true }).click()
+  await expect(page.getByRole('link', { name: /Flexiones con progresión/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Cardio suave/ })).toBeVisible()
+})

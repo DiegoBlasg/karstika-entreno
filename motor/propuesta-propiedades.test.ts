@@ -19,10 +19,10 @@ for (const fase of [FASE_BASE, FASE_FUERZA]) {
       for (const lugar of ['rocodromo', 'roca', 'casa'] as const) {
         for (const minutosDisponibles of [15, 45, 120]) {
           for (const fecha of ['2026-10-27', '2026-10-28']) {
-            // Con y sin un test de dedos hecho hace poco (el test en casa queda pendiente).
+            // Con y sin un test de dedos hecho hace poco (el test en casa queda pendiente) y, con él, el objetivo estético.
             for (const testsHechos of [undefined, { dedos: ['2026-10-25'], casa: [] }]) {
               escenarios.push(peticion({
-                fase, perfil, fecha, historial, evaluacion, contexto: { compania, lugar, minutosDisponibles }, ...(testsHechos ? { testsHechos } : {}),
+                fase, perfil, fecha, historial, evaluacion, contexto: { compania, lugar, minutosDisponibles }, ...(testsHechos ? { testsHechos, objetivoEstetico: true } : {}),
               }))
             }
           }
@@ -63,7 +63,10 @@ describe('propiedades de proponerSesion (todas las combinaciones)', () => {
       expect(new Set(t).size).toBe(t.length)
       expect(r.alternativas.length).toBeLessThanOrEqual(2)
       if (!r.principal) {
-        if (r.descanso?.regla !== 'generador.descanso-recomendado') expect(r.alternativas).toEqual([])
+        // Sin principal solo hay alternativas suaves para moverse (cardio, core y movilidad, test en casa, fuerza y forma).
+        if (r.descanso?.regla !== 'generador.descanso-recomendado') {
+          for (const a of r.alternativas) expect(['cardio', 'core-movilidad']).toContain(a.sesion.tipo)
+        }
         expect(r.descanso).toBeDefined()
       }
     }

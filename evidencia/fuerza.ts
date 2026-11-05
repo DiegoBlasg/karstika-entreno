@@ -171,4 +171,83 @@ export const hallazgos: Hallazgo[] = [
       'No son escaladores y la resistencia estudiada (carrera, ciclismo) no es la de antebrazo; solo se leyó el resumen vía Europe PMC; extrapolar a escalada es una hipótesis sin respaldo directo. No hay ensayos de interferencia en escaladores.',
     verificada: { fecha: '2026-10-26', metodo: 'resumen' },
   },
+  {
+    id: 'EV-FUERZA-013',
+    bloque: 'fuerza',
+    afirmacion:
+      'En un metaanálisis (15 estudios, 34 grupos de tratamiento, adultos), la hipertrofia aumentó de forma escalonada con el volumen semanal de entrenamiento de fuerza: más series semanales por grupo muscular dieron más ganancia de masa muscular, al menos hasta unas 10 series semanales, que es lo que los estudios incluidos permitían analizar.',
+    fuentes: [
+      {
+        autores: 'Schoenfeld, B. J.; Ogborn, D.; Krieger, J. W.',
+        anio: 2017,
+        titulo: 'Dose-response relationship between weekly resistance training volume and increases in muscle mass: A systematic review and meta-analysis',
+        publicacion: 'Journal of Sports Sciences, 35(11), 1073-1082',
+        doi: '10.1080/02640414.2016.1210197',
+      },
+    ],
+    nivel: 'A',
+    aplicaA: { nivel: 'adultos en general, no escaladores', objetivo: 'hipertrofia (estética)' },
+    limitaciones:
+      'No son escaladores; el efecto por encima de 10 series semanales por grupo no se pudo estimar con los estudios disponibles. Se usa para el objetivo estético opcional, no para el rendimiento en escalada. Solo resumen.',
+    verificada: { fecha: '2026-11-05', metodo: 'resumen' },
+  },
+  {
+    id: 'EV-FUERZA-014',
+    bloque: 'fuerza',
+    afirmacion:
+      'En un metaanálisis de 21 estudios con todas las series al fallo momentáneo y al menos 6 semanas, las cargas bajas (≤ 60 % del 1RM) y altas (> 60 %) dieron una hipertrofia parecida; las altas fueron mejores para la fuerza máxima.',
+    fuentes: [
+      {
+        autores: 'Schoenfeld, B. J.; Grgic, J.; Ogborn, D.; Krieger, J. W.',
+        anio: 2017,
+        titulo: 'Strength and Hypertrophy Adaptations Between Low- vs. High-Load Resistance Training: A Systematic Review and Meta-analysis',
+        publicacion: 'Journal of Strength and Conditioning Research, 31(12), 3508-3523',
+        doi: '10.1519/JSC.0000000000002200',
+      },
+    ],
+    nivel: 'A',
+    aplicaA: { nivel: 'adultos en general, no escaladores', objetivo: 'hipertrofia con peso corporal' },
+    limitaciones:
+      'Todas las series iban al fallo; la app para a 1-3 repeticiones del fallo por prudencia y para no cansar de cara a la escalada, lo que puede dar algo menos de efecto. No son escaladores. Solo resumen.',
+    verificada: { fecha: '2026-11-05', metodo: 'resumen' },
+  },
+  {
+    id: 'EV-FUERZA-015',
+    bloque: 'fuerza',
+    afirmacion:
+      'En un ensayo aleatorizado con 18 jóvenes no entrenados, 8 semanas de flexiones (ajustando la postura para igualar la carga) dieron una hipertrofia y una ganancia de fuerza parecidas a las del press de banca al 40 % del 1RM, 2 veces por semana.',
+    fuentes: [
+      {
+        autores: 'Kikuchi, N.; Nakazato, K.',
+        anio: 2017,
+        titulo: 'Low-load bench press and push-up induce similar muscle hypertrophy and strength gain',
+        publicacion: 'Journal of Exercise Science & Fitness, 15(1), 37-42',
+        doi: '10.1016/j.jesf.2017.06.003',
+      },
+    ],
+    nivel: 'A',
+    aplicaA: { nivel: 'jóvenes no entrenados, no escaladores', objetivo: 'hipertrofia de pecho con peso corporal' },
+    limitaciones: 'Muestra pequeña (n = 18), solo varones no entrenados y 8 semanas. No son escaladores. Texto completo en abierto (PMC5812864), leído el resumen.',
+    verificada: { fecha: '2026-11-05', metodo: 'resumen' },
+  },
+  {
+    id: 'EV-FUERZA-016',
+    bloque: 'fuerza',
+    afirmacion:
+      'En un metaanálisis de 25 estudios, con el volumen semanal igualado, la frecuencia de entrenamiento por grupo muscular no cambió de forma relevante la hipertrofia; sin igualar el volumen, las frecuencias más altas dieron algo más, porque permitían más series.',
+    fuentes: [
+      {
+        autores: 'Schoenfeld, B. J.; Grgic, J.; Krieger, J.',
+        anio: 2019,
+        titulo: 'How many times per week should a muscle be trained to maximize muscle hypertrophy? A systematic review and meta-analysis of studies examining the effects of resistance training frequency',
+        publicacion: 'Journal of Sports Sciences, 37(11), 1286-1295',
+        doi: '10.1080/02640414.2018.1555906',
+      },
+    ],
+    nivel: 'A',
+    aplicaA: { nivel: 'adultos en general, no escaladores', objetivo: 'hipertrofia' },
+    limitaciones:
+      'Se discute si todos los estudios igualaban de verdad el volumen. No son escaladores. Solo resumen y comentarios secundarios.',
+    verificada: { fecha: '2026-11-05', metodo: 'resumen' },
+  },
 ]

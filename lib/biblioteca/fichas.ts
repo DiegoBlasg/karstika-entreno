@@ -18,6 +18,7 @@ export const FICHA_IDS = [
   'pies-silenciosos', 'manos-pegadas', 'mismo-lado', 'placa-sin-manos', 'caidas-progresivas', 'respiracion-voy', 'tactica-encadene',
   'continuidad-5x3', 'up-down-up', 'repetir-vias', 'inthangs', 'suspensiones-largas', 'abrahangs', 'intermitentes-80', 'finger-curls',
   'dedos-en-barra', 'campus', 'paso-alto', 'tobillo',
+  'flexiones-progresion', 'pike-push-up', 'l-sit', 'cardio-suave',
 ] as const
 export type FichaId = (typeof FICHA_IDS)[number]
 
@@ -1071,10 +1072,71 @@ export const FICHAS: Record<FichaId, Ficha> = {
     paraSi: PARA_SI,
     parametros: ['P-72', ...SEGURIDAD],
   },
+  'flexiones-progresion': {
+    id: 'flexiones-progresion',
+    titulo: 'Flexiones con progresión',
+    paraQue: `Pecho, hombros y tríceps con tu peso: las flexiones dan una hipertrofia parecida al press de banca (Kikuchi y Nakazato 2017, A, en no escaladores). ${VALORES['P-77'].series} series de ${VALORES['P-77'].repMin}-${VALORES['P-77'].repMax} a ${VALORES['P-77'].rirMin}-${VALORES['P-77'].rirMax} del fallo.`,
+    material: 'Suelo (una mesa o una silla para las variantes)',
+    pasos: [
+      'Elige la variante en la que hagas entre 6 y 15: inclinadas (manos en una mesa) → normales → pies elevados → diamante (manos juntas, más tríceps) → arqueras.',
+      'Cuerpo recto de la cabeza a los talones, manos algo más anchas que los hombros.',
+      'Baja hasta casi tocar el suelo con el pecho, con los codos a unos 45° del cuerpo.',
+      'Para cuando te queden 1-3 repeticiones en la recámara.',
+      'Con 15 limpias en las 3 series, pasa a la variante siguiente.',
+    ],
+    errores: ['Hundir la cadera o levantarla.', 'Abrir los codos en cruz, que carga el hombro.'],
+    paraSi: ['Pinchazo delante del hombro: vuelve a la variante anterior.', ...PARA_SI],
+    parametros: ['P-77', ...SEGURIDAD],
+    dibujo: 'flexion',
+  },
+  'pike-push-up': {
+    id: 'pike-push-up',
+    titulo: 'Pike push-ups',
+    paraQue: 'Hombros con tu peso: una flexión con la cadera alta, que carga el hombro desde arriba. Progresión habitual de calistenia hacia la flexión en pino; la dosis es la de P-77 (volumen semanal cerca del fallo).',
+    material: 'Suelo (un banco o una silla para subir los pies)',
+    pasos: [
+      'Desde la flexión, sube la cadera hasta formar una V invertida.',
+      'Baja la cabeza hacia el suelo, entre las manos, doblando los codos.',
+      'Empuja hasta estirar los brazos.',
+      'Más difícil: pies en una silla.',
+    ],
+    errores: ['Arquear la espalda.', 'Bajar sin control y golpear con la cabeza.'],
+    paraSi: ['Molestia en el cuello o en el hombro: menos recorrido o vuelve a flexiones.', ...PARA_SI],
+    parametros: ['P-77', ...SEGURIDAD],
+  },
+  'l-sit': {
+    id: 'l-sit',
+    titulo: 'L-sit',
+    paraQue: 'Abdominales en isométrico, la progresión del hollow: piernas en L sostenido con los brazos. Se ven marcados con poca grasa corporal: hacer abdominales no quema la grasa de la tripa (Vispute 2011, A).',
+    material: 'Suelo (dos sillas estables o paralelas para el L-sit)',
+    pasos: [
+      'Cuando aguantes 40 s de hollow, pasa al L-sit: manos en dos sillas, brazos estirados, levanta el cuerpo.',
+      'L-sit: empieza con rodillas dobladas (tuck) y estira las piernas cuando puedas.',
+      '3 series de 20-40 s, cerca de no aguantar más.',
+    ],
+    errores: ['Hundir los hombros.', 'Redondear la espalda baja para subir las piernas.'],
+    paraSi: ['Dolor de espalda baja: dobla más las rodillas o vuelve al hollow.', ...PARA_SI],
+    parametros: ['P-77', ...SEGURIDAD],
+  },
+  'cardio-suave': {
+    id: 'cardio-suave',
+    titulo: 'Cardio suave',
+    paraQue: 'Moverte los días sin escalada sin cargar dedos ni codos: andar rápido, bici, correr suave o montaña. En no escaladores, el cardio restó menos a la fuerza en bici que corriendo, y la interferencia crecía con la frecuencia y la duración (Wilson 2012).',
+    material: 'Ninguno (bici si la tienes)',
+    pasos: [
+      `${VALORES['P-78'].minutosMin}-${VALORES['P-78'].minutosMax} min a un ritmo en el que puedas hablar.`,
+      'Si quieres ganar fuerza, mejor bici que correr.',
+      'Una salida de montaña cuenta como cardio.',
+      'Deja un día de la semana sin nada para recuperar.',
+    ],
+    errores: ['Convertirlo en series o carreras a tope: eso sí resta recuperación para escalar.'],
+    paraSi: PARA_SI,
+    parametros: ['P-78', ...SEGURIDAD],
+  },
 }
 
 export interface Grupo {
-  id: 'fuerza' | 'resistencia' | 'potencia' | 'tecnica' | 'cabeza' | 'hombro' | 'movilidad'
+  id: 'fuerza' | 'resistencia' | 'potencia' | 'tecnica' | 'cabeza' | 'hombro' | 'movilidad' | 'forma'
   titulo: string
   fichas: FichaId[]
 }
@@ -1124,6 +1186,7 @@ export const GRUPOS: Grupo[] = [
       'elevaciones-colgado', 'elevaciones-tumbado', 'plancha-lateral',
     ],
   },
+  { id: 'forma', titulo: 'Fuerza y forma', fichas: ['flexiones-progresion', 'pike-push-up', 'l-sit', 'cardio-suave'] },
 ]
 
 export type LugarFicha = 'rocodromo' | 'roca' | 'casa'
@@ -1149,6 +1212,7 @@ export const LUGARES_FICHA: Record<FichaId, LugarFicha[]> = {
   'pies-silenciosos': RR, 'manos-pegadas': R, 'mismo-lado': R, 'placa-sin-manos': R, 'caidas-progresivas': RR, 'respiracion-voy': RR,
   'tactica-encadene': ['roca'], 'continuidad-5x3': R, 'up-down-up': RR, 'repetir-vias': RR, inthangs: R, 'suspensiones-largas': R,
   abrahangs: R, 'intermitentes-80': R, 'finger-curls': RC, 'dedos-en-barra': C, campus: R, 'paso-alto': TODOS, tobillo: TODOS,
+  'flexiones-progresion': TODOS, 'pike-push-up': TODOS, 'l-sit': TODOS, 'cardio-suave': TODOS,
 }
 
 // Si el entrenador lo programa. Por defecto, sí; las de consulta las puedes hacer por tu cuenta; las «no» explican por

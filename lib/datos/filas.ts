@@ -11,6 +11,7 @@ export interface FilaPerfil {
   objetivo_temporada: string
   multipresa_en_casa: boolean
   dias_semana?: DiasSemana | null   // cuántos días suele entrenar (P-74); nulo = sin contestar
+  objetivo_estetico?: boolean       // también quiere verse fuerte y definido (P-77); la base siempre lo devuelve
   aviso_aceptado_en: string
 }
 

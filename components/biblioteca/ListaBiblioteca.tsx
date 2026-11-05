@@ -20,6 +20,7 @@ const ICONO_GRUPO: Record<Grupo['id'], ReactNode> = {
   cabeza: <IconoCuerda size={26} />,
   hombro: <IconoCima size={26} />,
   movilidad: <IconoCima size={26} />,
+  forma: <IconoCima size={26} />,
 }
 
 // Miniatura de cada ficha: su dibujo solo si ninguna otra ficha del grupo lo comparte (cinco suspensiones con el mismo

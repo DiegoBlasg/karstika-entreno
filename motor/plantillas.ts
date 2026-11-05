@@ -1232,8 +1232,84 @@ function construirTestCasa(p: Peticion): SesionPlan | null {
   ])
 }
 
+// Fuerza y forma (P-77): objetivo estético opcional, en casa. Empuje y core para el volumen semanal de hipertrofia
+// (2 sesiones × 3 series por ejercicio), sin tirón ni piernas, parando a 1-3 del fallo para no cansar de cara a la escalada.
+function construirFuerzaForma(p: Peticion): SesionPlan | null {
+  const v = VALORES['P-77']
+  if (v.minutos > p.contexto.minutosDisponibles) return null
+  const dosis = `${v.series} series de ${v.repMin}-${v.repMax} repeticiones, a ${v.rirMin}-${v.rirMax} del fallo · descanso 1-2 min`
+  const progresa = `Con ${v.repMax} limpias en las ${v.series} series, pasa a la variante siguiente de la ficha.`
+  const explicacion = explicar(
+    'plantilla.fuerza-forma',
+    ['P-77'],
+    'Para verte fuerte y definido sin quitarle nada a la escalada: empuje y abdominales, que la escalada apenas trabaja. Lo que hace crecer el músculo es el volumen semanal cerca del fallo, y con peso corporal se puede ganar parecido a con pesas (flexiones frente a press de banca ligero, al fallo; estudios en no escaladores). Aquí se para a 1-3 del fallo para no cansarte de cara a la escalada. Sin tirón, que ya lo dan la escalada y las dominadas, ni piernas, que entrenas en la montaña.',
+  )
+  const empuje = 15
+  const calentamiento = 5
+  return plan(sesionDe('fuerza-forma', p, v.minutos, 'suave'), [
+    {
+      nombre: 'Calentamiento',
+      minutos: calentamiento,
+      ejercicios: [{ nombre: 'Movilidad de hombro y flexiones suaves de menos a más', cargaTexto: 'Esfuerzo percibido 2–4 de 10', ficha: 'movilidad' }],
+      explicacion: explicar('plantilla.calentamiento-forma', ['P-49'], 'Antes de series cerca del fallo se calienta de menos a más, por prudencia.'),
+    },
+    {
+      nombre: 'Empuje',
+      minutos: empuje,
+      ejercicios: [
+        { nombre: 'Flexiones (la variante de tu nivel)', series: v.series, cargaTexto: dosis, notas: progresa, ficha: 'flexiones-progresion' },
+        { nombre: 'Pike push-ups', series: v.series, cargaTexto: dosis, notas: progresa, ficha: 'pike-push-up' },
+      ],
+      explicacion,
+    },
+    {
+      nombre: 'Abdominales y core',
+      minutos: v.minutos - calentamiento - empuje,
+      ejercicios: [
+        // Tumbado: colgarse cerca del fallo cargaría dedos y antebrazos, que son de la escalada.
+        { nombre: 'Elevaciones de piernas tumbado', series: v.series, cargaTexto: dosis, ficha: 'elevaciones-tumbado' },
+        { nombre: 'Hollow o L-sit (según tu nivel)', series: v.series, cargaTexto: '20-40 s por serie, cerca de no aguantar más', ficha: 'hollow', fichasExtra: ['l-sit'] },
+        { nombre: 'Plancha lateral', series: 2, cargaTexto: '30-45 s por lado', ficha: 'plancha-lateral' },
+      ],
+      explicacion: explicar(
+        'plantilla.abdominales-forma',
+        ['P-77'],
+        'Los abdominales crecen con el mismo volumen que el resto, pero se ven marcados sobre todo con poca grasa corporal: hacer abdominales no quema la grasa de la tripa (Vispute 2011).',
+      ),
+    },
+  ])
+}
+
+// Cardio suave (P-78): los días sin escalada, para hacer algo que canse sin cargar dedos ni codos.
+function construirCardio(p: Peticion): SesionPlan | null {
+  const { minutosMin, minutosMax } = VALORES['P-78']
+  if (p.contexto.minutosDisponibles < minutosMin) return null
+  const total = p.contexto.minutosDisponibles >= minutosMax ? minutosMax : minutosMin
+  return plan(sesionDe('cardio', p, total, 'suave'), [
+    {
+      nombre: 'Cardio suave',
+      minutos: total,
+      ejercicios: [{
+        nombre: 'Andar rápido, bici, correr suave o montaña',
+        cargaTexto: 'A ritmo de poder hablar',
+        notas: 'Si quieres ganar fuerza, mejor bici que correr: en los estudios restó menos.',
+        ficha: 'cardio-suave',
+      }],
+      explicacion: explicar(
+        'plantilla.cardio',
+        ['P-78'],
+        'Hoy no toca escalar: cardio suave para moverte sin cargar dedos ni codos. En estudios en no escaladores, el cardio restó menos a la fuerza en bici que corriendo, y menos cuanto menos frecuente y largo; se deja un día de la semana sin nada para recuperar.',
+      ),
+    },
+  ])
+}
+
 export function construirSesion(tipo: TipoSesion, p: Peticion): SesionPlan | null {
   switch (tipo) {
+    case 'fuerza-forma':
+      return construirFuerzaForma(p)
+    case 'cardio':
+      return construirCardio(p)
     case 'test-casa':
       return construirTestCasa(p)
     case 'core-movilidad':
